@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СОБ · Аналітика</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+.an-kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 22px; }
+.an-kpi  { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+.an-kpi .l { font-size: 13px; color: var(--muted); }
+.an-kpi .v { font-size: 30px; font-weight: 800; letter-spacing: -.025em; margin-top: 6px; }
+.an-kpi .s { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px,1fr)); gap: 11px; margin-top: 14px; }
+.type-cell { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 15px 17px; }
+.type-cell .tc-top { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.type-cell .tc-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.type-cell .tc-lbl { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.type-cell .tc-num { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+.type-cell .tc-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.chart-box { position: relative; height: 280px; }
+.dough-box { position: relative; height: 200px; width: 200px; flex-shrink: 0; }
+.legend   { display: flex; flex-direction: column; gap: 10px; }
+.legend-item { display: flex; align-items: center; gap: 9px; font-size: 13px; }
+.legend-item .sw { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.legend-item b { margin-left: auto; font-variant-numeric: tabular-nums; }
+.tbl .rk { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: 14px; background: var(--surface-3); color: var(--text-2); }
+.tbl .rk.g1 { background: var(--gold-100); color: var(--gold-700); }
+.tbl .rk.g2 { background: #E7ECF4; color: var(--navy-700); }
+.tbl .rk.g3 { background: var(--amber-100); color: var(--amber-500); }
+@media (max-width:1080px) { .an-kpis { grid-template-columns: repeat(2,1fr); } }
+@media (max-width:640px)  { .an-kpis { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="app" id="shell"></div>
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/shell.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
+<script>
+SOBShell.render({ active:'analytics', crumb:['СОБ','Аналітика'] });
+
+const S = window.SOB, F = window.fmt, I = window.ICON;
+Chart.defaults.font.family = 'Onest, sans-serif';
+Chart.defaults.font.size   = 12.5;
+Chart.defaults.color       = '#6A7A98';
+Chart.defaults.animation   = false;
+
+/* ─────────────────────────────────────────────
+   Обчислення — виклик при кожному оновленні
+───────────────────────────────────────────── */
+function calcData() {
+  const serviced   = window.SOBStore.serviced();
+  let   allEvents  = S.schoolEvents || [];
+  const eventTypes = S.eventTypes   || [];
+
+  /* застосовуємо фільтри */
+  if(filterSchool !== 'all') allEvents = allEvents.filter(e => e.schoolId === filterSchool);
+  if(filterType   !== 'all') allEvents = allEvents.filter(e => e.type     === filterType);
+
+  const totEvents   = serviced.reduce((a,s) => a + (s.events||0), 0);
+  const totPart     = serviced.reduce((a,s) => a + (s.participants||0), 0);
+  const totConsult  = serviced.reduce((a,s) => a + (s.consultations||0), 0);
+  const avgRating   = serviced.length
+    ? Math.round(serviced.reduce((a,s) => a + (s.rating||0), 0) / serviced.length)
+    : 0;
+
+  /* за типами */
+  const byType = {};
+  eventTypes.forEach(t => { byType[t.id] = { label:t.label, color:t.color, count:0, participants:0 }; });
+  allEvents.forEach(ev => {
+    const k = ev.type;
+    if (byType[k]) { byType[k].count++; byType[k].participants += (ev.participants||0); }
+    else {
+      if (!byType.other) byType.other = { label:'Інше', color:'#93A0B8', count:0, participants:0 };
+      byType.other.count++;
+      byType.other.participants += (ev.participants||0);
+    }
+  });
+
+  /* динаміка по 6 місяцях */
+  const now = new Date();
+  const months = [], mLabels = [];
+  const MN = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+    mLabels.push(MN[d.getMonth()]);
+  }
+  const evByMonth  = months.map(m => allEvents.filter(e => e.date?.startsWith(m)).length);
+  const secByMonth = months.map(m => allEvents.filter(e => e.date?.startsWith(m) && ['prevention','mine','evacuation'].includes(e.type)).length);
+
+  const ranked = [...serviced].sort((a,b) => (b.events||0)-(a.events||0));
+  const typeStats = Object.values(byType).filter(t => t.count > 0).sort((a,b) => b.count-a.count);
+  const typeAll   = Object.values(byType);
+
+  return { serviced, allEvents, totEvents, totPart, totConsult, avgRating,
+           byType, typeStats, typeAll, mLabels, evByMonth, secByMonth, ranked };
+}
+
+/* ─────────────────────────────────────────────
+   Стан графіків — один екземпляр, оновлюємо
+───────────────────────────────────────────── */
+let charts = {};
+let filterSchool = 'all';
+let filterType   = 'all';
+
+function destroyCharts() {
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  charts = {};
+}
+
+/* ─────────────────────────────────────────────
+   Рендер — не перезавантажує сторінку
+───────────────────────────────────────────── */
+function render() {
+  const d = calcData();
+  destroyCharts();
+
+  /* ── KPI ── */
+  const kpiHtml = `
+    <div class="an-kpi anim anim-1">
+      <div class="l">Усього заходів (паспорт)</div>
+      <div class="v tnum">${d.totEvents}</div>
+      <div class="s">журнал: ${d.allEvents.length} записів</div>
+    </div>
+    <div class="an-kpi anim anim-2">
+      <div class="l">Охоплено учасників</div>
+      <div class="v tnum">${F(d.totPart)}</div>
+      <div class="s">журнал: ${F(d.allEvents.reduce((a,e)=>a+(e.participants||0),0))}</div>
+    </div>
+    <div class="an-kpi anim anim-3">
+      <div class="l">Консультацій</div>
+      <div class="v tnum">${d.totConsult}</div>
+      <div class="s">по всіх закладах</div>
+    </div>
+    <div class="an-kpi anim anim-4">
+      <div class="l">Середній рейтинг</div>
+      <div class="v tnum">${d.avgRating}</div>
+      <div class="s">зі 100 балів</div>
+    </div>`;
+
+  /* ── Типи заходів ── */
+  const typesHtml = (S.eventTypes||[]).map(t => {
+    const st = d.byType[t.id] || { count:0, participants:0 };
+    return `<div class="type-cell">
+      <div class="tc-top"><span class="tc-dot" style="background:${t.color}"></span><span class="tc-lbl">${t.label}</span></div>
+      <div class="tc-num">${st.count}</div>
+      <div class="tc-sub">${F(st.participants)} учасн.</div>
+    </div>`;
+  }).join('');
+
+  /* ── Легенда пончика ── */
+  const doughData = d.typeStats.length
+    ? d.typeStats
+    : (S.eventTypes||[]).slice(0,5).map(t=>({label:t.label,color:t.color,count:0}));
+
+  const legendHtml = doughData.map(t =>
+    `<div class="legend-item"><span class="sw" style="background:${t.color}"></span>${t.label}<b>${t.count}</b></div>`
+  ).join('');
+
+  /* ── Рейтинг таблиця ── */
+  const ranked = [...d.serviced].sort((a,b)=>(b.rating||0)-(a.rating||0));
+  const tblHtml = ranked.map((s,i) => `
+    <tr style="cursor:pointer" onclick="location.href='school.html?id=${s.id}'">
+      <td><div class="rk ${i<3?'g'+(i+1):''}">${i+1}</div></td>
+      <td><b>${s.name}</b><div style="font-size:12px;color:var(--muted)">${s.city||''}</div></td>
+      <td class="tnum">${s.events||0}</td>
+      <td class="tnum">${F(s.participants||0)}</td>
+      <td class="tnum">${s.consultations||0}</td>
+      <td><span class="tag ${i===0?'gold':'blue'}">${s.rating||0}</span></td>
+    </tr>`).join('');
+
+  /* ── HTML ── */
+  document.getElementById('content').innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">Аналітика діяльності</h1>
+        <div class="page-sub">Зведені показники роботи СОБ по ${S.org.region} · ${S.org.period}</div>
+      </div>
+      <div class="row gap-8">
+        <button class="btn btn-ghost" onclick="window.print()">${I.doc} Друк</button>
+        <button class="btn btn-primary" onclick="exportAnalytics()">${I.download} Скачати CSV</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center">
+      <span style="font-size:13px;color:var(--muted);font-weight:600">${I.filter} Фільтр:</span>
+      <select class="input" id="filterTypeEl" style="max-width:230px">
+        <option value="all" ${filterType==='all'?'selected':''}>— Усі напрямки —</option>
+        ${(S.eventTypes||[]).map(t=>`<option value="${t.id}" ${filterType===t.id?'selected':''}>${t.label}</option>`).join('')}
+      </select>
+      <select class="input" id="filterSchoolEl" style="max-width:280px">
+        <option value="all" ${filterSchool==='all'?'selected':''}>— Усі заклади —</option>
+        ${(S.schools||[]).filter(s=>s.serviced).map(s=>`<option value="${s.id}" ${filterSchool===s.id?'selected':''}>${s.name}</option>`).join('')}
+      </select>
+      ${(filterType!=='all'||filterSchool!=='all')?`<button class="btn btn-ghost btn-sm" onclick="filterType='all';filterSchool='all';render()">Скинути</button>`:''}
+    </div>
+
+    <div class="an-kpis">${kpiHtml}</div>
+
+    <div class="card card-pad anim" style="margin-bottom:20px">
+      <div class="card-head">
+        <div class="section-title">${I.shield} Заходи за напрямками</div>
+        <span class="muted" style="font-size:13px">журнал: ${d.allEvents.length} записів</span>
+      </div>
+      <div class="type-grid">${typesHtml}</div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="card card-pad anim">
+        <div class="card-head"><div class="section-title">${I.chart} Динаміка за 6 місяців</div></div>
+        <div class="chart-box"><canvas id="cvLine"></canvas></div>
+      </div>
+      <div class="card card-pad anim">
+        <div class="card-head"><div class="section-title">${I.filter} Структура за напрямками</div></div>
+        <div style="display:flex;gap:20px;align-items:center;margin-top:8px">
+          <div class="dough-box"><canvas id="cvDough"></canvas></div>
+          <div class="legend" id="legend">${legendHtml}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="card card-pad anim">
+        <div class="card-head"><div class="section-title">${I.building} Активність закладів</div></div>
+        <div class="chart-box"><canvas id="cvBar"></canvas></div>
+      </div>
+      <div class="card card-pad anim">
+        <div class="card-head"><div class="section-title">${I.users} Учасники за напрямком</div></div>
+        <div class="chart-box"><canvas id="cvAud"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card card-pad anim">
+      <div class="card-head">
+        <div class="section-title">${I.trophy} Детальний рейтинг закладів</div>
+        <span class="muted" style="font-size:13px">${d.serviced.length} закладів</span>
+      </div>
+      <table class="tbl">
+        <thead><tr><th></th><th>Заклад</th><th>Заходи</th><th>Учасники</th><th>Консультації</th><th>Рейтинг</th></tr></thead>
+        <tbody>${tblHtml}</tbody>
+      </table>
+    </div>`;
+
+  /* ── Обробники фільтрів ── */
+  document.getElementById('filterTypeEl')?.addEventListener('change', e => { filterType = e.target.value; render(); });
+  document.getElementById('filterSchoolEl')?.addEventListener('change', e => { filterSchool = e.target.value; render(); });
+
+  /* ── Графіки ── */
+  const gridColor = '#EEF3FA';
+  const noAxes = { grid:{ display:false }, border:{ display:false } };
+  const yAxe   = { beginAtZero:true, grid:{ color:gridColor }, border:{ display:false }, ticks:{ precision:0 } };
+
+  charts.line = new Chart(document.getElementById('cvLine'), {
+    type: 'line',
+    data: {
+      labels: d.mLabels,
+      datasets: [
+        { label:'Усі заходи', data: d.evByMonth,
+          borderColor:'#1F59DD', backgroundColor: ctx=>{
+            const g = ctx.chart.ctx.createLinearGradient(0,0,0,280);
+            g.addColorStop(0,'rgba(31,89,221,.22)'); g.addColorStop(1,'rgba(31,89,221,0)'); return g;
+          }, fill:true, tension:.4, borderWidth:3, pointRadius:4, pointBackgroundColor:'#1F59DD' },
+        { label:'Безпека', data: d.secByMonth,
+          borderColor:'#E84545', fill:false, tension:.4, borderWidth:2, pointRadius:4, pointBackgroundColor:'#E84545' }
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, usePointStyle:true, padding:16 } } },
+      scales:{ y: yAxe, x: noAxes } }
+  });
+
+  charts.dough = new Chart(document.getElementById('cvDough'), {
+    type: 'doughnut',
+    data: {
+      labels: doughData.map(t=>t.label),
+      datasets: [{ data: doughData.map(t=>t.count||0), backgroundColor: doughData.map(t=>t.color), borderWidth:3, borderColor:'#fff' }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, cutout:'66%',
+      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx=>' '+ctx.label+': '+ctx.raw } } } }
+  });
+
+  const top7 = d.ranked.slice(0,7);
+  charts.bar = new Chart(document.getElementById('cvBar'), {
+    type: 'bar',
+    data: {
+      labels: top7.map(s => s.name.replace(/^(Запорізька|Мелітопольська|Вільнянська|Токмацька)\s/,'').split(' ').slice(0,3).join(' ').slice(0,22)),
+      datasets: [{ data: top7.map(s=>s.events||0), backgroundColor:'#1F59DD', borderRadius:8, maxBarThickness:32 }]
+    },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{ x: yAxe, y: noAxes } }
+  });
+
+  const topTypes = (d.typeStats.length ? d.typeStats : doughData).slice(0,6);
+  charts.aud = new Chart(document.getElementById('cvAud'), {
+    type: 'bar',
+    data: {
+      labels: topTypes.map(t => t.label),
+      datasets: [{ data: topTypes.map(t=>t.participants||0), backgroundColor: topTypes.map(t=>t.color), borderRadius:8, maxBarThickness:48 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{ y: yAxe, x: { ...noAxes, ticks:{ maxRotation:30 } } } }
+  });
+}
+
+/* ─────────────────────────────────────────────
+   Експорт CSV з аналітики
+───────────────────────────────────────────── */
+window.exportAnalytics = function(){
+  const d = calcData();
+  const bom = '﻿';
+  const rows = ['"Напрямок","Заходів","Учасників"\r\n'];
+  Object.values(d.byType).forEach(t =>
+    rows.push(`"${t.label}","${t.count}","${t.participants}"\r\n`));
+  rows.push(`\r\n"Заклад","Місто","Заходів","Учасників","Консультацій","Рейтинг"\r\n`);
+  d.serviced.forEach(s =>
+    rows.push(`"${s.name}","${s.city||''}","${s.events||0}","${s.participants||0}","${s.consultations||0}","${s.rating||0}"\r\n`));
+  const blob = new Blob([bom + rows.join('')], { type:'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `sob-аналітика-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast('Файл завантажується…');
+};
+
+/* ─────────────────────────────────────────────
+   Firebase sync — оновлюємо без reload
+───────────────────────────────────────────── */
+document.addEventListener('sob:synced', () => { render(); });
+
+render();
+</script>
+</body>
+</html>

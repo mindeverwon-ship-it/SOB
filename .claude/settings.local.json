@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/dimaboldyrev/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/56c90537-2c76-4e4f-9a69-b0570e640a06/dbc6b419-766c-4041-973c-829858aa6b8b/skills/docx/**)",
+      "Bash(python scripts/office/unpack.py \"/Users/dimaboldyrev/Desktop/Робота/заклади.docx\" /tmp/sob_zaklady/)",
+      "Bash(python -c ' *)",
+      "Bash(python3 -c ' *)",
+      "Bash(pip3 install *)",
+      "Bash(python '/Users/dimaboldyrev/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/56c90537-2c76-4e4f-9a69-b0570e640a06/dbc6b419-766c-4041-973c-829858aa6b8b/skills/docx/scripts/office/unpack.py' '/Users/dimaboldyrev/Downloads/Аудит веб-платформи.docx' /tmp/audit_unpacked/)",
+      "Bash(python3 __TRACKED_VAR__/scripts/office/unpack.py '/Users/dimaboldyrev/Downloads/Аудит веб-платформи.docx' /tmp/audit_unpacked/)",
+      "Bash(node --input-type=module)",
+      "Bash(xxd)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(python3 -m http.server --help)",
+      "Bash(ls /usr/local/bin/python* /opt/homebrew/bin/python* 2>/dev/null | head -5)",
+      "Bash(ls /opt/homebrew/bin/ | grep -E \"python|node|http\" 2>/dev/null; ls /usr/local/bin/ | grep -E \"node|http|serve\" 2>/dev/null)",
+      "Bash(curl -s \"https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js\")",
+      "Bash(openssl dgst *)",
+      "Bash(openssl base64 *)",
+      "Bash(python3 -m http.server 5555)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5555/login.html)",
+      "Bash(node -e ' *)",
+      "Bash(shasum -a 256)",
+      "Bash(git --version)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}

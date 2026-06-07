@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sob-static",
+      "runtimeExecutable": "/usr/bin/python3",
+      "runtimeArgs": ["-m", "http.server", "5555"],
+      "port": 5555,
+      "cwd": "/Users/dimaboldyrev/Desktop/Робота/SOB"
+    }
+  ]
+}

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вхід · Цифрова карта безпеки СОБ</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+body { background: var(--navy-950); }
+.login-wrap { min-height: 100vh; display: grid; grid-template-columns: 1.05fr .95fr; }
+
+/* Left brand panel */
+.brand-panel { position: relative; overflow: hidden; background: linear-gradient(160deg,var(--navy-800),var(--navy-950)); color: #fff; padding: 56px 60px; display: flex; flex-direction: column; }
+.brand-panel::before { content:''; position: absolute; inset: 0; background: radial-gradient(560px 380px at 80% -5%, rgba(46,107,240,.32), transparent 60%), radial-gradient(420px 320px at 10% 110%, rgba(255,196,46,.10), transparent 60%); }
+.brand-panel::after { content:''; position: absolute; right: -120px; bottom: -120px; width: 520px; height: 520px; background: url('assets/sob-emblem.png') center/contain no-repeat; opacity: .06; }
+.bp-top { display: flex; align-items: center; gap: 14px; position: relative; z-index: 1; }
+.bp-top .em { width: 56px; height: 56px; background: #fff; border-radius: 15px; display: grid; place-items: center; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+.bp-top .em img { width: 44px; height: 44px; object-fit: contain; }
+.bp-top .tt b { font-size: 17px; font-weight: 800; display: block; letter-spacing: .01em; }
+.bp-top .tt span { font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--blue-400); font-weight: 600; }
+.bp-mid { margin-top: auto; margin-bottom: auto; position: relative; z-index: 1; }
+.bp-mid .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; padding: 7px 14px; border-radius: 30px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); }
+.bp-mid .kicker .yd { width: 7px; height: 7px; border-radius: 50%; background: var(--gold-500); }
+.bp-mid h1 { font-size: 40px; font-weight: 800; letter-spacing: -.025em; line-height: 1.1; margin: 22px 0 16px; max-width: 520px; }
+.bp-mid p { font-size: 16px; color: rgba(255,255,255,.66); max-width: 460px; line-height: 1.6; }
+.bp-stats { display: flex; gap: 36px; margin-top: 40px; position: relative; z-index: 1; }
+.bp-stats .st b { font-size: 30px; font-weight: 800; letter-spacing: -.02em; display: block; }
+.bp-stats .st span { font-size: 13px; color: rgba(255,255,255,.55); }
+.bp-foot { position: relative; z-index: 1; font-size: 12.5px; color: rgba(255,255,255,.42); }
+
+/* Right form */
+.form-panel { background: var(--bg-2); display: flex; align-items: center; justify-content: center; padding: 40px; }
+.login-card { width: 100%; max-width: 420px; }
+.login-card h2 { font-size: 27px; font-weight: 800; letter-spacing: -.02em; }
+.login-card .sub { color: var(--muted); font-size: 14.5px; margin-top: 7px; margin-bottom: 30px; }
+.lf { display: flex; flex-direction: column; gap: 18px; }
+.pw-row { position: relative; }
+.pw-toggle { position: absolute; right: 12px; top: 38px; background: none; color: var(--muted); padding: 4px; }
+.pw-toggle svg { width: 18px; height: 18px; }
+.lf-opts { display: flex; align-items: center; justify-content: space-between; font-size: 13.5px; }
+.lf-opts a { color: var(--blue-600); font-weight: 600; }
+.remember { display: flex; align-items: center; gap: 8px; color: var(--text-2); cursor: pointer; }
+.cbx { width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid var(--border-strong); display: grid; place-items: center; transition: all .15s; }
+.cbx.on { background: var(--blue-600); border-color: var(--blue-600); color: #fff; }
+.cbx svg { width: 12px; height: 12px; opacity: 0; }
+.cbx.on svg { opacity: 1; }
+.err { background: var(--red-100); color: var(--red-500); font-size: 13px; font-weight: 600; padding: 11px 14px; border-radius: 11px; display: none; align-items: center; gap: 8px; }
+.err.show { display: flex; }
+.or { display: flex; align-items: center; gap: 14px; color: var(--muted-2); font-size: 12px; margin: 4px 0; }
+.or::before, .or::after { content:''; flex: 1; height: 1px; background: var(--border-2); }
+.demo-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-top: 26px; }
+.demo-box .dt { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
+.demo-acc { display: flex; align-items: center; gap: 11px; padding: 9px; border-radius: 11px; cursor: pointer; transition: background .14s; }
+.demo-acc:hover { background: var(--surface-2); }
+.demo-acc .da { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+.demo-acc .di { flex: 1; min-width: 0; }
+.demo-acc .di b { font-size: 13px; display: block; }
+.demo-acc .di span { font-size: 11.5px; color: var(--muted); }
+.demo-acc .creds { font-size: 11px; color: var(--muted-2); font-family: ui-monospace,monospace; }
+.demo-acc:hover .creds { color: var(--blue-600); }
+
+@media (max-width: 940px){ .login-wrap { grid-template-columns: 1fr; } .brand-panel { display: none; } .form-panel { background: var(--bg-2); } }
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <!-- Brand -->
+  <div class="brand-panel">
+    <div class="bp-top">
+      <div class="em"><img src="assets/sob-emblem.png" alt="СОБ"></div>
+      <div class="tt"><b>Служба освітньої безпеки</b><span>Запорізький район</span></div>
+    </div>
+    <div class="bp-mid">
+      <div class="kicker"><span class="yd"></span>Національна поліція України · 2026</div>
+      <h1>Цифрова карта безпеки та паспорт роботи</h1>
+      <p>Єдиний цифровий портал обліку заходів, статистики та взаємодії із закладами освіти. Захищений вхід для інспекторів, адміністраторів і керівництва.</p>
+      <div class="bp-stats" id="bpStats">
+        <div class="st"><b id="lstSchools">24</b><span>заклади освіти</span></div>
+        <div class="st"><b id="lstEvents">148</b><span>заходів за місяць</span></div>
+        <div class="st"><b id="lstParticipants">9 420</b><span>учасників</span></div>
+      </div>
+    </div>
+    <div class="bp-foot">© 2026 Служба освітньої безпеки · Захищене з'єднання</div>
+  </div>
+
+  <!-- Form -->
+  <div class="form-panel">
+    <div class="login-card anim">
+      <h2>Вхід до системи</h2>
+      <div class="sub">Авторизуйтесь, щоб отримати доступ до кабінету</div>
+
+      <form class="lf" id="loginForm" autocomplete="off">
+        <div class="err" id="loginErr"><span id="errIcon"></span><span id="errText">Невірний логін або пароль</span></div>
+        <div class="field">
+          <label for="login">Логін</label>
+          <div class="input-icon"><span id="userIc"></span><input class="input" type="text" id="login" placeholder="Введіть логін" autocomplete="username"></div>
+        </div>
+        <div class="field pw-row">
+          <label for="password">Пароль</label>
+          <div class="input-icon"><span id="lockIc"></span><input class="input" type="password" id="password" placeholder="Введіть пароль" autocomplete="current-password"></div>
+          <button type="button" class="pw-toggle" id="pwToggle" aria-label="Показати пароль"></button>
+        </div>
+        <div class="lf-opts">
+          <label class="remember" id="remember"><span class="cbx on" id="cbx"></span>Запам'ятати мене</label>
+          <a href="#" id="forgotLink">Забули пароль?</a>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg btn-block" id="submitBtn">Увійти до системи</button>
+      </form>
+
+      <div class="demo-box" style="text-align:center">
+        <div class="dt">Для входу використовуйте логін та пароль, отриманий від адміністратора</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Forgot password modal -->
+<div id="forgotModal" style="display:none;position:fixed;inset:0;background:rgba(9,23,51,.55);z-index:9999;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--bg-2);border-radius:20px;padding:32px;max-width:420px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+    <div style="font-size:19px;font-weight:800;margin-bottom:8px">Відновлення доступу</div>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:22px;line-height:1.6">Зверніться до адміністратора системи для отримання нового пароля:</p>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:10px;margin-bottom:22px">
+      <div style="display:flex;gap:10px;align-items:center;font-size:13.5px"><span id="fmIc1"></span><span><b>Болдирєв Дмитро</b> — адміністратор системи</span></div>
+      <div style="display:flex;gap:10px;align-items:center;font-size:13.5px"><span id="fmIc2"></span><span><b>Солод Наталія</b> — адміністратор системи</span></div>
+      <div style="margin-top:4px;padding-top:10px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted)">Повідомте адміністратора свій логін — пароль буде скинуто та надано новий.</div>
+    </div>
+    <button onclick="document.getElementById('forgotModal').style.display='none'" class="btn btn-primary btn-block">Зрозуміло</button>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/shell.js"></script>
+<script>
+const I = window.ICON;
+document.getElementById('userIc').innerHTML = I.users;
+document.getElementById('lockIc').innerHTML = I.lock;
+document.getElementById('errIcon').innerHTML = I.alert;
+document.getElementById('pwToggle').innerHTML = I.eye;
+document.getElementById('cbx').innerHTML = I.check;
+
+const S = window.SOB;
+
+// password toggle
+let pwShown = false;
+document.getElementById('pwToggle').addEventListener('click', () => {
+  pwShown = !pwShown;
+  document.getElementById('password').type = pwShown ? 'text' : 'password';
+});
+// remember toggle
+document.getElementById('remember').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('cbx').classList.toggle('on');
+});
+
+async function doLogin(){
+  const login = document.getElementById('login').value.trim();
+  const pw = document.getElementById('password').value;
+  document.getElementById('submitBtn').disabled = true;
+  const acc = await window.SOBAuth.login(login, pw);
+  document.getElementById('submitBtn').disabled = false;
+  if(acc){
+    document.getElementById('submitBtn').textContent = 'Вхід…';
+    setTimeout(() => {
+      if(acc.role === 'inspector') location.href = 'cabinet.html';
+      else if(acc.role === 'admin') location.href = 'admin.html';
+      else location.href = 'index.html';
+    }, 350);
+  } else {
+    const err = document.getElementById('loginErr');
+    err.classList.add('show');
+    document.getElementById('errText').textContent = login||pw ? 'Невірний логін або пароль' : 'Введіть логін і пароль';
+  }
+}
+document.getElementById('loginForm').addEventListener('submit', e => { e.preventDefault(); doLogin(); });
+
+document.getElementById('fmIc1').innerHTML = I.users;
+document.getElementById('fmIc2').innerHTML = I.users;
+document.getElementById('forgotLink').addEventListener('click', e => {
+  e.preventDefault();
+  document.getElementById('forgotModal').style.display = 'flex';
+});
+
+// auto-calculate all 3 stats from real data
+(function(){
+  const S = window.SOB;
+  const fmt = n => {
+    if(!n) return '0';
+    const s = String(Math.round(n));
+    return s.length > 3 ? s.slice(0, s.length - 3) + ' ' + s.slice(-3) : s;
+  };
+
+  // 1. Our serviced schools
+  const schoolsCnt = (S?.schools || []).filter(s => s.serviced !== false).length;
+  document.getElementById('lstSchools').textContent = fmt(schoolsCnt);
+
+  // 2. Events this calendar month
+  const now = new Date();
+  const eventsCnt = (S?.schoolEvents || []).filter(ev => {
+    if(!ev.date) return false;
+    const d = new Date(ev.date);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+  document.getElementById('lstEvents').textContent = fmt(eventsCnt);
+
+  // 3. Total children = sum of students across all serviced schools
+  const totalStudents = (S?.schools || [])
+    .filter(s => s.serviced !== false)
+    .reduce((sum, s) => sum + (s.students || 0), 0);
+  document.getElementById('lstParticipants').textContent = totalStudents ? fmt(totalStudents) : '0';
+})();
+</script>
+</body>
+</html>

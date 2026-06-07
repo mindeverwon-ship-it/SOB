@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СОБ · Огляд — Цифрова карта безпеки</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+/* HERO — lighter, airy with navy accent band */
+.hero { position: relative; overflow: hidden; background: linear-gradient(135deg, var(--navy-800) 0%, var(--navy-950) 100%); border-radius: var(--radius-xl); color: #fff; padding: 38px 40px; box-shadow: var(--shadow-navy); }
+.hero::before { content:''; position: absolute; inset: 0; background: radial-gradient(480px 320px at 92% -10%, rgba(46,107,240,.36), transparent 60%), radial-gradient(320px 260px at 75% 130%, rgba(255,196,46,.12), transparent 60%); pointer-events: none; }
+.hero::after { content:''; position: absolute; right: -50px; top: -40px; width: 280px; height: 280px; background: url('assets/sob-emblem.png') center/contain no-repeat; opacity: .07; pointer-events: none; }
+.hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr auto; gap: 34px; align-items: center; }
+.hero .badge-row { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.hero .hbadge { font-size: 11.5px; font-weight: 600; padding: 6px 12px; border-radius: 20px; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.15); display: inline-flex; gap: 6px; align-items: center; }
+.hero .hbadge .yd { width: 7px; height: 7px; border-radius: 50%; background: var(--gold-500); }
+.hero h1 { font-size: 33px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; max-width: 600px; }
+.hero p { color: rgba(255,255,255,.66); margin-top: 13px; font-size: 15px; max-width: 540px; }
+.hero .cta { display: flex; gap: 12px; margin-top: 26px; flex-wrap: wrap; }
+
+.report-panel { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.13); border-radius: var(--radius-lg); padding: 22px; width: 310px; backdrop-filter: blur(6px); }
+.report-panel .rp-top { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
+.report-panel .rp-ic { width: 40px; height: 40px; border-radius: 12px; background: var(--gold-500); color: var(--navy-900); display: grid; place-items: center; }
+.report-panel .rp-ic svg { width: 21px; height: 21px; }
+.report-panel .rp-t b { font-size: 14px; display: block; }
+.report-panel .rp-t span { font-size: 12px; color: rgba(255,255,255,.55); }
+.rp-btn { display: flex; align-items: center; gap: 9px; padding: 11px 14px; border-radius: 11px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.10); font-size: 13.5px; font-weight: 500; color: #fff; transition: background .15s; width: 100%; text-align: left; margin-top: 8px; }
+.rp-btn:first-of-type { margin-top: 0; }
+.rp-btn:hover { background: rgba(255,255,255,.16); }
+.rp-btn svg { width: 16px; height: 16px; color: var(--gold-400); }
+.rp-btn.gold { background: var(--gold-500); color: var(--navy-900); border-color: transparent; }
+.rp-btn.gold svg { color: var(--navy-900); }
+.rp-btn.gold:hover { background: var(--gold-400); }
+
+.sec-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.sec-cell { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-xs); }
+.sec-cell .v { font-size: 23px; font-weight: 800; letter-spacing: -.02em; }
+.sec-cell .l { font-size: 12px; color: var(--muted); margin-top: 3px; }
+@media (max-width: 1100px) { .sec-strip { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 560px) { .sec-strip { grid-template-columns: repeat(2, 1fr); } }
+
+.legend { display: flex; flex-direction: column; gap: 12px; }
+.legend-item { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
+.legend-item .sw { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+.legend-item b { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+.rtable { width: 100%; border-collapse: collapse; }
+.rtable th { text-align: left; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 700; padding: 0 14px 13px; }
+.rtable td { padding: 13px 14px; border-top: 1px solid var(--border); font-size: 14px; }
+.rtable tr:hover td { background: var(--surface-2); }
+.rtable .rk { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: 14px; background: var(--surface-3); color: var(--text-2); }
+.rtable .rk.g1 { background: var(--gold-100); color: var(--gold-700); }
+.rtable .rk.g2 { background: #E7ECF4; color: var(--navy-700); }
+.rtable .rk.g3 { background: var(--amber-100); color: var(--amber-500); }
+.rtable .sname { font-weight: 600; }
+.rtable .stype { font-size: 12px; color: var(--muted); }
+.bar-mini { height: 7px; border-radius: 4px; background: var(--surface-3); overflow: hidden; width: 110px; }
+.bar-mini > i { display: block; height: 100%; background: linear-gradient(90deg, var(--blue-500), var(--blue-600)); border-radius: 4px; }
+
+.chart-wrap { position: relative; height: 270px; }
+.doughnut-wrap { position: relative; height: 210px; }
+@media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } .report-panel { width: 100%; } }
+</style>
+</head>
+<body>
+<div class="app" id="shell"></div>
+
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/shell.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
+<script>
+SOBShell.render({ active: 'dashboard', crumb: ['СОБ', 'Огляд'] });
+const S = window.SOB, F = window.fmt, I = window.ICON;
+const U = window.SOBAuth.current();
+const canEdit = window.SOBAuth.canEdit();
+
+/* KPI — авторозрахунок з реальних даних */
+const now = new Date();
+const thisMonth = (ev) => { if(!ev.date) return false; const d=new Date(ev.date); return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth(); };
+const prevTypes = ['prevention','mine','evacuation','cyber','buling','legal'];
+const eventsThisMonth = (S.schoolEvents||[]).filter(thisMonth);
+const kpiValues = {
+  events:       eventsThisMonth.length,
+  prevention:   eventsThisMonth.filter(e=>prevTypes.includes(e.type)).length,
+  participants: eventsThisMonth.reduce((s,e)=>s+(e.participants||0),0),
+  schools:      (S.schools||[]).filter(s=>s.serviced!==false).length,
+};
+const kpiHtml = S.kpis.map((k, i) => {
+  const val = kpiValues[k.id] ?? k.value;
+  return `<div class="kpi anim anim-${i+1}"><div class="ic ${k.color}">${I[k.icon] || I.grid}</div><span class="delta flat">за місяць</span><div class="val tnum">${F(val)}</div><div class="lbl">${k.label}</div></div>`;
+}).join('');
+
+const ranked = [...S.schools].filter(s=>s.serviced!==false).sort((a,b) => b.rating - a.rating).slice(0, 6);
+const maxPart = Math.max(1, ...ranked.map(s => s.participants));
+const ratingRows = ranked.map((s, i) => `
+  <tr style="cursor:pointer" onclick="location.href='school.html?id=${s.id}'">
+    <td><div class="rk ${i<3?'g'+(i+1):''}">${i+1}</div></td>
+    <td><div class="sname">${s.name}</div><div class="stype">${s.type} · ${s.address.split(',').slice(-1)[0].trim()}</div></td>
+    <td class="tnum">${s.events}</td>
+    <td class="tnum">${F(s.participants)}</td>
+    <td><div class="bar-mini"><i style="width:${Math.round(s.participants/maxPart*100)}%"></i></div></td>
+    <td><span class="tag ${i===0?'gold':'blue'}">${s.rating}</span></td>
+  </tr>`).join('');
+
+/* легенда будується після розрахунку в блоці Chart нижче, тут placeholder */
+const legend = `<div id="chartLegend" style="display:flex;flex-direction:column;gap:8px"></div>`;
+
+/* role-aware quick action */
+const quickAction = canEdit
+  ? `<a class="btn btn-gold" href="${U.role==='admin'?'admin.html':'cabinet.html'}">${I.upload} ${U.role==='admin'?'Адмін-панель':'Мій кабінет'}</a>`
+  : `<a class="btn btn-gold" href="#report">${I.doc} Сформувати звіт</a>`;
+
+document.getElementById('content').innerHTML = `
+  <section class="hero anim">
+    <div class="hero-grid">
+      <div>
+        <div class="badge-row">
+          <span class="hbadge"><span class="yd"></span>${S.org.region}</span>
+          <span class="hbadge">${S.org.period}</span>
+          <span class="hbadge">Національна поліція України</span>
+        </div>
+        <h1>Цифрова карта безпеки та паспорт роботи Служби освітньої безпеки</h1>
+        <p>Єдиний цифровий портал обліку заходів, статистики та взаємодії із закладами освіти ${S.org.district}у.</p>
+        <div class="cta">
+          ${quickAction}
+          <a class="btn" style="background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.18)" href="map.html">${I.map} Карта закладів</a>
+        </div>
+      </div>
+      <div class="report-panel" id="report">
+        <div class="rp-top"><div class="rp-ic">${I.doc}</div><div class="rp-t"><b>Звіт за ${S.org.period}</b><span>Готовий до експорту</span></div></div>
+        <button class="rp-btn gold" onclick="exportReport('PDF')">${I.download} Завантажити PDF</button>
+        <button class="rp-btn" onclick="exportReport('PowerPoint')">${I.download} PowerPoint</button>
+        <button class="rp-btn" onclick="window.print()">${I.doc} Друкована версія</button>
+      </div>
+    </div>
+  </section>
+
+  <div style="margin-top:26px" class="row between wrap">
+    <div class="section-title">${I.grid} Ключові показники місяця</div>
+    <span class="muted" style="font-size:13px">Оновлено: ${new Date().toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'})}</span>
+  </div>
+  <div class="kpi-grid" style="margin-top:16px">${kpiHtml}</div>
+
+  <div style="margin-top:24px" class="section-title">${I.chart} Деталізація</div>
+  <div class="sec-strip anim" style="margin-top:14px">
+    ${S.secondary.map(x => `<div class="sec-cell"><div class="v tnum">${F(x.value)}</div><div class="l">${x.label}</div></div>`).join('')}
+  </div>
+
+  <div id="analytics" style="margin-top:26px" class="grid-2">
+    <div class="card card-pad anim">
+      <div class="card-head"><div class="section-title">${I.chart} Динаміка заходів</div></div>
+      <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
+    </div>
+    <div class="card card-pad anim">
+      <div class="card-head"><div class="section-title">${I.filter} Структура заходів</div></div>
+      <div style="display:grid;grid-template-columns:210px 1fr;gap:22px;align-items:center">
+        <div class="doughnut-wrap"><canvas id="doughnutChart"></canvas></div>
+        <div class="legend">${legend}</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px" class="grid-2">
+    <div class="card card-pad anim">
+      <div class="card-head"><div class="section-title">${I.users} Охоплення аудиторії</div></div>
+      <div class="chart-wrap" style="height:230px"><canvas id="barChart"></canvas></div>
+    </div>
+    <div class="card card-pad anim" id="rating">
+      <div class="card-head"><div class="section-title">${I.trophy} Рейтинг активності</div><span class="muted" style="font-size:13px">${S.org.period}</span></div>
+      <table class="rtable">
+        <thead><tr><th></th><th>Заклад освіти</th><th>Заходи</th><th>Учасники</th><th>Охоплення</th><th>Рейтинг</th></tr></thead>
+        <tbody>${ratingRows}</tbody>
+      </table>
+      <div class="divider"></div>
+      <div style="text-align:center"><a class="btn btn-ghost btn-sm" href="map.html">Усі заклади на карті ${I.chevron}</a></div>
+    </div>
+  </div>
+`;
+
+Chart.defaults.font.family = 'Onest, sans-serif';
+Chart.defaults.font.size = 12.5;
+Chart.defaults.color = '#6A7A98';
+Chart.defaults.animation = false;
+const _charts = [];
+
+/* ── Авторозрахунок даних графіків ── */
+(function(){
+  const evs = S.schoolEvents || [];
+  const mn = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+  const d = new Date();
+  // останні 5 місяців
+  const months5 = [];
+  for(let i=4; i>=0; i--){
+    const dt = new Date(d.getFullYear(), d.getMonth()-i, 1);
+    months5.push({ key: `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`, label: mn[dt.getMonth()] });
+  }
+  const prevTypes = ['prevention','mine','evacuation','cyber','buling','legal'];
+  const lineEvents     = months5.map(m => evs.filter(e=>e.date&&e.date.startsWith(m.key)).length);
+  const linePrevention = months5.map(m => evs.filter(e=>e.date&&e.date.startsWith(m.key)&&prevTypes.includes(e.type)).length);
+
+  _charts.push(new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: { labels: months5.map(m=>m.label), datasets: [
+      { label: 'Заходи', data: lineEvents, borderColor: '#1F59DD', backgroundColor: (ctx)=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,270);g.addColorStop(0,'rgba(31,89,221,.20)');g.addColorStop(1,'rgba(31,89,221,0)');return g;}, fill: true, tension: .4, borderWidth: 3, pointBackgroundColor: '#1F59DD', pointRadius: 4, pointHoverRadius: 6 },
+      { label: 'Профілактика', data: linePrevention, borderColor: '#FFC42E', backgroundColor: 'transparent', fill: false, tension: .4, borderWidth: 3, pointBackgroundColor: '#FFC42E', pointRadius: 4, pointHoverRadius: 6 },
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, padding: 18 } } }, scales: { y: { beginAtZero: true, grid: { color: '#EEF3FA' }, border: { display: false } }, x: { grid: { display: false }, border: { display: false } } } }
+  }));
+
+  // Donut — розбивка за типами
+  const byType = {};
+  evs.forEach(e=>{ const k=e.type||'other'; byType[k]=(byType[k]||0)+1; });
+  const typeColors = { prevention:'#1B4FD1', cyber:'#2C66E6', buling:'#FFC824', legal:'#1E9E6A', mine:'#E84545', evacuation:'#FF7A00', other:'#93A0B8' };
+  const typeLabels = S.eventTypes ? Object.fromEntries((S.eventTypes||[]).map(t=>[t.id,t.label])) : {};
+  const dtLabels = Object.keys(byType).map(k=>typeLabels[k]||k);
+  const dtValues = Object.keys(byType).map(k=>byType[k]);
+  const dtColors = Object.keys(byType).map(k=>typeColors[k]||'#93A0B8');
+  const legendEl = document.getElementById('chartLegend');
+  if(legendEl){
+    if(dtLabels.length){
+      legendEl.innerHTML = dtLabels.map((l,i)=>`<div class="legend-item"><span class="sw" style="background:${dtColors[i]}"></span>${l}<b>${dtValues[i]}</b></div>`).join('');
+    } else {
+      legendEl.innerHTML = `<div style="color:var(--muted);font-size:13px">Дані з'являться після додавання заходів</div>`;
+    }
+  }
+  _charts.push(new Chart(document.getElementById('doughnutChart'), {
+    type: 'doughnut',
+    data: { labels: dtLabels.length ? dtLabels : ['Немає даних'], datasets: [{ data: dtValues.length ? dtValues : [1], backgroundColor: dtColors.length ? dtColors : ['#EEF3FA'], borderWidth: 3, borderColor: '#fff' }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '66%', plugins: { legend: { display: false } } }
+  }));
+
+  // Bar — охоплення аудиторії (учні/педагоги/батьки за audience полем)
+  const audMap = { students:0, teachers:0, parents:0 };
+  evs.forEach(e=>{ const a=(e.audience||'').toLowerCase(); if(a.includes('учн')||a.includes('клас')) audMap.students+=(e.participants||0); else if(a.includes('педаг')||a.includes('вчит')) audMap.teachers+=(e.participants||0); else if(a.includes('батьк')) audMap.parents+=(e.participants||0); else audMap.students+=(e.participants||0); });
+  _charts.push(new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: { labels: ['Учні','Педагоги','Батьки'], datasets: [{ data: [audMap.students,audMap.teachers,audMap.parents], backgroundColor: ['#1F59DD','#2E6BF0','#FFC42E'], borderRadius: 9, maxBarThickness: 76 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#EEF3FA' }, border: { display: false } }, x: { grid: { display: false }, border: { display: false } } } }
+  }));
+})();
+
+function paintCharts(){ _charts.forEach(c => { try { c.resize(); c.draw(); } catch(e){} }); }
+requestAnimationFrame(paintCharts); setTimeout(paintCharts, 80);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) paintCharts(); });
+
+function exportReport(kind){
+  if(kind === 'PDF'){
+    // Формуємо друкований звіт у новому вікні
+    const rows = ranked.map((s,i)=>`<tr><td>${i+1}</td><td>${s.name}</td><td>${s.events||0}</td><td>${s.participants||0}</td><td>${s.rating||0}</td></tr>`).join('');
+    const allEvents = S.schoolEvents.slice(0,30).map(e=>{const sc=S.schools.find(x=>x.id===e.schoolId);return `<tr><td>${e.date||''}</td><td>${sc?sc.name:''}</td><td>${e.type||''}</td><td>${e.title||''}</td><td>${e.participants||0}</td></tr>`;}).join('');
+    const kpiHtmlPrint = S.kpis.map(k=>`<div style="display:inline-block;margin:0 20px 10px 0"><b style="font-size:26px">${kpiValues[k.id]??k.value}</b><div style="font-size:12px;color:#666">${k.label}</div></div>`).join('');
+    const w = window.open('','_blank');
+    w.document.write(`<!doctype html><html lang="uk"><head><meta charset="utf-8">
+      <title>Звіт СОБ — ${S.org.period}</title>
+      <style>body{font-family:Arial,sans-serif;margin:30px;color:#0e274d}h1{font-size:22px;margin-bottom:4px}h2{font-size:16px;margin:22px 0 8px;border-bottom:2px solid #1f59dd;padding-bottom:4px}p.sub{color:#666;font-size:13px;margin-bottom:20px}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#0e274d;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #ddd}@media print{button{display:none}}</style></head><body>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:6px">
+        <div><h1>Служба освітньої безпеки · ${S.org.district}</h1><p class="sub">Звіт за ${S.org.period} · Сформовано ${new Date().toLocaleDateString('uk-UA')}</p></div>
+      </div>
+      <h2>Ключові показники</h2><div style="margin-bottom:16px">${kpiHtmlPrint}</div>
+      <h2>Рейтинг активності закладів</h2>
+      <table><thead><tr><th>#</th><th>Заклад освіти</th><th>Заходів</th><th>Учасників</th><th>Рейтинг</th></tr></thead><tbody>${rows}</tbody></table>
+      ${S.schoolEvents.length?`<h2>Журнал заходів</h2><table><thead><tr><th>Дата</th><th>Заклад</th><th>Тип</th><th>Назва</th><th>Учасників</th></tr></thead><tbody>${allEvents}</tbody></table>`:''}
+      <p style="margin-top:24px;font-size:11px;color:#888">© ${new Date().getFullYear()} Служба освітньої безпеки ${S.org.region}</p>
+      <button onclick="window.print()" style="margin-top:16px;padding:10px 22px;background:#1f59dd;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">Друкувати / Зберегти PDF</button>
+      </body></html>`);
+    w.document.close();
+  } else if(kind === 'PowerPoint'){
+    // Завантажуємо CSV для імпорту у презентацію
+    const date = new Date().toISOString().slice(0,10);
+    const bom = '﻿';
+    const rows = ['"Заклад","Місто","Дата","Тип","Назва","Учасників"\r\n'];
+    S.schoolEvents.forEach(ev => {
+      const sch = S.schools.find(x => x.id === ev.schoolId);
+      const typeLbl = (S.eventTypes||[]).find(t=>t.id===ev.type)?.label||ev.type||'';
+      rows.push([sch?.name||'', sch?.city||'', ev.date||'', typeLbl, ev.title||'', ev.participants||0].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',') + '\r\n');
+    });
+    const blob = new Blob([bom + rows.join('')], {type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `sob-заходи-${date}.csv`; a.click();
+    toast('CSV для імпорту у PowerPoint завантажено');
+  }
+}
+window.exportReport = exportReport;
+</script>
+</body>
+</html>

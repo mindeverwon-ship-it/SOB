@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СОБ · Фотогалерея</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+.gal-toolbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:22px; }
+.seg2 { display:flex; gap:4px; background:var(--surface-3); border-radius:12px; padding:4px; }
+.seg2 button { padding:9px 16px; font-size:13.5px; font-weight:600; border-radius:9px; color:var(--muted); transition:all .15s; }
+.seg2 button.on { background:var(--surface); color:var(--blue-700); box-shadow:var(--shadow-xs); }
+.fchip { padding:8px 14px; border-radius:20px; font-size:13px; font-weight:600; background:var(--surface); border:1px solid var(--border-2); color:var(--text-2); cursor:pointer; transition:all .14s; }
+.fchip.on { background:var(--navy-800); color:#fff; border-color:transparent; }
+.gal-group { margin-bottom:34px; }
+.gal-group-head { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.gal-group-head .gh-ic { width:38px; height:38px; border-radius:11px; background:var(--blue-100); color:var(--blue-600); display:grid; place-items:center; }
+.gal-group-head .gh-ic svg { width:19px; height:19px; }
+.gal-group-head b { font-size:17px; font-weight:700; letter-spacing:-.01em; }
+.gal-group-head .cnt { font-size:13px; color:var(--muted); }
+.gal-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+.gal-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-xs); }
+.gal-card image-slot { width:100%; height:170px; }
+.gal-card .cap { padding:12px 14px; }
+.gal-card .cap b { font-size:13.5px; font-weight:600; display:block; line-height:1.3; }
+.gal-card .cap span { font-size:12px; color:var(--muted); display:flex; gap:6px; align-items:center; margin-top:5px; }
+.gal-card .cap span svg { width:12px; height:12px; }
+.gal-card .cap .tag { margin-top:9px; }
+@media (max-width:1080px){ .gal-grid { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:560px){ .gal-grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="app" id="shell"></div>
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/shell.js"></script>
+<script src="assets/image-slot.js"></script>
+<script>
+SOBShell.render({ active:'gallery', crumb:['СОБ','Фотогалерея'] });
+const S=window.SOB, F=window.fmt, I=window.ICON;
+const U=window.SOBAuth.current();
+let mode='school'; // school | topic
+let topicFilter='all';
+
+const TOPIC_ICON={'Кібербезпека':'lock','Протидія булінгу':'shield','Правова освіта':'book','Робота з батьками':'users','Профілактика':'siren'};
+
+document.getElementById('content').innerHTML=`
+  <div class="page-head">
+    <div><h1 class="page-title">Фотогалерея заходів</h1><div class="page-sub">Фотозвіти профілактичної роботи у закладах освіти ${S.org.region}</div></div>
+    ${window.SOBAuth.canEdit()?`<a class="btn btn-primary" href="cabinet.html">${I.upload} Додати фото</a>`:''}
+  </div>
+  <div class="gal-toolbar">
+    <div class="seg2" id="modeSeg"><button data-m="school" class="on">${I.building} За закладами</button><button data-m="topic">${I.filter} За тематиками</button></div>
+    <div class="spacer" style="flex:1"></div>
+    <div class="filters" id="topicFilters"></div>
+  </div>
+  <div id="galBody"></div>`;
+
+const topics=['all',...S.galleryTopics];
+document.getElementById('topicFilters').innerHTML=topics.map(t=>`<button class="fchip ${t==='all'?'on':''}" data-t="${t}">${t==='all'?'Усі теми':t}</button>`).join('');
+
+function card(g){
+  const sc  = S.schools.find(x=>x.id===g.schoolId)||{};
+  // підтримка обох форматів дати: g.month (YYYY-MM) і g.date (YYYY-MM-DD)
+  let dtStr = '';
+  if(g.month) {
+    try { dtStr = new Date(g.month+'-01').toLocaleDateString('uk-UA',{month:'long',year:'numeric'}); } catch(e){}
+  } else if(g.date) {
+    try { dtStr = new Date(g.date).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'}); } catch(e){}
+  }
+  const imgHtml = g.dataUrl
+    ? `<div style="width:100%;height:170px;overflow:hidden"><img src="${g.dataUrl}" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div>`
+    : `<image-slot id="galp-${g.id}" shape="rect" placeholder="Фото заходу"></image-slot>`;
+  const topicTag = g.topic ? `<span class="tag blue">${g.topic}</span>` : '';
+  const authorStr = g.author ? `${I.users} ${g.author}` : '';
+  return `<div class="gal-card">
+    ${imgHtml}
+    <div class="cap">
+      <b>${g.title||'Без назви'}</b>
+      <span>${I.pin}${sc.name||''}</span>
+      <div class="row between" style="margin-top:9px;flex-wrap:wrap;gap:6px">
+        ${topicTag}
+        <span style="font-size:11px;color:var(--muted-2)">${dtStr}</span>
+      </div>
+      ${authorStr ? `<div style="font-size:11px;color:var(--muted-2);margin-top:4px">${authorStr}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function render(){
+  let items=S.gallery.slice();
+  if(topicFilter!=='all') items=items.filter(g=>g.topic===topicFilter);
+  let html='';
+  if(!items.length){ document.getElementById('galBody').innerHTML=`<div class="card card-pad" style="text-align:center;color:var(--muted)">Немає фото за обраним фільтром</div>`; bindSlots(); return; }
+  if(mode==='school'){
+    const bySchool={};
+    items.forEach(g=>{(bySchool[g.schoolId]=bySchool[g.schoolId]||[]).push(g);});
+    Object.keys(bySchool).forEach(sid=>{
+      const sc=S.schools.find(x=>x.id===sid)||{name:'Заклад'};
+      html+=`<div class="gal-group"><div class="gal-group-head"><div class="gh-ic">${I.building}</div><b>${sc.name}</b><span class="cnt">· ${bySchool[sid].length} фото</span></div><div class="gal-grid">${bySchool[sid].map(card).join('')}</div></div>`;
+    });
+  } else {
+    const byTopic={};
+    items.forEach(g=>{ const t=g.topic||'Інше'; (byTopic[t]=byTopic[t]||[]).push(g); });
+    Object.keys(byTopic).sort().forEach(tp=>{
+      html+=`<div class="gal-group"><div class="gal-group-head"><div class="gh-ic">${I[TOPIC_ICON[tp]]||I.image}</div><b>${tp}</b><span class="cnt">· ${byTopic[tp].length} фото</span></div><div class="gal-grid">${byTopic[tp].map(card).join('')}</div></div>`;
+    });
+  }
+  document.getElementById('galBody').innerHTML=html;
+  bindSlots();
+}
+function bindSlots(){ /* image-slot persists by id automatically */ }
+
+document.getElementById('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b));render();});
+document.getElementById('topicFilters').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;topicFilter=b.dataset.t;document.querySelectorAll('#topicFilters button').forEach(x=>x.classList.toggle('on',x===b));render();});
+render();
+</script>
+</body>
+</html>

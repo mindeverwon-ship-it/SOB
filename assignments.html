@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СОБ · Доручення</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+.asgn-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; display:flex; gap:16px; align-items:flex-start; transition:box-shadow .15s; }
+.asgn-card:hover { box-shadow:var(--shadow); }
+.asgn-card.overdue { border-left:4px solid var(--red-500); }
+.asgn-ic { width:44px; height:44px; border-radius:13px; display:grid; place-items:center; flex-shrink:0; color:#fff; background:var(--blue-600); }
+.asgn-ic svg { width:22px; height:22px; }
+.asgn-body { flex:1; min-width:0; }
+.asgn-title { font-weight:700; font-size:15px; }
+.asgn-meta { font-size:12.5px; color:var(--muted); margin-top:4px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.asgn-desc { font-size:13.5px; color:var(--text-2); margin-top:8px; }
+.asgn-actions { display:flex; gap:6px; flex-shrink:0; align-items:flex-start; }
+.deadline-ok      { color:var(--green-600); font-weight:600; }
+.deadline-soon    { color:var(--gold-600);  font-weight:600; }
+.deadline-overdue { color:var(--red-500);   font-weight:600; }
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
+.stat-c { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; }
+.stat-c .v { font-size:26px; font-weight:800; letter-spacing:-.02em; }
+.stat-c .l { font-size:12.5px; color:var(--muted); margin-top:3px; }
+.iact { color:var(--muted-2); padding:6px; border-radius:8px; transition:all .14s; }
+.iact:hover { background:var(--surface-3); color:var(--text); }
+.iact.del:hover { background:var(--red-100); color:var(--red-500); }
+.iact.done-btn { color:var(--green-600); }
+.iact svg { width:16px; height:16px; display:block; }
+.fchip { padding:8px 14px; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; transition:all .14s; background:var(--surface); border:1px solid var(--border-2); color:var(--text-2); }
+.fchip.on { background:var(--navy-800); color:#fff; border-color:transparent; }
+@media(max-width:880px){ .stats-row { grid-template-columns:repeat(2,1fr); } }
+</style>
+</head>
+<body>
+<div class="app" id="shell"></div>
+
+<!-- Add/Edit assignment modal -->
+<div class="modal-scrim" id="asgnModal">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-head"><div class="section-title" id="asgnModalTitle">Нове доручення</div><button class="icon-btn" id="closeAsgn"></button></div>
+    <div class="modal-body col" style="gap:14px">
+      <div class="field"><label>Назва доручення <span style="color:var(--red-500)">*</span></label><input class="input" id="asgn_title" placeholder="Напр. Перевірити стан укриттів у школі…"></div>
+      <div class="field"><label>Опис / деталі</label><textarea class="input" id="asgn_desc" rows="3" placeholder="Детальніший опис завдання…" style="resize:vertical"></textarea></div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Відповідальний <span style="color:var(--red-500)">*</span></label><select class="input" id="asgn_assignee"></select></div>
+        <div class="field"><label>Пріоритет</label><select class="input" id="asgn_priority">
+          <option value="normal">Звичайний</option>
+          <option value="high">Високий</option>
+          <option value="urgent">Терміновий</option>
+        </select></div>
+      </div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Термін виконання</label><input class="input" type="date" id="asgn_deadline"></div>
+        <div class="field"><label>Статус</label><select class="input" id="asgn_status">
+          <option value="new">Нове</option>
+          <option value="wip">Виконується</option>
+          <option value="done">Виконано</option>
+        </select></div>
+      </div>
+      <div class="field"><label>Пов'язаний заклад (необов'язково)</label><select class="input" id="asgn_school"><option value="">— Оберіть заклад —</option></select></div>
+      <div class="field"><label>Результат / коментар</label><input class="input" id="asgn_result" placeholder="Що зроблено?"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('asgnModal')">Скасувати</button>
+      <button class="btn btn-primary" id="saveAsgn">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/shell.js"></script>
+<script>
+const S = window.SOB, F = window.fmt, I = window.ICON;
+const U = window.SOBAuth.current();
+const canEdit = window.SOBAuth.canEdit();
+
+SOBShell.render({ active: 'assignments', crumb: ['СОБ', 'Доручення'] });
+
+if(!window.SOB.assignments) window.SOB.assignments = [];
+
+document.getElementById('closeAsgn').innerHTML = I.close;
+
+// Populate selects
+const inspOpts = Object.entries(S.inspectors).map(([k,ins]) => `<option value="${k}">${ins.name}</option>`).join('');
+document.getElementById('asgn_assignee').innerHTML = '<option value="">— Оберіть виконавця —</option>' + inspOpts;
+
+const schOpts = S.schools.filter(s => s.serviced).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+document.getElementById('asgn_school').innerHTML = '<option value="">— Заклад не обрано —</option>' + schOpts;
+
+let editingId      = null;
+let filterStatus   = 'all';
+let filterPriority = 'all';
+let filterAssignee = 'all';
+let searchQ        = '';
+
+function priorityChip(p) {
+  if(p === 'urgent') return '<span class="tag" style="background:var(--red-100);color:var(--red-500)">Терміново</span>';
+  if(p === 'high')   return '<span class="tag" style="background:var(--gold-100);color:var(--gold-700)">Високий</span>';
+  return '';
+}
+
+function deadlineHtml(dl, status) {
+  if(!dl || status === 'done') return '';
+  const now  = new Date(); now.setHours(0,0,0,0);
+  const date = new Date(dl);
+  const diff = Math.round((date - now) / 86400000);
+  const str  = date.toLocaleDateString('uk-UA');
+  if(diff < 0)  return `<span class="deadline-overdue">${I.clock} Прострочено (${str})</span>`;
+  if(diff <= 3) return `<span class="deadline-soon">${I.clock} До ${str} (${diff} дн.)</span>`;
+  return `<span class="deadline-ok">${I.clock} До ${str}</span>`;
+}
+
+function statusLabel(s) {
+  const map = { new: 'Нове', wip: 'Виконується', done: 'Виконано' };
+  return map[s] || s;
+}
+
+function isOverdue(a) {
+  if(!a.deadline || a.status === 'done') return false;
+  return new Date(a.deadline) < new Date();
+}
+
+function render() {
+  let items = [...(S.assignments || [])];
+
+  // inspector sees only their own
+  if(U.role === 'inspector') items = items.filter(a => a.assignee === U.inspector);
+
+  if(filterStatus   !== 'all') items = items.filter(x => x.status   === filterStatus);
+  if(filterPriority !== 'all') items = items.filter(x => x.priority === filterPriority);
+  if(filterAssignee !== 'all') items = items.filter(x => x.assignee === filterAssignee);
+  if(searchQ) {
+    const q = searchQ.toLowerCase();
+    items = items.filter(x => {
+      const ins = S.inspectors[x.assignee];
+      const sc  = S.schools.find(s => s.id === x.school);
+      return (x.title||'').toLowerCase().includes(q)
+          || (x.desc||'').toLowerCase().includes(q)
+          || (ins?.name||'').toLowerCase().includes(q)
+          || (sc?.name||'').toLowerCase().includes(q);
+    });
+  }
+
+  const all    = S.assignments.length;
+  const newCnt = S.assignments.filter(x => x.status === 'new').length;
+  const wipCnt = S.assignments.filter(x => x.status === 'wip').length;
+  const overCnt= S.assignments.filter(x => isOverdue(x)).length;
+  const doneCnt= S.assignments.filter(x => x.status === 'done').length;
+
+  const statuses = [
+    { val:'all',  label:'Усі',        cnt: all },
+    { val:'new',  label:'Нові',       cnt: newCnt },
+    { val:'wip',  label:'Виконуються',cnt: wipCnt },
+    { val:'done', label:'Виконано',   cnt: doneCnt },
+  ];
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-head">
+      <div><h1 class="page-title">Доручення</h1><div class="page-sub">Контроль виконання завдань та доручень інспекторам СОБ</div></div>
+      ${canEdit ? `<button class="btn btn-primary" id="addAsgnBtn">${I.plus} Нове доручення</button>` : ''}
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-c"><div class="v">${all}</div><div class="l">Усього доручень</div></div>
+      <div class="stat-c"><div class="v" style="color:var(--blue-600)">${newCnt + wipCnt}</div><div class="l">Активних</div></div>
+      <div class="stat-c"><div class="v" style="color:var(--red-500)">${overCnt}</div><div class="l">Прострочено</div></div>
+      <div class="stat-c"><div class="v" style="color:var(--green-600)">${doneCnt}</div><div class="l">Виконано</div></div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+      <div style="flex:1;min-width:200px;position:relative">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted)">${I.search}</span>
+        <input type="text" id="asgnSearch" placeholder="Пошук за назвою, виконавцем, школою…" value="${searchQ}"
+          style="width:100%;padding:10px 14px 10px 38px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;background:var(--surface-2);outline:none">
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${statuses.map(s => `<button class="fchip ${filterStatus===s.val?'on':''}" data-status="${s.val}">${s.label}${s.cnt?' ('+s.cnt+')':''}</button>`).join('')}
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center">
+      <select class="input" id="priorFilter" style="max-width:190px">
+        <option value="all" ${filterPriority==='all'?'selected':''}>— Будь-який пріоритет —</option>
+        <option value="urgent" ${filterPriority==='urgent'?'selected':''}>Терміновий</option>
+        <option value="high"   ${filterPriority==='high'?'selected':''}>Високий</option>
+        <option value="normal" ${filterPriority==='normal'?'selected':''}>Звичайний</option>
+      </select>
+      ${U.role !== 'inspector' ? `<select class="input" id="assigneeFilter" style="max-width:240px">
+        <option value="all" ${filterAssignee==='all'?'selected':''}>— Усі виконавці —</option>
+        ${Object.entries(S.inspectors).map(([k,ins])=>`<option value="${k}" ${filterAssignee===k?'selected':''}>${ins.name.split(' ').slice(0,2).join(' ')}</option>`).join('')}
+      </select>` : ''}
+      ${(filterPriority!=='all'||filterAssignee!=='all') ? `<button class="btn btn-ghost btn-sm" id="clearAsgnFilters">Скинути</button>` : ''}
+    </div>
+
+    <div class="col" style="gap:12px" id="asgnList">
+      ${items.length ? items.map(a => {
+        const ins = S.inspectors[a.assignee];
+        const sc  = S.schools.find(x => x.id === a.school);
+        const overdue = isOverdue(a);
+        const statusCls = a.status === 'done' ? 'status-done' : (a.status === 'wip' ? 'status-wip' : 'status-new');
+        const icBg = a.status === 'done' ? 'var(--green-500)' : (overdue ? 'var(--red-500)' : 'var(--blue-600)');
+        return `<div class="asgn-card ${overdue ? 'overdue' : ''}">
+          <div class="asgn-ic" style="background:${icBg}">${a.status==='done' ? I.check : I.doc}</div>
+          <div class="asgn-body">
+            <div class="asgn-title">${a.title||'Без назви'} ${priorityChip(a.priority)}</div>
+            <div class="asgn-meta">
+              <span class="tag ${statusCls}">${statusLabel(a.status)}</span>
+              ${ins ? `<span>${I.users} ${ins.name.split(' ').slice(0,2).join(' ')}</span>` : ''}
+              ${sc  ? `<span>${I.building} ${sc.name}</span>` : ''}
+              ${deadlineHtml(a.deadline, a.status)}
+              <span style="color:var(--muted-2);font-size:11.5px">${a.createdAt ? new Date(a.createdAt).toLocaleDateString('uk-UA') : ''}</span>
+            </div>
+            ${a.desc ? `<div class="asgn-desc">${a.desc}</div>` : ''}
+            ${a.result ? `<div style="margin-top:6px;font-size:13px;color:var(--green-600);font-weight:600">${I.check} ${a.result}</div>` : ''}
+          </div>
+          ${canEdit ? `<div class="asgn-actions">
+            ${a.status !== 'done' ? `<button class="iact done-btn" data-done="${a.id}" title="Позначити виконаним">${I.check}</button>` : ''}
+            <button class="iact" data-edit="${a.id}" title="Редагувати">${I.edit}</button>
+            <button class="iact del" data-del="${a.id}" title="Видалити">${I.trash}</button>
+          </div>` : ''}
+        </div>`;
+      }).join('') : `<div class="card card-pad" style="text-align:center;color:var(--muted);padding:40px">Доручень не знайдено</div>`}
+    </div>
+  `;
+
+  document.querySelectorAll('.fchip').forEach(b => {
+    b.addEventListener('click', () => { filterStatus = b.dataset.status; render(); });
+  });
+  document.getElementById('asgnSearch')?.addEventListener('input', e => {
+    const pos = e.target.selectionStart;
+    searchQ = e.target.value;
+    render();
+    const ni = document.getElementById('asgnSearch');
+    ni?.focus(); ni?.setSelectionRange(pos, pos);
+  });
+  document.getElementById('priorFilter')?.addEventListener('change', e => { filterPriority = e.target.value; render(); });
+  document.getElementById('assigneeFilter')?.addEventListener('change', e => { filterAssignee = e.target.value; render(); });
+  document.getElementById('clearAsgnFilters')?.addEventListener('click', () => { filterPriority='all'; filterAssignee='all'; render(); });
+
+  if(canEdit) {
+    document.getElementById('addAsgnBtn')?.addEventListener('click', () => openModal(null));
+    document.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openModal(b.dataset.edit)));
+    document.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
+      if(confirm('Видалити доручення?')) { window.SOBStore.deleteAssignment(b.dataset.del); toast('Доручення видалено','navy'); render(); }
+    }));
+    document.querySelectorAll('[data-done]').forEach(b => b.addEventListener('click', () => {
+      window.SOBStore.updateAssignment(b.dataset.done, { status:'done', doneAt: new Date().toISOString() });
+      toast('Доручення позначено виконаним');
+      render();
+    }));
+  }
+}
+
+function openModal(id) {
+  editingId = id;
+  document.getElementById('asgnModalTitle').textContent = id ? 'Редагувати доручення' : 'Нове доручення';
+  const a = id ? (S.assignments.find(x => x.id === id) || {}) : {};
+  document.getElementById('asgn_title').value    = a.title    || '';
+  document.getElementById('asgn_desc').value     = a.desc     || '';
+  document.getElementById('asgn_assignee').value = a.assignee || '';
+  document.getElementById('asgn_priority').value = a.priority || 'normal';
+  document.getElementById('asgn_deadline').value = a.deadline || '';
+  document.getElementById('asgn_status').value   = a.status   || 'new';
+  document.getElementById('asgn_school').value   = a.school   || '';
+  document.getElementById('asgn_result').value   = a.result   || '';
+  document.getElementById('asgnModal').classList.add('show');
+}
+
+document.getElementById('saveAsgn').addEventListener('click', () => {
+  const title = document.getElementById('asgn_title').value.trim();
+  if(!title) { toast('Введіть назву доручення', 'red'); return; }
+  const assignee = document.getElementById('asgn_assignee').value;
+  if(!assignee) { toast('Оберіть відповідального', 'red'); return; }
+  const data = {
+    title,
+    desc:     document.getElementById('asgn_desc').value.trim(),
+    assignee,
+    priority: document.getElementById('asgn_priority').value,
+    deadline: document.getElementById('asgn_deadline').value,
+    status:   document.getElementById('asgn_status').value,
+    school:   document.getElementById('asgn_school').value,
+    result:   document.getElementById('asgn_result').value.trim(),
+  };
+  if(editingId) {
+    window.SOBStore.updateAssignment(editingId, data);
+    toast('Доручення оновлено');
+  } else {
+    window.SOBStore.addAssignment(data);
+    toast('Доручення створено');
+  }
+  closeModal('asgnModal');
+  render();
+});
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+window.closeModal = closeModal;
+document.querySelectorAll('.modal-scrim').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('show'); }));
+
+document.addEventListener('sob:synced', () => render());
+render();
+</script>
+</body>
+</html>

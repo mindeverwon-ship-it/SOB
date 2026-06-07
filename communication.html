@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СОБ · Контакти та зв'язок</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+.comm-grid { display: grid; grid-template-columns: 1fr 360px; gap: 22px; }
+.team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; margin-top: 14px; }
+
+/* Inspector card */
+.ic-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; gap: 0; transition: box-shadow .15s; }
+.ic-card:hover { box-shadow: var(--shadow-md); }
+.ic-top { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
+.ic-av { width: 54px; height: 54px; border-radius: 15px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 17px; flex-shrink: 0; }
+.ic-name { font-weight: 700; font-size: 15px; line-height: 1.25; }
+.ic-title { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.ic-dept { font-size: 11.5px; color: var(--muted-2); margin-top: 2px; }
+.ic-contacts { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px solid var(--border); }
+.ic-row { display: flex; align-items: center; gap: 9px; font-size: 13px; }
+.ic-row svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--blue-600); }
+.ic-row a { color: var(--blue-600); font-weight: 600; text-decoration: none; }
+.ic-row a:hover { text-decoration: underline; }
+.ic-row .ic-lbl { color: var(--muted); font-size: 11.5px; min-width: 56px; }
+.ic-schools { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+.ic-actions { display: flex; gap: 6px; margin-top: 12px; }
+
+/* External contacts */
+.ec-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.ec-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.ec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.ec-ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; }
+.ec-ic svg { width: 16px; height: 16px; }
+.ec-name { font-weight: 600; font-size: 14px; }
+.ec-org { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.ec-contacts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.ec-link { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; padding: 5px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); font-weight: 500; text-decoration: none; color: var(--text); transition: all .14s; }
+.ec-link:hover { background: var(--blue-050); border-color: var(--blue-200); color: var(--blue-700); }
+.ec-link svg { width: 13px; height: 13px; color: var(--blue-600); }
+.ec-actions { display: flex; gap: 4px; margin-top: 8px; }
+.iact { color: var(--muted-2); padding: 5px; border-radius: 7px; transition: all .13s; }
+.iact:hover { background: var(--surface-3); color: var(--text); }
+.iact.del:hover { background: var(--red-100); color: var(--red-500); }
+.iact svg { width: 14px; height: 14px; display: block; }
+
+/* Announcements */
+.ann-item { padding: 14px 16px; border-radius: var(--radius); border-left: 3px solid var(--blue-500); background: var(--blue-050); margin-bottom: 10px; }
+.ann-item.warn { border-color: var(--gold-500); background: var(--gold-050,#fffbeb); }
+.ann-item.red  { border-color: var(--red-500); background: var(--red-100); }
+.ann-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.ann-title { font-weight: 700; font-size: 13.5px; }
+.ann-date  { font-size: 11px; color: var(--muted); }
+.ann-body  { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+.ann-actions { display: flex; gap: 4px; }
+
+/* empty state */
+.empty-state { text-align: center; padding: 28px 16px; color: var(--muted); font-size: 13.5px; }
+
+/* Edit mode highlight */
+.edit-mode .ic-card { border-color: var(--blue-200); }
+
+@media (max-width: 1100px) { .comm-grid { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .team-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="app" id="shell"></div>
+
+<!-- ══ External contact modal ══ -->
+<div class="modal-scrim" id="ecModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <div class="section-title" id="ecModalTitle">Додати контакт</div>
+      <button class="icon-btn" id="closeEc" onclick="closeModal('ecModal')"></button>
+    </div>
+    <div class="modal-body col" style="gap:13px">
+      <div class="field"><label>ПІБ / назва <span style="color:var(--red-500)">*</span></label><input class="input" id="ec_name" placeholder="Прізвище Ім'я По-батькові або назва"></div>
+      <div class="field"><label>Організація / посада</label><input class="input" id="ec_org" placeholder="ЗОШ №5, директор / Управління освіти…"></div>
+      <div class="grid-2" style="gap:12px">
+        <div class="field"><label>Телефон</label><input class="input" id="ec_phone" type="tel" placeholder="+380…"></div>
+        <div class="field"><label>Мобільний</label><input class="input" id="ec_phone2" type="tel" placeholder="+380…"></div>
+      </div>
+      <div class="grid-2" style="gap:12px">
+        <div class="field"><label>Email</label><input class="input" id="ec_email" type="email" placeholder="…@…"></div>
+        <div class="field"><label>Telegram</label><input class="input" id="ec_telegram" placeholder="@username"></div>
+      </div>
+      <div class="field"><label>Категорія</label>
+        <select class="input" id="ec_category">
+          <option value="school">Заклад освіти</option>
+          <option value="dept">Відомство / управління</option>
+          <option value="partner">Партнер / організація</option>
+          <option value="other">Інше</option>
+        </select>
+      </div>
+      <div class="field"><label>Примітка</label><input class="input" id="ec_note" placeholder="Додаткова інформація"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('ecModal')">Скасувати</button>
+      <button class="btn btn-primary" id="saveEc">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Announcement modal ══ -->
+<div class="modal-scrim" id="annModal">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <div class="section-title" id="annModalTitle">Нове оголошення</div>
+      <button class="icon-btn" id="closeAnn" onclick="closeModal('annModal')"></button>
+    </div>
+    <div class="modal-body col" style="gap:13px">
+      <div class="field"><label>Заголовок <span style="color:var(--red-500)">*</span></label><input class="input" id="ann_title" placeholder="Наприклад: Нараду перенесено"></div>
+      <div class="field"><label>Текст оголошення</label><textarea class="input" id="ann_body" rows="3" placeholder="Короткий опис…" style="resize:vertical"></textarea></div>
+      <div class="field"><label>Тип</label>
+        <select class="input" id="ann_type">
+          <option value="info">Інформація (синій)</option>
+          <option value="warn">Увага (жовтий)</option>
+          <option value="red">Важливо (червоний)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('annModal')">Скасувати</button>
+      <button class="btn btn-primary" id="saveAnn">Опублікувати</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/shell.js"></script>
+<script>
+SOBShell.render({ active: 'comm', crumb: ['СОБ', 'Контакти та зв\'язок'] });
+const S = window.SOB, F = window.fmt, I = window.ICON;
+const U = window.SOBAuth.current();
+const isAdmin = U.role === 'admin';
+
+document.getElementById('closeEc').innerHTML  = I.close;
+document.getElementById('closeAnn').innerHTML = I.close;
+
+/* ── Ініціалізація сховища комунікацій ── */
+if (!S.org.contacts)     S.org.contacts = [];
+if (!S.org.announcements) S.org.announcements = [];
+
+const uid = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+
+/* ══════════════════════════════════════════════════
+   ІКОНКИ-хелпери
+══════════════════════════════════════════════════ */
+const TG_ICON = `<svg viewBox="0 0 24 24" width="13" height="13" fill="var(--blue-600)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8-1.7 8.02c-.12.57-.47.7-.95.44l-2.62-1.93-1.27 1.22c-.14.14-.26.26-.53.26l.19-2.68 4.84-4.37c.21-.19-.05-.29-.32-.1L7.58 15.1l-2.58-.8c-.56-.17-.57-.56.12-.83l10.07-3.88c.46-.17.87.11.71.83h-.26z"/></svg>`;
+
+const CAT_COLOR = { school:'var(--blue-600)', dept:'var(--purple-500)', partner:'var(--green-500)', other:'var(--muted)' };
+const CAT_LABEL = { school:'Заклад освіти', dept:'Відомство', partner:'Партнер', other:'Інше' };
+
+/* ══════════════════════════════════════════════════
+   РЕНДЕР
+══════════════════════════════════════════════════ */
+function render() {
+  const inspList = Object.entries(S.inspectors);
+  const contacts = S.org.contacts || [];
+  const anns     = S.org.announcements || [];
+
+  /* ── Команда СОБ ── */
+  const teamHtml = inspList.length ? inspList.map(([key, ins]) => {
+    const init = ins.name.split(' ').map(w=>w[0]).slice(0,2).join('');
+    const clr  = ins.color || '#0E274D';
+    const schCnt = S.schools.filter(s=>s.serviced && s.inspector===key).length;
+    const schNames = S.schools.filter(s=>s.serviced && s.inspector===key).map(s=>s.name.split(' ').slice(0,4).join(' ')).join(', ');
+
+    return `<div class="ic-card">
+      <div class="ic-top">
+        <div class="ic-av" style="background:${clr}">${init}</div>
+        <div style="flex:1;min-width:0">
+          <div class="ic-name">${ins.name}</div>
+          <div class="ic-title">${ins.rankTitle ? ins.rankTitle + ' · ' : ''}${ins.position || ins.rank || 'Інспектор ССОБ'}</div>
+          ${ins.department ? `<div class="ic-dept">${ins.department}</div>` : ''}
+        </div>
+      </div>
+      <div class="ic-contacts">
+        ${ins.phone ? `<div class="ic-row">${I.phone}<span class="ic-lbl">Служб.:</span><a href="tel:${ins.phone.replace(/[^+\d]/g,'')}">${ins.phone}</a></div>` : ''}
+        ${ins.phone2 ? `<div class="ic-row">${I.phone}<span class="ic-lbl">Моб.:</span><a href="tel:${ins.phone2.replace(/[^+\d]/g,'')}">${ins.phone2}</a></div>` : ''}
+        ${ins.email ? `<div class="ic-row">${I.mail}<span class="ic-lbl">Email:</span><a href="mailto:${ins.email}">${ins.email}</a></div>` : ''}
+        ${ins.telegram ? `<div class="ic-row">${TG_ICON}<span class="ic-lbl">Telegram:</span><span>${ins.telegram}</span></div>` : ''}
+        ${(!ins.phone && !ins.phone2 && !ins.email && !ins.telegram) ? `<div style="color:var(--muted);font-size:12.5px">Контакти не вказані${isAdmin?' — натисніть «Редагувати»':''}</div>` : ''}
+      </div>
+      ${schCnt ? `<div class="ic-schools">${I.school} Заклади: ${schNames||schCnt+' закл.'}</div>` : ''}
+      ${isAdmin ? `<div class="ic-actions">
+        <button class="btn btn-soft btn-sm" style="flex:1" onclick="editInspector('${key}')">${I.edit} Редагувати контакти</button>
+        <a class="btn btn-ghost btn-sm" href="tel:${(ins.phone||ins.phone2||'').replace(/[^+\d]/g,'')}">${I.phone}</a>
+        ${ins.email ? `<a class="btn btn-ghost btn-sm" href="mailto:${ins.email}">${I.mail}</a>` : ''}
+      </div>` : `<div class="ic-actions">
+        ${ins.phone ? `<a class="btn btn-soft btn-sm" style="flex:1" href="tel:${ins.phone.replace(/[^+\d]/g,'')}">${I.phone} Подзвонити</a>` : ''}
+        ${ins.email ? `<a class="btn btn-ghost btn-sm" href="mailto:${ins.email}">${I.mail}</a>` : ''}
+      </div>`}
+    </div>`;
+  }).join('') : `<div class="empty-state" style="grid-column:1/-1">Інспекторів немає. Адміністратор може додати їх в Адмін-панелі → Інспектори СОБ.</div>`;
+
+  /* ── Зовнішні контакти ── */
+  const ecHtml = contacts.length ? contacts.map(c => {
+    const catClr = CAT_COLOR[c.category] || 'var(--muted)';
+    return `<div class="ec-card">
+      <div class="ec-head">
+        <div class="ec-ic" style="background:var(--surface-3);color:${catClr}">${I.users}</div>
+        <div>
+          <div class="ec-name">${c.name}</div>
+          <div class="ec-org">${c.org||''} ${c.category?`<span class="tag" style="font-size:10px;padding:2px 6px">${CAT_LABEL[c.category]||c.category}</span>`:''}</div>
+        </div>
+      </div>
+      <div class="ec-contacts">
+        ${c.phone  ? `<a class="ec-link" href="tel:${c.phone.replace(/[^+\d]/g,'')}">${I.phone}${c.phone}</a>` : ''}
+        ${c.phone2 ? `<a class="ec-link" href="tel:${c.phone2.replace(/[^+\d]/g,'')}">${I.phone}${c.phone2}</a>` : ''}
+        ${c.email  ? `<a class="ec-link" href="mailto:${c.email}">${I.mail}${c.email}</a>` : ''}
+        ${c.telegram ? `<span class="ec-link">${TG_ICON}${c.telegram}</span>` : ''}
+      </div>
+      ${c.note ? `<div style="font-size:12px;color:var(--muted);margin-top:7px">${c.note}</div>` : ''}
+      ${isAdmin ? `<div class="ec-actions"><button class="iact" data-eec="${c.id}" title="Редагувати">${I.edit}</button><button class="iact del" data-dec="${c.id}" title="Видалити">${I.trash}</button></div>` : ''}
+    </div>`;
+  }).join('') : `<div class="empty-state">${isAdmin ? 'Зовнішніх контактів немає. Натисніть «+ Додати контакт».' : 'Контактів ще немає.'}</div>`;
+
+  /* ── Оголошення ── */
+  const typeMap = { info:'', warn:'warn', red:'red' };
+  const annHtml = anns.length ? anns.map(a => `
+    <div class="ann-item ${typeMap[a.type]||''}">
+      <div class="ann-head">
+        <span class="ann-title">${a.title}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="ann-date">${a.date||''}</span>
+          ${isAdmin ? `<button class="iact del" data-dann="${a.id}" style="padding:3px">${I.trash}</button>` : ''}
+        </div>
+      </div>
+      <div class="ann-body">${a.body||''}</div>
+    </div>`).join('') : `<div class="empty-state">${isAdmin ? 'Оголошень немає. Натисніть «+ Додати».' : 'Оголошень поки немає.'}</div>`;
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-head" style="margin-bottom:20px">
+      <div>
+        <h1 class="page-title">Контакти та зв'язок</h1>
+        <div class="page-sub">Команда СОБ, корисні контакти та оголошення · ${S.org.region}</div>
+      </div>
+      ${isAdmin ? `<div class="row gap-8">
+        <button class="btn btn-ghost btn-sm" onclick="openAnnModal()">${I.plus} Оголошення</button>
+        <button class="btn btn-primary btn-sm" onclick="openEcModal(null)">${I.plus} Додати контакт</button>
+      </div>` : ''}
+    </div>
+
+    <div class="comm-grid">
+      <!-- Ліва колонка: команда + зовнішні контакти -->
+      <div>
+        <div class="card card-pad" style="margin-bottom:20px">
+          <div class="card-head">
+            <div class="section-title">${I.shield} Команда СОБ · Запорізький район</div>
+            <span class="muted" style="font-size:13px">${inspList.length} інспекторів</span>
+          </div>
+          <div class="team-grid">${teamHtml}</div>
+        </div>
+
+        <div class="card card-pad">
+          <div class="card-head">
+            <div class="section-title">${I.users} Корисні контакти</div>
+            ${isAdmin ? `<button class="btn btn-soft btn-sm" onclick="openEcModal(null)">${I.plus} Додати</button>` : ''}
+          </div>
+          <div class="ec-list">${ecHtml}</div>
+        </div>
+      </div>
+
+      <!-- Права колонка: оголошення + швидкі дії -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card card-pad">
+          <div class="card-head">
+            <div class="section-title">${I.bell} Оголошення</div>
+            ${isAdmin ? `<button class="btn btn-soft btn-sm" onclick="openAnnModal()">${I.plus} Додати</button>` : ''}
+          </div>
+          <div style="margin-top:12px">${annHtml}</div>
+        </div>
+
+        <div class="card card-pad">
+          <div class="section-title" style="margin-bottom:14px">${I.phone} Швидкий зв'язок</div>
+          ${inspList.filter(([,ins])=>ins.phone||ins.email).slice(0,5).map(([,ins])=>{
+            const init=ins.name.split(' ').map(w=>w[0]).slice(0,2).join('');
+            const clr=ins.color||'#0E274D';
+            return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border)">
+              <div style="width:34px;height:34px;border-radius:10px;background:${clr};display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;flex-shrink:0">${init}</div>
+              <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">${ins.name.split(' ')[0]} ${ins.name.split(' ')[1]||''}</div><div style="font-size:11.5px;color:var(--muted)">${ins.position||ins.rank||''}</div></div>
+              <div style="display:flex;gap:4px">
+                ${ins.phone?`<a class="btn btn-soft btn-sm" style="padding:6px 8px" href="tel:${ins.phone.replace(/[^+\d]/g,'')}">${I.phone}</a>`:''}
+                ${ins.email?`<a class="btn btn-ghost btn-sm" style="padding:6px 8px" href="mailto:${ins.email}">${I.mail}</a>`:''}
+              </div>
+            </div>`;
+          }).join('')}
+          ${inspList.filter(([,ins])=>ins.phone||ins.email).length===0 ? `<div class="empty-state">Додайте контакти інспекторів в Адмін-панелі</div>` : ''}
+        </div>
+
+        <div class="card card-pad" style="background:linear-gradient(135deg,var(--navy-800),var(--navy-950));color:#fff;border:none">
+          <div style="font-weight:700;font-size:15px;display:flex;gap:9px;align-items:center">${I.video} Відеоконсультація</div>
+          <p style="font-size:12.5px;color:rgba(255,255,255,.6);margin:9px 0 14px">Розпочніть відеодзвінок Google Meet з будь-яким учасником команди.</p>
+          <button class="btn btn-gold btn-sm" style="width:100%" onclick="startMeet()">${I.video} Розпочати відеодзвінок</button>
+        </div>
+      </div>
+    </div>`;
+
+  bindActions();
+}
+
+/* ══════════════════════════════════════════════════
+   ДІЇ
+══════════════════════════════════════════════════ */
+function bindActions(){
+  /* видалити зовнішній контакт */
+  document.querySelectorAll('[data-dec]').forEach(b=>b.addEventListener('click',()=>{
+    if(confirm('Видалити контакт?')){
+      S.org.contacts = S.org.contacts.filter(c=>c.id!==b.dataset.dec);
+      window.SOBStore.save(); toast('Контакт видалено','navy'); render();
+    }
+  }));
+  /* редагувати зовнішній контакт */
+  document.querySelectorAll('[data-eec]').forEach(b=>b.addEventListener('click',()=>openEcModal(b.dataset.eec)));
+  /* видалити оголошення */
+  document.querySelectorAll('[data-dann]').forEach(b=>b.addEventListener('click',()=>{
+    if(confirm('Видалити оголошення?')){
+      S.org.announcements = S.org.announcements.filter(a=>a.id!==b.dataset.dann);
+      window.SOBStore.save(); toast('Оголошення видалено','navy'); render();
+    }
+  }));
+}
+
+/* ── Редагування інспектора (через адмін-модал) ── */
+window.editInspector = function(key){
+  location.href='admin.html#ins-'+key;
+};
+/* Якщо повернулись із admin з anchor — відкриваємо інспектора */
+if(location.hash.startsWith('#ins-')){
+  const k=location.hash.slice(5);
+  if(S.inspectors[k]) toast('Редагуйте інспектора в Адмін-панелі → Інспектори СОБ','navy');
+}
+
+/* ── Зовнішні контакти modal ── */
+let editingEcId = null;
+window.openEcModal = function(id){
+  editingEcId = id;
+  const c = id ? (S.org.contacts||[]).find(x=>x.id===id)||{} : {};
+  document.getElementById('ecModalTitle').textContent = id ? 'Редагувати контакт' : 'Додати контакт';
+  document.getElementById('ec_name').value     = c.name||'';
+  document.getElementById('ec_org').value      = c.org||'';
+  document.getElementById('ec_phone').value    = c.phone||'';
+  document.getElementById('ec_phone2').value   = c.phone2||'';
+  document.getElementById('ec_email').value    = c.email||'';
+  document.getElementById('ec_telegram').value = c.telegram||'';
+  document.getElementById('ec_category').value = c.category||'school';
+  document.getElementById('ec_note').value     = c.note||'';
+  document.getElementById('ecModal').classList.add('show');
+};
+document.getElementById('saveEc').addEventListener('click',()=>{
+  const name = document.getElementById('ec_name').value.trim();
+  if(!name){toast('Введіть ім\'я або назву','red');return;}
+  const data = {
+    id:       editingEcId || uid(),
+    name,
+    org:      document.getElementById('ec_org').value.trim(),
+    phone:    document.getElementById('ec_phone').value.trim(),
+    phone2:   document.getElementById('ec_phone2').value.trim(),
+    email:    document.getElementById('ec_email').value.trim(),
+    telegram: document.getElementById('ec_telegram').value.trim(),
+    category: document.getElementById('ec_category').value,
+    note:     document.getElementById('ec_note').value.trim(),
+  };
+  if(!S.org.contacts) S.org.contacts=[];
+  if(editingEcId){
+    const idx = S.org.contacts.findIndex(c=>c.id===editingEcId);
+    if(idx>=0) S.org.contacts[idx]=data; else S.org.contacts.push(data);
+  } else {
+    S.org.contacts.push(data);
+  }
+  window.SOBStore.save();
+  toast(editingEcId?'Контакт оновлено':'Контакт додано');
+  closeModal('ecModal'); render();
+});
+
+/* ── Оголошення modal ── */
+window.openAnnModal = function(){
+  document.getElementById('ann_title').value = '';
+  document.getElementById('ann_body').value  = '';
+  document.getElementById('ann_type').value  = 'info';
+  document.getElementById('annModal').classList.add('show');
+};
+document.getElementById('saveAnn').addEventListener('click',()=>{
+  const title = document.getElementById('ann_title').value.trim();
+  if(!title){toast('Введіть заголовок','red');return;}
+  if(!S.org.announcements) S.org.announcements=[];
+  S.org.announcements.unshift({
+    id:    uid(),
+    title,
+    body:  document.getElementById('ann_body').value.trim(),
+    type:  document.getElementById('ann_type').value,
+    date:  new Date().toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'}),
+    author: U.name||'Адміністратор',
+  });
+  window.SOBStore.save();
+  toast('Оголошення опубліковано');
+  closeModal('annModal'); render();
+});
+
+/* ── Google Meet ── */
+window.startMeet = function(){
+  if(confirm('Відкрити Google Meet у новій вкладці?\nmeet.google.com/new — створить нову кімнату')){
+    window.open('https://meet.google.com/new','_blank');
+  }
+};
+
+/* ── Modal helpers ── */
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+window.closeModal = closeModal;
+document.querySelectorAll('.modal-scrim').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
+
+/* ── Sync ── */
+document.addEventListener('sob:synced',()=>render());
+
+render();
+</script>
+</body>
+</html>

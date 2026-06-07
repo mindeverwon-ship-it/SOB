@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СОБ · Інциденти</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+.inc-filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:20px; }
+.inc-search { flex:1; min-width:200px; position:relative; }
+.inc-search input { width:100%; padding:10px 14px 10px 38px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; background:var(--surface-2); outline:none; }
+.inc-search input:focus { border-color:var(--blue-400); box-shadow:0 0 0 3px var(--blue-050); }
+.inc-search .si { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted); }
+.inc-search .si svg { width:16px; height:16px; }
+.inc-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; display:flex; gap:16px; align-items:flex-start; transition:box-shadow .15s; }
+.inc-card:hover { box-shadow:var(--shadow); }
+.inc-ic { width:44px; height:44px; border-radius:13px; display:grid; place-items:center; flex-shrink:0; color:#fff; }
+.inc-ic svg { width:22px; height:22px; }
+.inc-body { flex:1; min-width:0; }
+.inc-title { font-weight:700; font-size:15px; }
+.inc-meta { font-size:12.5px; color:var(--muted); margin-top:4px; display:flex; gap:10px; flex-wrap:wrap; }
+.inc-desc { font-size:13.5px; color:var(--text-2); margin-top:8px; }
+.inc-actions { display:flex; gap:6px; flex-shrink:0; align-items:flex-start; }
+.status-new    { background:var(--blue-100); color:var(--blue-700); }
+.status-wip    { background:var(--gold-100); color:var(--gold-700); }
+.status-done   { background:var(--green-100); color:var(--green-600); }
+.status-closed { background:var(--surface-3); color:var(--muted); }
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
+.stat-c { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; }
+.stat-c .v { font-size:26px; font-weight:800; letter-spacing:-.02em; }
+.stat-c .l { font-size:12.5px; color:var(--muted); margin-top:3px; }
+.iact { color:var(--muted-2); padding:6px; border-radius:8px; transition:all .14s; }
+.iact:hover { background:var(--surface-3); color:var(--text); }
+.iact.del:hover { background:var(--red-100); color:var(--red-500); }
+.iact svg { width:16px; height:16px; display:block; }
+@media(max-width:880px){ .stats-row { grid-template-columns:repeat(2,1fr); } }
+</style>
+</head>
+<body>
+<div class="app" id="shell"></div>
+
+<!-- Add/Edit incident modal -->
+<div class="modal-scrim" id="incModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-head"><div class="section-title" id="incModalTitle">Зафіксувати інцидент</div><button class="icon-btn" id="closeInc"></button></div>
+    <div class="modal-body col" style="gap:14px">
+      <div class="field"><label>Заголовок інциденту <span style="color:var(--red-500)">*</span></label><input class="input" id="inc_title" placeholder="Стисло опишіть інцидент"></div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Тип інциденту <span style="color:var(--red-500)">*</span></label><select class="input" id="inc_type"></select></div>
+        <div class="field"><label>Дата інциденту <span style="color:var(--red-500)">*</span></label><input class="input" type="date" id="inc_date"></div>
+      </div>
+      <div class="field"><label>Заклад освіти</label><select class="input" id="inc_school"><option value="">— Оберіть заклад —</option></select></div>
+      <div class="field"><label>Детальний опис</label><textarea class="input" id="inc_desc" rows="3" placeholder="Опишіть обставини, учасників, перебіг подій…" style="resize:vertical"></textarea></div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Відповідальний інспектор</label><select class="input" id="inc_inspector"></select></div>
+        <div class="field"><label>Статус</label><select class="input" id="inc_status">
+          <option value="new">Новий</option>
+          <option value="wip">Опрацьовується</option>
+          <option value="done">Вирішено</option>
+          <option value="closed">Закрито</option>
+        </select></div>
+      </div>
+      <div class="field"><label>Вжиті заходи / результат</label><input class="input" id="inc_result" placeholder="Що було зроблено?"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('incModal')">Скасувати</button>
+      <button class="btn btn-primary" id="saveInc">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/shell.js"></script>
+<script>
+const S = window.SOB, F = window.fmt, I = window.ICON;
+const U = window.SOBAuth.current();
+const canEdit = window.SOBAuth.canEdit();
+
+SOBShell.render({ active: 'incidents', crumb: ['СОБ', 'Інциденти'] });
+
+if(!window.SOB.incidents) window.SOB.incidents = [];
+
+document.getElementById('closeInc').innerHTML = I.close;
+
+// Populate type select
+const typeOpts = S.incidentTypes.map(t => `<option value="${t.id}">${t.label}</option>`).join('');
+document.getElementById('inc_type').innerHTML = typeOpts;
+
+// Populate school select
+const schOpts = S.schools.filter(s => s.serviced).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+document.getElementById('inc_school').innerHTML = '<option value="">— Оберіть заклад —</option>' + schOpts;
+
+// Populate inspector select
+const inspOpts = Object.entries(S.inspectors).map(([k,ins]) => `<option value="${k}">${ins.name}</option>`).join('');
+document.getElementById('inc_inspector').innerHTML = '<option value="">— Оберіть інспектора —</option>' + inspOpts;
+
+let editingId = null;
+let filterStatus   = 'all';
+let filterType     = 'all';
+let filterInspector= 'all';
+let filterDateFrom = '';
+let filterDateTo   = '';
+let searchQ        = '';
+
+function statusLabel(s) {
+  const map = { new: 'Новий', wip: 'Опрацьовується', done: 'Вирішено', closed: 'Закрито' };
+  return map[s] || s;
+}
+
+function typeInfo(id) {
+  return S.incidentTypes.find(t => t.id === id) || { label: id, color: '#93A0B8', icon: 'doc' };
+}
+
+function render() {
+  let items = [...(S.incidents || [])];
+
+  if(filterStatus    !== 'all') items = items.filter(x => x.status === filterStatus);
+  if(filterType      !== 'all') items = items.filter(x => x.type   === filterType);
+  if(filterInspector !== 'all') items = items.filter(x => x.inspector === filterInspector);
+  if(filterDateFrom) items = items.filter(x => x.date >= filterDateFrom);
+  if(filterDateTo)   items = items.filter(x => x.date <= filterDateTo);
+  if(searchQ) {
+    const q = searchQ.toLowerCase();
+    items = items.filter(x => {
+      const sc  = S.schools.find(s => s.id === x.school);
+      const ins = S.inspectors[x.inspector];
+      const ti  = S.incidentTypes.find(t => t.id === x.type);
+      return (x.title||'').toLowerCase().includes(q)
+          || (x.desc||'').toLowerCase().includes(q)
+          || (sc?.name||'').toLowerCase().includes(q)
+          || (ins?.name||'').toLowerCase().includes(q)
+          || (ti?.label||'').toLowerCase().includes(q);
+    });
+  }
+
+  const total   = S.incidents.length;
+  const newCnt  = S.incidents.filter(x => x.status === 'new').length;
+  const wipCnt  = S.incidents.filter(x => x.status === 'wip').length;
+  const doneCnt = S.incidents.filter(x => x.status === 'done' || x.status === 'closed').length;
+
+  const statuses = [
+    { val:'all',    label:'Усі',           cnt: total },
+    { val:'new',    label:'Нові',          cnt: newCnt },
+    { val:'wip',    label:'В роботі',      cnt: wipCnt },
+    { val:'done',   label:'Вирішено',      cnt: doneCnt },
+  ];
+
+  const types = [{ id:'all', label:'Усі типи' }, ...S.incidentTypes];
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-head">
+      <div><h1 class="page-title">Інциденти</h1><div class="page-sub">Облік та опрацювання інцидентів у закладах освіти ${S.org.region}</div></div>
+      ${canEdit ? `<button class="btn btn-primary" id="addIncBtn">${I.plus} Зафіксувати інцидент</button>` : ''}
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-c"><div class="v">${total}</div><div class="l">Усього інцидентів</div></div>
+      <div class="stat-c"><div class="v" style="color:var(--blue-600)">${newCnt}</div><div class="l">Нових</div></div>
+      <div class="stat-c"><div class="v" style="color:var(--gold-600)">${wipCnt}</div><div class="l">В опрацюванні</div></div>
+      <div class="stat-c"><div class="v" style="color:var(--green-600)">${doneCnt}</div><div class="l">Вирішено</div></div>
+    </div>
+
+    <div class="inc-filters">
+      <div class="inc-search"><span class="si">${I.search}</span><input type="text" id="incSearch" placeholder="Пошук за назвою, описом, школою, інспектором…" value="${searchQ}"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${statuses.map(s => `<button class="fchip ${filterStatus===s.val?'on':''}" data-status="${s.val}">${s.label}${s.cnt?' ('+s.cnt+')':''}</button>`).join('')}
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center">
+      <select class="input" id="typeFilter" style="max-width:200px">
+        ${types.map(t => `<option value="${t.id}" ${filterType===t.id?'selected':''}>${t.label}</option>`).join('')}
+      </select>
+      <select class="input" id="inspectorFilter" style="max-width:220px">
+        <option value="all" ${filterInspector==='all'?'selected':''}>— Усі інспектори —</option>
+        ${Object.entries(S.inspectors).map(([k,ins]) => `<option value="${k}" ${filterInspector===k?'selected':''}>${ins.name.split(' ').slice(0,2).join(' ')}</option>`).join('')}
+      </select>
+      <input type="date" class="input" id="dateFrom" value="${filterDateFrom}" title="Дата від" style="max-width:160px">
+      <input type="date" class="input" id="dateTo"   value="${filterDateTo}"   title="Дата до"  style="max-width:160px">
+      ${(filterInspector!=='all'||filterDateFrom||filterDateTo||filterType!=='all') ? `<button class="btn btn-ghost btn-sm" id="clearFilters">Скинути фільтри</button>` : ''}
+    </div>
+
+    <div class="col" style="gap:12px" id="incList">
+      ${items.length ? items.map(inc => {
+        const ti = typeInfo(inc.type);
+        const sc = S.schools.find(x => x.id === inc.school);
+        const ins = S.inspectors[inc.inspector];
+        const dt = inc.date ? new Date(inc.date).toLocaleDateString('uk-UA') : '';
+        const statusCls = 'status-' + (inc.status || 'new');
+        return `<div class="inc-card">
+          <div class="inc-ic" style="background:${ti.color}">${I[ti.icon]||I.alert}</div>
+          <div class="inc-body">
+            <div class="inc-title">${inc.title||'Без назви'}</div>
+            <div class="inc-meta">
+              <span class="tag ${statusCls}">${statusLabel(inc.status)}</span>
+              <span>${I.calendar} ${dt}</span>
+              ${sc ? `<span>${I.building} ${sc.name}</span>` : ''}
+              ${ins ? `<span>${I.users} ${ins.name.split(' ').slice(0,2).join(' ')}</span>` : ''}
+            </div>
+            ${inc.desc ? `<div class="inc-desc">${inc.desc}</div>` : ''}
+            ${inc.result ? `<div style="margin-top:6px;font-size:13px;color:var(--green-600);font-weight:600">${I.check} ${inc.result}</div>` : ''}
+          </div>
+          ${canEdit ? `<div class="inc-actions">
+            <button class="iact" data-edit="${inc.id}" title="Редагувати">${I.edit}</button>
+            <button class="iact del" data-del="${inc.id}" title="Видалити">${I.trash}</button>
+          </div>` : ''}
+        </div>`;
+      }).join('') : `<div class="card card-pad" style="text-align:center;color:var(--muted);padding:40px">Інцидентів не знайдено</div>`}
+    </div>
+  `;
+
+  // bind style for fchip
+  document.querySelectorAll('.fchip').forEach(b => {
+    b.style.cssText = 'padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:all .14s;' +
+      (b.classList.contains('on') ? 'background:var(--navy-800);color:#fff;border:none;' : 'background:var(--surface);border:1px solid var(--border-2);color:var(--text-2);');
+    b.addEventListener('click', () => { filterStatus = b.dataset.status; render(); });
+  });
+
+  document.getElementById('incSearch')?.addEventListener('input', e => {
+    const pos = e.target.selectionStart;
+    searchQ = e.target.value;
+    render();
+    const ni = document.getElementById('incSearch');
+    ni?.focus(); ni?.setSelectionRange(pos, pos);
+  });
+  document.getElementById('typeFilter')?.addEventListener('change', e => { filterType = e.target.value; render(); });
+  document.getElementById('inspectorFilter')?.addEventListener('change', e => { filterInspector = e.target.value; render(); });
+  document.getElementById('dateFrom')?.addEventListener('change', e => { filterDateFrom = e.target.value; render(); });
+  document.getElementById('dateTo')?.addEventListener('change', e => { filterDateTo = e.target.value; render(); });
+  document.getElementById('clearFilters')?.addEventListener('click', () => { filterType='all'; filterInspector='all'; filterDateFrom=''; filterDateTo=''; render(); });
+
+  if(canEdit) {
+    document.getElementById('addIncBtn')?.addEventListener('click', () => openModal(null));
+    document.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openModal(b.dataset.edit)));
+    document.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
+      if(confirm('Видалити інцидент?')) { window.SOBStore.deleteIncident(b.dataset.del); toast('Інцидент видалено', 'navy'); render(); }
+    }));
+  }
+}
+
+function openModal(id) {
+  editingId = id;
+  document.getElementById('incModalTitle').textContent = id ? 'Редагувати інцидент' : 'Зафіксувати інцидент';
+  const inc = id ? (S.incidents.find(x => x.id === id) || {}) : {};
+  document.getElementById('inc_title').value    = inc.title || '';
+  document.getElementById('inc_type').value     = inc.type  || S.incidentTypes[0]?.id || '';
+  document.getElementById('inc_date').value     = inc.date  || new Date().toISOString().slice(0,10);
+  document.getElementById('inc_school').value   = inc.school    || '';
+  document.getElementById('inc_desc').value     = inc.desc      || '';
+  document.getElementById('inc_inspector').value = inc.inspector || (U.inspector || '');
+  document.getElementById('inc_status').value   = inc.status    || 'new';
+  document.getElementById('inc_result').value   = inc.result    || '';
+  document.getElementById('incModal').classList.add('show');
+}
+
+document.getElementById('saveInc').addEventListener('click', () => {
+  const title = document.getElementById('inc_title').value.trim();
+  if(!title) { toast('Введіть заголовок інциденту', 'red'); return; }
+  const type = document.getElementById('inc_type').value;
+  if(!type) { toast('Оберіть тип інциденту', 'red'); return; }
+  const data = {
+    title,
+    type,
+    date:      document.getElementById('inc_date').value,
+    school:    document.getElementById('inc_school').value,
+    desc:      document.getElementById('inc_desc').value.trim(),
+    inspector: document.getElementById('inc_inspector').value,
+    status:    document.getElementById('inc_status').value,
+    result:    document.getElementById('inc_result').value.trim(),
+  };
+  if(editingId) {
+    window.SOBStore.updateIncident(editingId, data);
+    toast('Інцидент оновлено');
+  } else {
+    window.SOBStore.addIncident(data);
+    toast('Інцидент зафіксовано');
+  }
+  closeModal('incModal');
+  render();
+});
+
+function openModal2(id){ openModal(id); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+window.closeModal = closeModal;
+document.querySelectorAll('.modal-scrim').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('show'); }));
+
+document.addEventListener('sob:synced', () => render());
+render();
+</script>
+</body>
+</html>

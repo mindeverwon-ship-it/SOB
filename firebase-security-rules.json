@@ -1,0 +1,19 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "sob": {
+      "schools":      { ".read": true,  ".write": true },
+      "gallery":      { ".read": true,  ".write": true },
+      "kpis":         { ".read": true,  ".write": true },
+      "secondary":    { ".read": true,  ".write": true },
+      "org":          { ".read": true,  ".write": true },
+      "schoolEvents": { ".read": true,  ".write": true },
+      "inspectors":   { ".read": true,  ".write": true },
+      "incidents":    { ".read": true,  ".write": true },
+      "assignments":  { ".read": true,  ".write": true },
+      "auditLog":     { ".read": true,  ".write": true },
+      "files":        { ".read": true,  ".write": true }
+    }
+  }
+}

@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СОБ · Кабінет інспектора</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+.cab-hero { background: linear-gradient(135deg,var(--navy-800),var(--navy-950)); color:#fff; border-radius: var(--radius-xl); padding: 30px 34px; position: relative; overflow: hidden; box-shadow: var(--shadow-navy); }
+.cab-hero::after { content:''; position:absolute; right:-40px; top:-30px; width:220px; height:220px; background:url('assets/sob-emblem.png') center/contain no-repeat; opacity:.07; }
+.cab-hero .greet { font-size: 13px; color: var(--blue-400); font-weight: 600; letter-spacing:.04em; }
+.cab-hero h1 { font-size: 28px; font-weight: 800; letter-spacing:-.02em; margin-top:6px; }
+.cab-hero p { color: rgba(255,255,255,.6); margin-top:8px; font-size:14.5px; }
+.cab-actions { display:flex; gap:10px; margin-top:22px; flex-wrap:wrap; }
+.qa-grid { display:grid; grid-template-columns: repeat(4,1fr); gap:16px; }
+.qa { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px; box-shadow:var(--shadow-sm); }
+.qa .ic { width:44px;height:44px;border-radius:13px;display:grid;place-items:center;margin-bottom:14px; }
+.qa .v { font-size:28px;font-weight:800;letter-spacing:-.02em; } .qa .l { font-size:13px;color:var(--muted);margin-top:4px; }
+.mine-grid { display:grid; grid-template-columns: repeat(2,1fr); gap:16px; }
+.mine { display:flex; gap:14px; padding:16px; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); transition:all .15s; }
+.mine:hover { box-shadow:var(--shadow); transform:translateY(-2px); }
+.mine .th { width:54px;height:54px;border-radius:13px;background:linear-gradient(135deg,var(--blue-500),var(--navy-700));display:grid;place-items:center;color:#fff;flex-shrink:0; }
+.mine .th svg{width:24px;height:24px}
+.mine .nm{font-weight:600;font-size:14.5px;line-height:1.25}
+.mine .mt{font-size:12px;color:var(--muted);margin-top:3px}
+.mine .row3{display:flex;gap:14px;margin-top:9px;font-size:12.5px}
+.mine .row3 b{font-weight:700}
+.file-row { display:flex; align-items:center; gap:14px; padding:13px 0; border-top:1px solid var(--border); }
+.file-row:first-child{border-top:none}
+.file-ic{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;font-weight:800;font-size:11px;color:#fff;flex-shrink:0}
+.file-ic.pdf{background:#DC4338}.file-ic.doc{background:#1F59DD}.file-ic.ppt{background:#E5891F}.file-ic.zip{background:#7659E0}.file-ic.img{background:#1AA56C}.file-ic.other{background:#6A7A98}
+.file-meta{flex:1;min-width:0}.file-meta b{font-size:13.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.file-meta span{font-size:12px;color:var(--muted)}
+.del{color:var(--muted-2);padding:5px;border-radius:8px}.del:hover{background:var(--red-100);color:var(--red-500)}.del svg{width:16px;height:16px}
+.gate { max-width:440px; margin:80px auto; text-align:center; }
+.gate .ic{width:64px;height:64px;border-radius:18px;background:var(--blue-100);color:var(--blue-600);display:grid;place-items:center;margin:0 auto 18px}
+.gate .ic svg{width:30px;height:30px}
+.photo-up { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+.photo-up image-slot{width:100%;height:120px}
+@media (max-width:1080px){.qa-grid{grid-template-columns:repeat(2,1fr)}.mine-grid{grid-template-columns:1fr}.photo-up{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:640px){.photo-up{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:420px){.qa-grid{grid-template-columns:1fr}.photo-up{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app" id="shell"></div>
+
+<div class="modal-scrim" id="eventModal">
+  <div class="modal">
+    <div class="modal-head"><div class="section-title">Додати захід</div><button class="icon-btn" onclick="closeModal('eventModal')" id="closeEvent"></button></div>
+    <div class="modal-body col" style="gap:16px">
+      <div class="field"><label>Заклад</label><select class="input" id="ev_school"></select></div>
+      <div class="field"><label>Назва заходу</label><input class="input" id="ev_title" placeholder="Напр. Лекція «Безпека в інтернеті»"></div>
+      <div class="grid-2" style="gap:14px">
+        <div class="field"><label>Дата</label><input class="input" type="date" id="ev_date"></div>
+        <div class="field"><label>Тип</label><select class="input" id="ev_type"></select></div>
+      </div>
+      <div class="grid-2" style="gap:14px">
+        <div class="field"><label>Аудиторія</label><input class="input" id="ev_audience" placeholder="Напр. 8–11 класи"></div>
+        <div class="field"><label>Учасників</label><input class="input" type="number" id="ev_participants" placeholder="0"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('eventModal')">Скасувати</button><button class="btn btn-primary" id="saveEvent">Додати захід</button></div>
+  </div>
+</div>
+<input type="file" id="fileInput" multiple style="display:none">
+
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/shell.js"></script>
+<script src="assets/image-slot.js"></script>
+<script>
+const S = window.SOB, F = window.fmt, I = window.ICON;
+const U = window.SOBAuth.current();
+SOBShell.render({ active: 'cabinet', crumb: ['СОБ', 'Кабінет інспектора'] });
+
+if(U.role !== 'inspector' && U.role !== 'admin'){
+  document.getElementById('content').innerHTML = `<div class="gate"><div class="ic">${I.lock}</div><h1 class="page-title">Потрібен вхід</h1><p class="page-sub" style="margin-bottom:24px">Кабінет доступний інспекторам СОБ та адміністратору. Будь ласка, увійдіть у систему.</p><a class="btn btn-primary btn-lg" href="login.html">${I.logout} Увійти до системи</a></div>`;
+} else {
+  document.getElementById('closeEvent').innerHTML = I.close;
+  const myKey = U.inspector;
+  const myName = (S.inspectors[myKey]?.name) || U.name;
+  // schools this inspector manages (admin sees all serviced)
+  const myParams = U.role==='admin' ? window.SOBStore.serviced() : S.schools.filter(s=>s.serviced && s.inspector===myKey);
+  const ids = myParams.map(s=>s.id);
+  const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+  const fmtDate=iso=>{const d=new Date(iso);return d.getDate()+' '+MONTHS[d.getMonth()];};
+  const fileIcType=n=>{const e=(n.split('.').pop()||'').toLowerCase();if(e==='pdf')return'pdf';if(['doc','docx'].includes(e))return'doc';if(['ppt','pptx'].includes(e))return'ppt';if(['zip','rar','7z'].includes(e))return'zip';if(['jpg','jpeg','png','gif','webp'].includes(e))return'img';return'other';};
+
+  document.getElementById('ev_type').innerHTML = (S.eventTypes||[]).map(t=>`<option value="${t.id}">${t.label}</option>`).join('');
+  document.getElementById('ev_school').innerHTML = myParams.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+
+  function render(){
+    const myEvents = S.schoolEvents.filter(e=>ids.includes(e.schoolId)).slice(0,6);
+    const myFiles = S.files.filter(f=>ids.includes(f.schoolId)).slice(0,6);
+    const totEvents = S.schoolEvents.filter(e=>ids.includes(e.schoolId)).length;
+    const totParticip = myParams.reduce((a,s)=>a+(s.participants||0),0);
+    const totFiles = S.files.filter(f=>ids.includes(f.schoolId)).length;
+
+    document.getElementById('content').innerHTML = `
+      <section class="cab-hero anim">
+        <div class="greet">${new Date().toLocaleDateString('uk-UA',{weekday:'long',day:'numeric',month:'long'})}</div>
+        <h1>Вітаю, ${myName.split(' ').slice(1,2).join(' ')||myName}!</h1>
+        <p>Ваш робочий кабінет: ${myParams.length} закладів, ${totEvents} заходів. Додавайте заходи, завантажуйте фото та документи — усе зберігається.</p>
+        <div class="cab-actions">
+          <button class="btn btn-gold" id="addEvBtn">${I.plus} Додати захід</button>
+          <button class="btn" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.18)" id="upFileBtn">${I.upload} Завантажити файл</button>
+          <a class="btn" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.18)" href="#photos">${I.image} Додати фото</a>
+        </div>
+      </section>
+
+      <div class="qa-grid" style="margin-top:24px">
+        <div class="qa anim anim-1"><div class="ic" style="background:var(--blue-100);color:var(--blue-600)">${I.building}</div><div class="v">${myParams.length}</div><div class="l">Моїх закладів</div></div>
+        <div class="qa anim anim-2"><div class="ic" style="background:var(--gold-100);color:var(--gold-700)">${I.calendar}</div><div class="v">${totEvents}</div><div class="l">Заходів проведено</div></div>
+        <div class="qa anim anim-3"><div class="ic" style="background:var(--green-100);color:var(--green-500)">${I.users}</div><div class="v tnum">${F(totParticip)}</div><div class="l">Охоплено учасників</div></div>
+        <div class="qa anim anim-4"><div class="ic" style="background:var(--purple-100);color:var(--purple-500)">${I.file}</div><div class="v">${totFiles}</div><div class="l">Файлів завантажено</div></div>
+      </div>
+
+      <div style="margin-top:28px" class="grid-2">
+        <div class="card card-pad">
+          <div class="card-head"><div class="section-title">${I.building} Мої заклади</div><a class="btn btn-ghost btn-sm" href="schools.html">Усі ${I.chevron}</a></div>
+          <div class="mine-grid">
+            ${myParams.map(s=>`<a class="mine" href="school.html?id=${s.id}">
+              <div class="th">${I.shield}</div>
+              <div><div class="nm">${s.name}</div><div class="mt">${s.city||''}</div>
+                <div class="row3"><span><b>${s.events||0}</b> заходів</span><span><b>${F(s.participants||0)}</b> учасн.</span></div>
+              </div></a>`).join('')}
+          </div>
+        </div>
+        <div class="card card-pad">
+          <div class="card-head"><div class="section-title">${I.file} Останні файли</div><button class="btn btn-soft btn-sm" id="upFileBtn2">${I.upload} Завантажити</button></div>
+          ${myFiles.length?myFiles.map(f=>`<div class="file-row"><div class="file-ic ${fileIcType(f.name)}">${(f.name.split('.').pop()||'').toUpperCase().slice(0,4)}</div><div class="file-meta"><b>${f.name}</b><span>${f.size||''} · ${f.date||''}</span></div>${f.dataUrl?`<a class="btn btn-ghost btn-sm" href="${f.dataUrl}" download="${f.name}">${I.download}</a>`:''}<button class="del" data-fdel="${f.id}">${I.trash}</button></div>`).join(''):`<div style="padding:20px;text-align:center;color:var(--muted)">Файлів ще немає</div>`}
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:20px">
+        <div class="card-head"><div class="section-title">${I.calendar} Останні заходи</div><button class="btn btn-primary btn-sm" id="addEvBtn2">${I.plus} Додати захід</button></div>
+        ${myEvents.length?myEvents.map(e=>{const sc=S.schools.find(x=>x.id===e.schoolId);return `<div class="file-row"><div class="file-ic" style="background:var(--blue-600)">${fmtDate(e.date).split(' ')[0]}</div><div class="file-meta"><b>${e.title}</b><span>${sc?sc.name:''} · ${e.type} · ${F(e.participants||0)} уч.</span></div><button class="del" data-edel="${e.id}">${I.trash}</button></div>`;}).join(''):`<div style="padding:20px;text-align:center;color:var(--muted)">Заходів ще немає — натисніть «Додати захід»</div>`}
+      </div>
+
+      <div class="card card-pad" style="margin-top:20px" id="photos">
+        <div class="card-head"><div class="section-title">${I.image} Фотозвіти</div><span class="muted" style="font-size:13px">Перетягніть фото у комірки — вони збережуться</span></div>
+        <div class="photo-up">${Array.from({length:10}).map((_,i)=>`<image-slot id="cab-photo-${myKey}-${i}" shape="rounded" radius="13" placeholder="Фото"></image-slot>`).join('')}</div>
+      </div>
+    `;
+    bind();
+  }
+
+  function bind(){
+    document.getElementById('addEvBtn')?.addEventListener('click', openEvent);
+    document.getElementById('addEvBtn2')?.addEventListener('click', openEvent);
+    document.getElementById('upFileBtn')?.addEventListener('click', ()=>document.getElementById('fileInput').click());
+    document.getElementById('upFileBtn2')?.addEventListener('click', ()=>document.getElementById('fileInput').click());
+    document.querySelectorAll('[data-fdel]').forEach(b=>b.addEventListener('click', ()=>{ if(confirm('Видалити файл?')){window.SOBStore.deleteFile(b.dataset.fdel);toast('Файл видалено','navy');render();}}));
+    document.querySelectorAll('[data-edel]').forEach(b=>b.addEventListener('click', ()=>{ if(confirm('Видалити захід?')){window.SOBStore.deleteEvent(b.dataset.edel);toast('Захід видалено','navy');render();}}));
+  }
+
+  function openModal(id){document.getElementById(id).classList.add('show');}
+  window.closeModal=id=>document.getElementById(id).classList.remove('show');
+  function openEvent(){ document.getElementById('ev_date').value=new Date().toISOString().slice(0,10); openModal('eventModal'); }
+  document.getElementById('saveEvent').addEventListener('click', ()=>{
+    const title=document.getElementById('ev_title').value.trim();
+    if(!title){toast('Введіть назву заходу','red');return;}
+    const schoolId=document.getElementById('ev_school').value;
+    const parts=+document.getElementById('ev_participants').value||0;
+    window.SOBStore.addEvent({schoolId,title,date:document.getElementById('ev_date').value,type:document.getElementById('ev_type').value,audience:document.getElementById('ev_audience').value.trim(),participants:parts});
+    const sc=S.schools.find(x=>x.id===schoolId); window.SOBStore.updateSchool(schoolId,{events:(sc.events||0)+1,participants:(sc.participants||0)+parts});
+    document.getElementById('ev_title').value='';document.getElementById('ev_audience').value='';document.getElementById('ev_participants').value='';
+    window.closeModal('eventModal'); toast('Захід додано'); render();
+  });
+
+  document.getElementById('fileInput').addEventListener('change', e=>handleFiles(e.target.files));
+  function humanSize(b){if(b<1024)return b+' Б';if(b<1048576)return(b/1024).toFixed(0)+' КБ';return(b/1048576).toFixed(1)+' МБ';}
+  function handleFiles(list){
+    const schoolId=ids[0];
+    [...list].forEach(file=>{
+      const meta={name:file.name,size:humanSize(file.size),date:new Date().toISOString().slice(0,10),schoolId,inspector:myKey};
+      if(file.size<1.8*1048576){const r=new FileReader();r.onload=()=>{meta.dataUrl=r.result;window.SOBStore.addFile(meta);toast('Файл завантажено');render();};r.readAsDataURL(file);}
+      else{window.SOBStore.addFile(meta);toast('Файл додано','navy');render();}
+    });
+    document.getElementById('fileInput').value='';
+  }
+  document.querySelectorAll('.modal-scrim').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
+  render();
+}
+</script>
+</body>
+</html>

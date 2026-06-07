@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СОБ · Адмін-панель</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+.adm-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:24px;overflow-x:auto}
+.adm-tab{padding:12px 18px;font-size:14px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;white-space:nowrap;transition:color .15s}
+.adm-tab:hover{color:var(--text)}.adm-tab.active{color:var(--blue-600);border-bottom-color:var(--blue-600)}
+.tbl .badge-serv{display:inline-flex;align-items:center;gap:5px}
+.iact{color:var(--muted-2);padding:6px;border-radius:8px;transition:all .14s}
+.iact:hover{background:var(--surface-3);color:var(--text)}.iact.del:hover{background:var(--red-100);color:var(--red-500)}
+.iact svg{width:16px;height:16px;display:block}
+.stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow-sm)}
+.sc .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;margin-bottom:14px}
+.sc .v{font-size:27px;font-weight:800;letter-spacing:-.02em}.sc .l{font-size:13px;color:var(--muted);margin-top:3px}
+.danger-zone{border:1px solid var(--red-100);background:#fff;border-radius:var(--radius-lg);padding:22px;margin-top:8px}
+.gate{max-width:440px;margin:80px auto;text-align:center}
+.gate .ic{width:64px;height:64px;border-radius:18px;background:var(--purple-100);color:var(--purple-500);display:grid;place-items:center;margin:0 auto 18px}
+.gate .ic svg{width:30px;height:30px}
+.usr-row .av{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.ins-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:10px}
+.ins-card .ins-top{display:flex;align-items:center;gap:13px}
+.ins-card .av{width:48px;height:48px;border-radius:13px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:16px;flex-shrink:0}
+.ins-card .ins-name{font-weight:700;font-size:15px;line-height:1.2}
+.ins-card .ins-rank{font-size:12px;color:var(--muted);margin-top:2px}
+.ins-card .ins-contacts{display:flex;flex-direction:column;gap:5px;padding-top:8px;border-top:1px solid var(--border)}
+.ins-contact-line{display:flex;align-items:center;gap:8px;font-size:13px}
+.ins-contact-line svg{width:14px;height:14px;color:var(--blue-600);flex-shrink:0}
+.ins-card .ins-actions{display:flex;gap:6px;margin-top:4px}
+.ins-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:12px}
+.search-bar{position:relative;margin-bottom:14px}
+.search-bar input{width:100%;padding:10px 14px 10px 40px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;background:var(--surface-2);outline:none}
+.search-bar input:focus{border-color:var(--blue-400);box-shadow:0 0 0 3px var(--blue-050)}
+.search-bar .si{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.search-bar .si svg{width:16px;height:16px}
+.rpt-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px}
+.rpt-card+.rpt-card{margin-top:14px}
+.rpt-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--border)}
+.rpt-row:first-child{border-top:none}
+.rpt-ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+.period-select{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
+@media(max-width:1080px){.stat-cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){
+  .stat-cards{grid-template-columns:repeat(2,1fr);gap:10px}
+  .ins-grid{grid-template-columns:1fr}
+  /* schools table — hide less important columns on mobile */
+  .tbl th:nth-child(2),.tbl td:nth-child(2),
+  .tbl th:nth-child(3),.tbl td:nth-child(3),
+  .tbl th:nth-child(6),.tbl td:nth-child(6){display:none}
+  .tbl td,.tbl th{padding:10px 8px;font-size:13px}
+  .adm-tab{padding:10px 12px;font-size:13px}
+}
+@media(max-width:420px){
+  .stat-cards{grid-template-columns:1fr}
+}
+.adm-sch-block{margin-bottom:24px}
+.adm-sch-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.adm-photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:900px){.adm-photo-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.adm-photo-grid{grid-template-columns:repeat(2,1fr)}}
+.adm-photo-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.adm-photo-card img{width:100%;height:120px;object-fit:cover;display:block}
+.adm-photo-empty{width:100%;height:120px;display:grid;place-items:center;background:var(--surface-3);color:var(--muted-2)}
+.adm-photo-info{padding:8px 10px}
+.adm-photo-title{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.adm-photo-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.adm-photo-del{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border-radius:8px;padding:5px 7px;font-size:12px;line-height:1;display:flex;align-items:center;opacity:0;transition:opacity .15s}
+.adm-photo-card:hover .adm-photo-del{opacity:1}
+</style>
+</head>
+<body>
+<div class="app" id="shell"></div>
+
+<!-- ══ Inspector modal ══ -->
+<div class="modal-scrim" id="insModal">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-head"><div class="section-title" id="insModalTitle">Додати інспектора</div><button class="icon-btn" onclick="closeModal('insModal')" id="closeIns"></button></div>
+    <div class="modal-body col" style="gap:14px">
+      <div class="field"><label>ПІБ <span style="color:var(--red-500)">*</span></label><input class="input" id="i_name" placeholder="Прізвище Ім'я По-батькові"></div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Звання</label><input class="input" id="i_rank_title" placeholder="майор поліції"></div>
+        <div class="field"><label>Посада</label><input class="input" id="i_position" placeholder="Старший інспектор ССОБ"></div>
+      </div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Службовий телефон</label><input class="input" id="i_phone" placeholder="+380 (61) …" type="tel"></div>
+        <div class="field"><label>Мобільний телефон</label><input class="input" id="i_phone2" placeholder="+380 (67) …" type="tel"></div>
+      </div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Email</label><input class="input" id="i_email" placeholder="@gp.npu.gov.ua" type="email"></div>
+        <div class="field"><label>Telegram</label><input class="input" id="i_telegram" placeholder="@username або +380…"></div>
+      </div>
+      <div class="field"><label>Відділ / підрозділ</label><input class="input" id="i_department" placeholder="ССОБ Запорізького ВП"></div>
+      <div class="field"><label>Примітка (необов'язково)</label><input class="input" id="i_note" placeholder="Додаткова інформація"></div>
+      <div class="field">
+        <label>Колір аватара</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="colorPicker"></div>
+        <input type="hidden" id="i_color" value="#1F59DD">
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('insModal')">Скасувати</button><button class="btn btn-primary" id="saveIns">Зберегти</button></div>
+  </div>
+</div>
+
+<!-- ══ School modal ══ -->
+<div class="modal-scrim" id="schModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-head"><div class="section-title" id="schModalTitle">Додати заклад</div><button class="icon-btn" onclick="closeModal('schModal')" id="closeSch"></button></div>
+    <div class="modal-body col" style="gap:14px">
+      <div class="field"><label>Назва закладу <span style="color:var(--red-500)">*</span></label><input class="input" id="m_name" placeholder="Запорізька гімназія №11"></div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Тип</label><input class="input" id="m_type" placeholder="Ліцей / Гімназія / ЗОШ"></div>
+        <div class="field"><label>Місто / село</label><input class="input" id="m_city" placeholder="м. Запоріжжя"></div>
+      </div>
+      <div class="field"><label>Адреса</label><input class="input" id="m_address" placeholder="вул. …, місто"></div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Директор</label><input class="input" id="m_director"></div>
+        <div class="field"><label>Телефон</label><input class="input" id="m_phone"></div>
+      </div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Email</label><input class="input" id="m_email" placeholder="school@…" type="email"></div>
+        <div class="field"><label>Вебсайт</label><input class="input" id="m_website" placeholder="https://…"></div>
+      </div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Координата (широта)</label><input class="input" id="m_lat" type="number" step="0.0001" placeholder="47.84"></div>
+        <div class="field"><label>Координата (довгота)</label><input class="input" id="m_lng" type="number" step="0.0001" placeholder="35.13"></div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:-6px">Google Maps: правий клік → «Що тут?»</div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Відповідальний інспектор</label><select class="input" id="m_inspector"></select></div>
+        <div class="field"><label>Обслуговується СОБ</label><select class="input" id="m_serviced"><option value="true">Так — наш заклад</option><option value="false">Ні — інший заклад</option></select></div>
+      </div>
+      <div class="field"><label>Загальна кількість дітей у закладі</label><input class="input" id="m_students" type="number" min="0" placeholder="Напр. 420 — загальний контингент учнів"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('schModal')">Скасувати</button><button class="btn btn-primary" id="saveSch">Зберегти</button></div>
+  </div>
+</div>
+
+<input type="file" id="importInput" accept="application/json" style="display:none">
+
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/shell.js"></script>
+<script>
+const S=window.SOB, F=window.fmt, I=window.ICON;
+const U=window.SOBAuth.current();
+SOBShell.render({ active:'admin', crumb:['СОБ','Адмін-панель'] });
+
+if(U.role!=='admin'){
+  document.getElementById('content').innerHTML=`<div class="gate"><div class="ic">${I.lock}</div><h1 class="page-title">Доступ обмежено</h1><p class="page-sub" style="margin-bottom:24px">Адмін-панель доступна лише адміністратору системи.</p><a class="btn btn-primary btn-lg" href="login.html">${I.logout} Увійти як адміністратор</a></div>`;
+} else {
+  document.getElementById('closeSch').innerHTML=I.close;
+  document.getElementById('closeIns').innerHTML=I.close;
+  let tab='schools', editingId=null, editingInsKey=null;
+  let schSearch='', insSearch='';
+
+  /* ── color picker ── */
+  const COLORS=['#1F59DD','#1AA56C','#E84545','#7B4FD1','#FF7A00','#0E274D','#1E9E6A','#C8390B'];
+  (function buildPicker(){
+    const cp=document.getElementById('colorPicker'); if(!cp) return;
+    COLORS.forEach(c=>{
+      const d=document.createElement('div');
+      d.dataset.color=c;
+      d.style.cssText=`width:28px;height:28px;border-radius:8px;background:${c};cursor:pointer;border:2px solid transparent;transition:border .12s`;
+      d.addEventListener('click',()=>selectColor(c));
+      cp.appendChild(d);
+    });
+  })();
+  window.selectColor=function(c){
+    document.getElementById('i_color').value=c;
+    document.querySelectorAll('#colorPicker [data-color]').forEach(el=>el.style.border=el.dataset.color===c?'3px solid #fff':'2px solid transparent');
+    document.querySelectorAll('#colorPicker [data-color]').forEach(el=>el.style.outline=el.dataset.color===c?'2px solid '+c:'none');
+  };
+  selectColor('#1F59DD');
+
+  /* ── Inspector modal ── */
+  function openIns(key){
+    editingInsKey=key;
+    document.getElementById('insModalTitle').textContent=key?'Редагувати інспектора':'Додати інспектора';
+    const ins=key?S.inspectors[key]:{};
+    document.getElementById('i_name').value=ins.name||'';
+    document.getElementById('i_rank_title').value=ins.rankTitle||ins.rank||'';
+    document.getElementById('i_position').value=ins.position||ins.rank||'Інспектор ССОБ';
+    document.getElementById('i_phone').value=ins.phone||'';
+    document.getElementById('i_phone2').value=ins.phone2||'';
+    document.getElementById('i_email').value=ins.email||'';
+    document.getElementById('i_telegram').value=ins.telegram||'';
+    document.getElementById('i_department').value=ins.department||'';
+    document.getElementById('i_note').value=ins.note||'';
+    selectColor(ins.color||'#1F59DD');
+    openModal('insModal');
+  }
+  document.getElementById('saveIns').addEventListener('click',()=>{
+    const name=document.getElementById('i_name').value.trim();
+    if(!name){toast('Введіть ПІБ інспектора','red');return;}
+    const position=document.getElementById('i_position').value.trim()||'Інспектор ССОБ';
+    const data={
+      name,
+      rank: position,
+      rankTitle: document.getElementById('i_rank_title').value.trim(),
+      position,
+      phone:  document.getElementById('i_phone').value.trim(),
+      phone2: document.getElementById('i_phone2').value.trim(),
+      email:  document.getElementById('i_email').value.trim(),
+      telegram: document.getElementById('i_telegram').value.trim(),
+      department: document.getElementById('i_department').value.trim(),
+      note: document.getElementById('i_note').value.trim(),
+      color: document.getElementById('i_color').value,
+    };
+    if(editingInsKey){
+      S.inspectors[editingInsKey]=Object.assign(S.inspectors[editingInsKey]||{},data);
+    } else {
+      const key=name.toLowerCase().replace(/\s+/g,'').slice(0,8)+Date.now().toString(36).slice(-3);
+      S.inspectors[key]=data;
+    }
+    window.SOBStore.save();
+    // оновити select у модалі заклада
+    buildInspectorSelect();
+    toast(editingInsKey?'Інспектора оновлено':'Інспектора додано');
+    closeModal('insModal');
+    shell();
+  });
+
+  function buildInspectorSelect(){
+    document.getElementById('m_inspector').innerHTML='<option value="">— не призначено —</option>'+
+      Object.entries(S.inspectors).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');
+  }
+
+  /* ── Main shell ── */
+  function shell(){
+    const serviced=S.schools.filter(s=>s.serviced).length;
+    document.getElementById('content').innerHTML=`
+      <div class="page-head"><div><h1 class="page-title">Адмін-панель</h1><div class="page-sub">Керування закладами, інспекторами, звітами та даними системи</div></div></div>
+      <div class="stat-cards">
+        <div class="sc"><div class="ic" style="background:var(--blue-100);color:var(--blue-600)">${I.school}</div><div class="v">${S.schools.length}</div><div class="l">Закладів у системі</div></div>
+        <div class="sc"><div class="ic" style="background:var(--green-100);color:var(--green-500)">${I.shield}</div><div class="v">${serviced}</div><div class="l">Обслуговує СОБ</div></div>
+        <div class="sc"><div class="ic" style="background:var(--gold-100);color:var(--gold-700)">${I.users}</div><div class="v">${Object.keys(S.inspectors).length}</div><div class="l">Інспекторів</div></div>
+        <div class="sc"><div class="ic" style="background:var(--purple-100);color:var(--purple-500)">${I.calendar}</div><div class="v">${S.schoolEvents.length}</div><div class="l">Заходів у журналі</div></div>
+      </div>
+      <div class="adm-tabs">
+        <div class="adm-tab ${tab==='schools'?'active':''}" data-t="schools">Заклади освіти</div>
+        <div class="adm-tab ${tab==='inspectors'?'active':''}" data-t="inspectors">Інспектори СОБ</div>
+        <div class="adm-tab ${tab==='users'?'active':''}" data-t="users">Користувачі</div>
+        <div class="adm-tab ${tab==='reports'?'active':''}" data-t="reports">Звіти та скачування</div>
+        <div class="adm-tab ${tab==='gallery'?'active':''}" data-t="gallery">Фотогалерея</div>
+        <div class="adm-tab ${tab==='auditlog'?'active':''}" data-t="auditlog">Журнал аудиту</div>
+        <div class="adm-tab ${tab==='data'?'active':''}" data-t="data">Налаштування</div>
+      </div>
+      <div id="admBody"></div>`;
+    document.querySelectorAll('.adm-tab').forEach(t=>t.addEventListener('click',()=>{
+      tab=t.dataset.t;
+      document.querySelectorAll('.adm-tab').forEach(x=>x.classList.toggle('active',x===t));
+      renderTab();
+    }));
+    renderTab();
+  }
+
+  function renderTab(){
+    if(tab==='schools') renderSchools();
+    else if(tab==='inspectors') renderInspectors();
+    else if(tab==='users') renderUsers();
+    else if(tab==='reports') renderReports();
+    else if(tab==='gallery') renderGallery();
+    else if(tab==='auditlog') renderAuditLog();
+    else renderData();
+  }
+
+  /* ── Gallery tab ── */
+  function renderGallery(){
+    const gallery = S.gallery || [];
+    const totalSize = gallery.reduce((s,g) => s + (g.dataUrl ? Math.round(g.dataUrl.length * 0.75 / 1024) : 0), 0);
+    const sizeStr = totalSize > 1024 ? (totalSize/1024).toFixed(1)+' МБ' : totalSize+' КБ';
+    const pct = Math.min(100, Math.round(totalSize / (1024*1024) * 100));
+    const pctColor = pct > 80 ? 'var(--red-500)' : pct > 50 ? 'var(--gold-600)' : 'var(--green-600)';
+
+    // group by school
+    const bySchool = {};
+    gallery.forEach(g => { (bySchool[g.schoolId] = bySchool[g.schoolId]||[]).push(g); });
+
+    const schoolSections = Object.keys(bySchool).map(sid => {
+      const sc = S.schools.find(x=>x.id===sid)||{name:'Без закладу'};
+      const photos = bySchool[sid];
+      const cards = photos.map(g => {
+        const dt = g.date ? new Date(g.date).toLocaleDateString('uk-UA',{day:'numeric',month:'short',year:'numeric'}) : (g.month||'');
+        return `<div class="adm-photo-card">
+          ${g.dataUrl ? `<img src="${g.dataUrl}" loading="lazy">` : `<div class="adm-photo-empty">${I.image}</div>`}
+          <div class="adm-photo-info">
+            <div class="adm-photo-title">${g.title||'Без назви'}</div>
+            <div class="adm-photo-meta">${dt}${g.author?' · '+g.author:''}</div>
+          </div>
+          <button class="adm-photo-del" data-gid="${g.id}" title="Видалити фото">${I.trash}</button>
+        </div>`;
+      }).join('');
+      return `<div class="adm-sch-block">
+        <div class="adm-sch-head">
+          <span>${I.building} <b>${sc.name}</b></span>
+          <span class="muted" style="font-size:13px">${photos.length} фото</span>
+          <button class="btn btn-sm" style="background:var(--red-100);color:var(--red-500);margin-left:auto" data-del-school="${sid}">
+            ${I.trash} Видалити всі (${photos.length})
+          </button>
+        </div>
+        <div class="adm-photo-grid">${cards}</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('admBody').innerHTML = `
+      <div class="card card-pad" style="margin-bottom:16px">
+        <div class="card-head" style="margin-bottom:12px">
+          <div class="section-title">${I.image} Управління фотогалереєю</div>
+          ${gallery.length ? `<button class="btn btn-sm" style="background:var(--red-100);color:var(--red-500)" id="delAllPhotos">${I.trash} Видалити всі фото</button>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+          <div style="flex:1;min-width:200px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+              <span class="muted">Зайнято сховища</span>
+              <b style="color:${pctColor}">${sizeStr} з ~1 ГБ</b>
+            </div>
+            <div style="height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${pctColor};border-radius:4px;transition:width .3s"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:20px;flex-shrink:0">
+            <div style="text-align:center"><b style="font-size:22px;font-weight:800">${gallery.length}</b><div style="font-size:12px;color:var(--muted)">фото всього</div></div>
+            <div style="text-align:center"><b style="font-size:22px;font-weight:800">${Object.keys(bySchool).length}</b><div style="font-size:12px;color:var(--muted)">закладів</div></div>
+          </div>
+        </div>
+      </div>
+      ${gallery.length ? schoolSections : `<div class="card card-pad" style="text-align:center;color:var(--muted);padding:40px">Галерея порожня — фото ще не завантажено</div>`}`;
+
+    document.getElementById('delAllPhotos')?.addEventListener('click', () => {
+      if(confirm(`Видалити всі ${gallery.length} фото? Це незворотня дія.`)){
+        (S.gallery||[]).forEach(g => window.SOBStore.deleteGallery(g.id));
+        toast('Всі фото видалено','navy');
+        renderGallery();
+      }
+    });
+
+    document.querySelectorAll('[data-del-school]').forEach(b => b.addEventListener('click', () => {
+      const sid = b.dataset.delSchool;
+      const sc = S.schools.find(x=>x.id===sid)||{name:'заклад'};
+      const cnt = (S.gallery||[]).filter(g=>g.schoolId===sid).length;
+      if(confirm(`Видалити всі ${cnt} фото закладу «${sc.name}»?`)){
+        (S.gallery||[]).filter(g=>g.schoolId===sid).forEach(g => window.SOBStore.deleteGallery(g.id));
+        toast('Фото видалено','navy');
+        renderGallery();
+      }
+    }));
+
+    document.querySelectorAll('[data-gid]').forEach(b => b.addEventListener('click', () => {
+      if(confirm('Видалити це фото?')){
+        window.SOBStore.deleteGallery(b.dataset.gid);
+        toast('Фото видалено','navy');
+        renderGallery();
+      }
+    }));
+  }
+
+  /* ── Audit Log tab ── */
+  function renderAuditLog(){
+    const log = (S.auditLog||[]).slice(0,200);
+    const actionLabel = { create:'Створено', update:'Змінено', delete:'Видалено', cancel:'Скасовано', restore:'Відновлено' };
+    const entityLabel = { event:'Захід', school:'Заклад', inspector:'Інспектор', incident:'Інцидент', assignment:'Доручення' };
+    const actionColor = { create:'var(--green-500)', update:'var(--blue-600)', delete:'var(--red-500)', cancel:'var(--gold-600)', restore:'var(--green-600)' };
+    document.getElementById('admBody').innerHTML=`
+      <div class="card card-pad">
+        <div class="card-head" style="margin-bottom:12px">
+          <div class="section-title">${I.clock} Журнал аудиту (останні ${log.length} записів)</div>
+          <span class="muted" style="font-size:13px">Усього: ${(S.auditLog||[]).length}</span>
+        </div>
+        ${log.length ? `<table class="tbl"><thead><tr><th>Час</th><th>Дія</th><th>Об'єкт</th><th>Опис</th><th>Хто</th></tr></thead><tbody>
+        ${log.map(entry=>{
+          const dt = new Date(entry.at).toLocaleString('uk-UA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+          const aLabel = actionLabel[entry.action]||entry.action;
+          const eLabel = entityLabel[entry.entity]||entry.entity;
+          const aColor = actionColor[entry.action]||'var(--muted)';
+          return `<tr><td style="font-size:12px;color:var(--muted);white-space:nowrap">${dt}</td>
+            <td><span style="font-size:12px;font-weight:700;color:${aColor}">${aLabel}</span></td>
+            <td><span class="tag blue" style="font-size:11px">${eLabel}</span></td>
+            <td style="font-size:13px">${entry.description||''}</td>
+            <td style="font-size:12.5px;font-weight:600">${entry.who||''}</td></tr>`;
+        }).join('')}</tbody></table>`
+        : `<div style="padding:32px;text-align:center;color:var(--muted)">Журнал порожній — дії з'являться після перших змін у системі</div>`}
+      </div>`;
+  }
+
+  /* ── Schools tab ── */
+  function renderSchools(){
+    const q=schSearch.toLowerCase();
+    const rows=S.schools.filter(s=>!q||s.name.toLowerCase().includes(q)||(s.city||'').toLowerCase().includes(q)||(S.inspectors[s.inspector]?.name||'').toLowerCase().includes(q));
+    document.getElementById('admBody').innerHTML=`
+      <div class="card card-pad">
+        <div class="card-head" style="margin-bottom:12px">
+          <div class="section-title">${I.school} Усі заклади (${S.schools.length})</div>
+          <button class="btn btn-primary btn-sm" id="addSch">${I.plus} Додати заклад</button>
+        </div>
+        <div class="search-bar">
+          <span class="si">${I.search||'🔍'}</span>
+          <input id="schSearchInput" placeholder="Пошук за назвою, містом, інспектором…" value="${schSearch}">
+        </div>
+        ${rows.length?`<table class="tbl"><thead><tr><th>Заклад</th><th>Тип</th><th>Місто</th><th>Статус</th><th>Інспектор</th><th>Заходи</th><th></th></tr></thead>
+        <tbody>${rows.map(s=>{const ins=S.inspectors[s.inspector];return `<tr>
+          <td><b>${s.name}</b></td><td>${s.type||'—'}</td><td>${s.city||'—'}</td>
+          <td>${s.serviced?`<span class="tag green">${I.check} Наш</span>`:`<span class="tag gray">Інший</span>`}</td>
+          <td>${ins?ins.name.split(' ').slice(0,2).join(' '):'<span class="muted">—</span>'}</td>
+          <td class="tnum">${s.events||0}</td>
+          <td><div class="row" style="gap:2px;justify-content:flex-end">
+            <button class="iact" data-edit="${s.id}" title="Редагувати">${I.edit}</button>
+            <button class="iact del" data-del="${s.id}" title="Видалити">${I.trash}</button>
+          </div></td>
+        </tr>`;}).join('')}</tbody></table>`:`<div style="padding:24px;text-align:center;color:var(--muted)">Нічого не знайдено</div>`}
+      </div>`;
+    document.getElementById('addSch').addEventListener('click',()=>openSch(null));
+    const schInp=document.getElementById('schSearchInput');
+    schInp.addEventListener('input',e=>{
+      const pos=e.target.selectionStart;
+      schSearch=e.target.value;
+      renderSchools();
+      const ni=document.getElementById('schSearchInput');
+      ni.focus(); ni.setSelectionRange(pos,pos);
+    });
+    document.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>openSch(b.dataset.edit)));
+    document.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
+      const s=S.schools.find(x=>x.id===b.dataset.del);
+      if(confirm(`Видалити «${s.name}»? Заходи та файли цього закладу теж будуть видалені.`)){
+        window.SOBStore.deleteSchool(b.dataset.del);toast('Заклад видалено','navy');shell();
+      }
+    }));
+  }
+
+  /* ── Inspectors tab ── */
+  function renderInspectors(){
+    const q=insSearch.toLowerCase();
+    const entries=Object.entries(S.inspectors).filter(([k,ins])=>!q||ins.name.toLowerCase().includes(q)||(ins.position||'').toLowerCase().includes(q)||(ins.rankTitle||'').toLowerCase().includes(q));
+    document.getElementById('admBody').innerHTML=`
+      <div class="card card-pad">
+        <div class="card-head" style="margin-bottom:12px">
+          <div class="section-title">${I.shield} Інспектори СОБ (${Object.keys(S.inspectors).length})</div>
+          <button class="btn btn-primary btn-sm" id="addIns">${I.plus} Додати інспектора</button>
+        </div>
+        <div class="search-bar">
+          <span class="si">${I.search||'🔍'}</span>
+          <input id="insSearchInput" placeholder="Пошук за ПІБ, посадою, підрозділом…" value="${insSearch}">
+        </div>
+        <div class="ins-grid">
+        ${entries.map(([k,ins])=>{
+          const init=ins.name.split(' ').map(w=>w[0]).slice(0,2).join('');
+          const cnt=S.schools.filter(s=>s.serviced&&s.inspector===k).length;
+          const clr=ins.color||'#0E274D';
+          return `<div class="ins-card">
+            <div class="ins-top">
+              <div class="av" style="background:${clr}">${init}</div>
+              <div>
+                <div class="ins-name">${ins.name}</div>
+                <div class="ins-rank">${ins.rankTitle?ins.rankTitle+' · ':''}${ins.position||ins.rank||'Інспектор ССОБ'}</div>
+                ${ins.department?`<div style="font-size:11px;color:var(--muted);margin-top:1px">${ins.department}</div>`:''}
+              </div>
+            </div>
+            <div class="ins-contacts">
+              ${ins.phone?`<div class="ins-contact-line">${I.phone}<a href="tel:${ins.phone.replace(/[^+\d]/g,'')}" style="color:var(--blue-600);font-weight:600">${ins.phone}</a></div>`:''}
+              ${ins.phone2?`<div class="ins-contact-line">${I.phone}<a href="tel:${ins.phone2.replace(/[^+\d]/g,'')}" style="color:var(--text-2)">${ins.phone2}</a></div>`:''}
+              ${ins.email?`<div class="ins-contact-line">${I.mail}<a href="mailto:${ins.email}" style="color:var(--blue-600)">${ins.email}</a></div>`:''}
+              ${ins.telegram?`<div class="ins-contact-line"><svg viewBox="0 0 24 24" width="14" height="14" fill="var(--blue-600)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8-1.7 8.02c-.12.57-.47.7-.95.44l-2.62-1.93-1.27 1.22c-.14.14-.26.26-.53.26l.19-2.68 4.84-4.37c.21-.19-.05-.29-.32-.1L7.58 15.1l-2.58-.8c-.56-.17-.57-.56.12-.83l10.07-3.88c.46-.17.87.11.71.83h-.26z"/></svg><span>${ins.telegram}</span></div>`:''}
+              ${ins.note?`<div style="font-size:12px;color:var(--muted);padding-top:4px;border-top:1px solid var(--border)">${ins.note}</div>`:''}
+              <div style="font-size:12px;color:var(--muted-2);padding-top:2px">Закладів: <b style="color:var(--text-2)">${cnt}</b></div>
+            </div>
+            <div class="ins-actions">
+              <button class="btn btn-soft btn-sm" style="flex:1" data-eins="${k}">${I.edit} Редагувати</button>
+              <button class="btn btn-sm" style="background:var(--red-100);color:var(--red-500)" data-dins="${k}">${I.trash}</button>
+            </div>
+          </div>`;
+        }).join('')}
+        ${entries.length===0?`<div style="padding:24px;text-align:center;color:var(--muted);grid-column:1/-1">Нічого не знайдено</div>`:''}
+        </div>
+      </div>`;
+    document.getElementById('addIns').addEventListener('click',()=>openIns(null));
+    document.getElementById('insSearchInput').addEventListener('input',e=>{
+      const pos=e.target.selectionStart;
+      insSearch=e.target.value;
+      renderInspectors();
+      const ni=document.getElementById('insSearchInput');
+      ni.focus(); ni.setSelectionRange(pos,pos);
+    });
+    document.querySelectorAll('[data-eins]').forEach(b=>b.addEventListener('click',()=>openIns(b.dataset.eins)));
+    document.querySelectorAll('[data-dins]').forEach(b=>b.addEventListener('click',()=>{
+      const k=b.dataset.dins, ins=S.inspectors[k];
+      if(confirm(`Видалити інспектора «${ins.name}»? Заклади залишаться, але втратять прив'язку.`)){
+        delete S.inspectors[k]; window.SOBStore.save(); toast('Інспектора видалено','navy'); shell();
+      }
+    }));
+  }
+
+  /* ── Users tab ── */
+  function renderUsers(){
+    document.getElementById('admBody').innerHTML=`
+      <div class="card card-pad">
+        <div class="section-title" style="margin-bottom:16px">${I.users} Облікові записи (${S.accounts.length})</div>
+        ${S.accounts.map(a=>{const r=S.roles[a.role];return `<div class="usr-row file-row" style="border-top:1px solid var(--border)">
+          <div class="av" style="background:${r.color}">${a.initials}</div>
+          <div class="file-meta flex:1"><b>${a.name}</b><span>Логін: <b>${a.login}</b> · <span style="color:${r.color};font-weight:600">${r.label}</span>${a.inspector?` · інспектор: ${S.inspectors[a.inspector]?.name||a.inspector}`:''}</span></div>
+        </div>`;}).join('')}
+        <div class="muted" style="font-size:12.5px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          Паролі та облікові записи зберігаються у файлі <b>js/data.js</b> → масив <b>accounts</b>. Для зміни пароля — редагуйте файл та перезавантажте сайт.
+        </div>
+      </div>`;
+  }
+
+  /* ── Reports tab ── */
+  function renderReports(){
+    document.getElementById('admBody').innerHTML=`
+      <div class="rpt-card">
+        <div class="section-title" style="margin-bottom:4px">${I.download} Звіти та вивантаження даних</div>
+        <p class="muted" style="font-size:13.5px;margin-bottom:16px">Оберіть тип звіту для скачування. Файли CSV відкриваються в Excel (підтримується кирилиця).</p>
+        <div class="rpt-row">
+          <div class="rpt-ic" style="background:var(--blue-100);color:var(--blue-600)">${I.calendar}</div>
+          <div style="flex:1"><b>Журнал заходів</b><div class="muted" style="font-size:12.5px">Усі записані заходи: заклад, дата, тип, назва, аудиторія, учасники, примітка</div></div>
+          <button class="btn btn-primary btn-sm" onclick="exportCSV('events')">CSV ↓</button>
+        </div>
+        <div class="rpt-row">
+          <div class="rpt-ic" style="background:var(--green-100);color:var(--green-500)">${I.school}</div>
+          <div style="flex:1"><b>Список закладів СОБ</b><div class="muted" style="font-size:12.5px">Заклади, що обслуговуються: адреса, директор, контакти, статистика</div></div>
+          <button class="btn btn-primary btn-sm" onclick="exportCSV('schools')">CSV ↓</button>
+        </div>
+        <div class="rpt-row">
+          <div class="rpt-ic" style="background:var(--gold-100);color:var(--gold-700)">${I.chart}</div>
+          <div style="flex:1"><b>Зведена статистика за типами</b><div class="muted" style="font-size:12.5px">Кількість заходів та учасників по кожному напрямку діяльності</div></div>
+          <button class="btn btn-primary btn-sm" onclick="exportCSV('stats')">CSV ↓</button>
+        </div>
+        <div class="rpt-row">
+          <div class="rpt-ic" style="background:var(--purple-100);color:var(--purple-500)">${I.users}</div>
+          <div style="flex:1"><b>Список інспекторів</b><div class="muted" style="font-size:12.5px">ПІБ, звання, посада, контакти, кількість підшефних закладів</div></div>
+          <button class="btn btn-primary btn-sm" onclick="exportCSV('inspectors')">CSV ↓</button>
+        </div>
+        <div class="rpt-row">
+          <div class="rpt-ic" style="background:var(--navy-100,#eef3fa);color:var(--navy-700)">${I.doc}</div>
+          <div style="flex:1"><b>Повна резервна копія</b><div class="muted" style="font-size:12.5px">Усі дані системи у форматі JSON для відновлення або міграції</div></div>
+          <button class="btn btn-ghost btn-sm" onclick="exportJSON()">JSON ↓</button>
+        </div>
+      </div>
+      <div class="rpt-card">
+        <div class="section-title" style="margin-bottom:10px">${I.upload} Імпорт даних</div>
+        <p class="muted" style="font-size:13.5px;margin-bottom:14px">Відновити систему з раніше збереженого JSON-файлу резервної копії.</p>
+        <button class="btn btn-ghost btn-sm" id="importBtn">${I.upload} Імпортувати з JSON</button>
+      </div>`;
+    document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('importInput').click());
+  }
+
+  /* ── Data/Settings tab ── */
+  function renderData(){
+    const opts=S.org.periodOptions||[];
+    document.getElementById('admBody').innerHTML=`
+      <div class="grid-2">
+        <div class="card card-pad">
+          <div class="section-title" style="margin-bottom:12px">${I.calendar} Поточний звітний період</div>
+          <p class="muted" style="font-size:13.5px;margin-bottom:14px">Цей період відображається на головній сторінці, у заголовках звітів та аналітиці.</p>
+          <div class="period-select">
+            <select class="input" id="periodSel" style="max-width:260px">
+              ${opts.map(p=>`<option value="${p}" ${p===S.org.period?'selected':''}>${p}</option>`).join('')}
+            </select>
+            <button class="btn btn-primary btn-sm" id="savePeriod">Застосувати</button>
+          </div>
+          <div style="margin-top:14px;font-size:13px;color:var(--muted)">Поточний: <b style="color:var(--text)">${S.org.period}</b></div>
+        </div>
+        <div class="card card-pad">
+          <div class="section-title" style="margin-bottom:8px">${I.settings} Стан сховища</div>
+          <div class="row between" style="margin-top:8px"><span class="muted">Закладів</span><b>${S.schools.length}</b></div><div class="divider"></div>
+          <div class="row between"><span class="muted">Заходів у журналі</span><b>${S.schoolEvents.length}</b></div><div class="divider"></div>
+          <div class="row between"><span class="muted">Файлів</span><b>${S.files.length}</b></div><div class="divider"></div>
+          <div class="row between"><span class="muted">Фото в галереї</span><b>${(S.gallery||[]).length}</b></div><div class="divider"></div>
+          <div class="row between"><span class="muted">Інспекторів</span><b>${Object.keys(S.inspectors).length}</b></div>
+        </div>
+      </div>
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="section-title" style="margin-bottom:8px">${I.users} Статистика на сторінці входу</div>
+        <p class="muted" style="font-size:13.5px;margin-bottom:14px">Усі три показники розраховуються автоматично з реальних даних системи.</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:var(--radius);font-size:13.5px">
+            <span class="muted">${I.school} Наших закладів освіти</span>
+            <b style="color:var(--blue-600)">${S.schools.filter(s=>s.serviced!==false).length}</b>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:var(--radius);font-size:13.5px">
+            <span class="muted">${I.calendar} Заходів у поточному місяці</span>
+            <b style="color:var(--blue-600)">${(()=>{const now=new Date();return (S.schoolEvents||[]).filter(ev=>{if(!ev.date)return false;const d=new Date(ev.date);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();}).length;})()}</b>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border-radius:var(--radius);font-size:13.5px">
+            <span class="muted">${I.users} Дітей у закладах (сума контингенту)</span>
+            <b style="color:var(--blue-600)">${S.schools.filter(s=>s.serviced!==false).reduce((a,s)=>a+(s.students||0),0).toLocaleString('uk-UA')}</b>
+          </div>
+        </div>
+      </div>
+      <div class="danger-zone" style="margin-top:16px">
+        <div class="section-title" style="color:var(--red-500);margin-bottom:6px">${I.alert} Небезпечна зона</div>
+        <p class="muted" style="font-size:13.5px;margin-bottom:16px">Скидання поверне систему до початкових даних. Усі ваші зміни та завантажені фото буде стерто. Спершу зробіть експорт JSON.</p>
+        <button class="btn btn-sm" style="background:var(--red-100);color:var(--red-500)" id="resetBtn">${I.trash} Скинути всі дані до початкових</button>
+      </div>`;
+
+    document.getElementById('savePeriod').addEventListener('click',()=>{
+      const p=document.getElementById('periodSel').value;
+      S.org.period=p; window.SOBStore.save(); toast('Період змінено на «'+p+'»'); renderData();
+    });
+    document.getElementById('resetBtn').addEventListener('click',()=>{
+      if(confirm('Скинути ВСІ дані до початкових? Зміни буде втрачено.')){
+        window.SOBStore.reset(); toast('Дані скинуто','navy'); setTimeout(()=>location.reload(),700);
+      }
+    });
+  }
+
+  /* ── School modal ── */
+  function openModal(id){document.getElementById(id).classList.add('show');}
+  window.closeModal=id=>document.getElementById(id).classList.remove('show');
+  buildInspectorSelect();
+
+  function openSch(id){
+    editingId=id;
+    document.getElementById('schModalTitle').textContent=id?'Редагувати заклад':'Додати заклад';
+    const s=id?S.schools.find(x=>x.id===id):{};
+    ['name','address','type','city','director','phone','email','website'].forEach(k=>{
+      const el=document.getElementById('m_'+k); if(el) el.value=s[k]||'';
+    });
+    document.getElementById('m_students').value = s.students || '';
+    document.getElementById('m_lat').value=s.lat||S.org.center.lat;
+    document.getElementById('m_lng').value=s.lng||S.org.center.lng;
+    document.getElementById('m_inspector').value=s.inspector||'';
+    document.getElementById('m_serviced').value=id?String(s.serviced!==false):String(true);
+    buildInspectorSelect();
+    if(id) document.getElementById('m_inspector').value=s.inspector||'';
+    openModal('schModal');
+  }
+  document.getElementById('saveSch').addEventListener('click',()=>{
+    const name=document.getElementById('m_name').value.trim();
+    if(!name){toast('Введіть назву закладу','red');return;}
+    const data={
+      name, address:document.getElementById('m_address').value.trim(),
+      type:document.getElementById('m_type').value.trim(), city:document.getElementById('m_city').value.trim(),
+      director:document.getElementById('m_director').value.trim(), phone:document.getElementById('m_phone').value.trim(),
+      email:document.getElementById('m_email').value.trim(), website:document.getElementById('m_website').value.trim(),
+      lat:+document.getElementById('m_lat').value||S.org.center.lat, lng:+document.getElementById('m_lng').value||S.org.center.lng,
+      inspector:document.getElementById('m_inspector').value||null,
+      serviced:document.getElementById('m_serviced').value==='true',
+      students:+document.getElementById('m_students').value||0,
+    };
+    if(editingId){window.SOBStore.updateSchool(editingId,data);toast('Заклад оновлено');}
+    else{window.SOBStore.addSchool({...data,events:0,prevention:0,participants:0,consultations:0,rating:0,students:0});toast('Заклад додано');}
+    window.closeModal('schModal'); shell();
+  });
+
+  /* ── CSV / JSON export ── */
+  function csvRow(arr){ return arr.map(v=>'"'+(String(v||'').replace(/"/g,'""'))+'"').join(',')+'\r\n'; }
+  function downloadCSV(filename,rows){
+    const bom='﻿'; // BOM для коректного відображення кирилиці в Excel
+    const blob=new Blob([bom+rows.join('')],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+  }
+
+  window.exportCSV=function(type){
+    const date=new Date().toISOString().slice(0,10);
+    if(type==='events'){
+      const rows=[csvRow(['Заклад','Місто','Дата','Тип заходу','Назва','Аудиторія','Учасники','Примітка'])];
+      S.schoolEvents.forEach(ev=>{
+        const sch=S.schools.find(x=>x.id===ev.schoolId);
+        const typeLbl=(S.eventTypes||[]).find(t=>t.id===ev.type)?.label||ev.type||'';
+        rows.push(csvRow([sch?.name||ev.schoolId, sch?.city||'', ev.date||'', typeLbl, ev.title||'', ev.audience||'', ev.participants||0, ev.note||'']));
+      });
+      downloadCSV(`sob-заходи-${date}.csv`,rows);
+    } else if(type==='schools'){
+      const rows=[csvRow(['Назва','Тип','Місто','Адреса','Директор','Телефон','Email','Інспектор','Заходів','Учасників','Консультацій','Рейтинг','Обслуговується'])];
+      S.schools.filter(s=>s.serviced).forEach(s=>{
+        rows.push(csvRow([s.name,s.type||'',s.city||'',s.address||'',s.director||'',s.phone||'',s.email||'',S.inspectors[s.inspector]?.name||'',s.events||0,s.participants||0,s.consultations||0,s.rating||0,'Так']));
+      });
+      downloadCSV(`sob-заклади-${date}.csv`,rows);
+    } else if(type==='stats'){
+      const byType={};
+      (S.eventTypes||[]).forEach(t=>{byType[t.id]={label:t.label,count:0,participants:0};});
+      (S.schoolEvents||[]).forEach(ev=>{if(byType[ev.type]){byType[ev.type].count++;byType[ev.type].participants+=(ev.participants||0);}});
+      const rows=[csvRow(['Напрямок','Заходів','Учасників'])];
+      Object.values(byType).forEach(t=>rows.push(csvRow([t.label,t.count,t.participants])));
+      downloadCSV(`sob-статистика-${date}.csv`,rows);
+    } else if(type==='inspectors'){
+      const rows=[csvRow(['ПІБ','Звання','Посада','Підрозділ','Службовий тел.','Мобільний тел.','Email','Telegram','Закладів','Примітка'])];
+      Object.entries(S.inspectors).forEach(([k,ins])=>{
+        const cnt=S.schools.filter(s=>s.serviced&&s.inspector===k).length;
+        rows.push(csvRow([ins.name,ins.rankTitle||'',ins.position||ins.rank||'',ins.department||'',ins.phone||'',ins.phone2||'',ins.email||'',ins.telegram||'',cnt,ins.note||'']));
+      });
+      downloadCSV(`sob-інспектори-${date}.csv`,rows);
+    }
+    toast('Файл завантажується…');
+  };
+
+  function exportJSON(){
+    const out={}; ['schools','schoolEvents','gallery','files','inspectors','org'].forEach(k=>out[k]=S[k]);
+    const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download=`sob-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
+    toast('Резервну копію завантажено');
+  }
+  window.exportJSON=exportJSON;
+
+  document.getElementById('importInput').addEventListener('change',e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{
+      try{
+        const d=JSON.parse(r.result);
+        ['schools','schoolEvents','gallery','files','inspectors','org'].forEach(k=>{if(d[k])S[k]=d[k];});
+        window.SOBStore.save(); toast('Дані імпортовано'); shell();
+      }catch(err){toast('Помилка файлу','red');}
+    };
+    r.readAsText(f); e.target.value='';
+  });
+
+  document.querySelectorAll('.modal-scrim').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
+  shell();
+}
+</script>
+</body>
+</html>

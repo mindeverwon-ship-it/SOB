@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СОБ · Картка закладу</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+.sch-hero { display: grid; grid-template-columns: 360px 1fr; gap: 26px; }
+.sch-photo { border-radius: var(--radius-lg); overflow: hidden; height: 250px; }
+.sch-photo image-slot { width: 100%; height: 100%; }
+.sch-info .row-top { display: flex; align-items: flex-start; gap: 14px; justify-content: space-between; }
+.sch-info h1 { font-size: 26px; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; }
+.sch-info .addr { color: var(--muted); font-size: 14px; margin-top: 8px; display: flex; gap: 6px; align-items: center; }
+.sch-info .addr svg { width: 16px; height: 16px; }
+.sch-stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 22px; }
+.ss { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 16px; box-shadow: var(--shadow-xs); }
+.ss .v { font-size: 23px; font-weight: 800; letter-spacing: -.02em; }
+.ss .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: 28px 0 24px; overflow-x: auto; }
+.tab { padding: 12px 17px; font-size: 14px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; transition: color .15s; white-space: nowrap; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--blue-600); border-bottom-color: var(--blue-600); }
+.tab-panel { display: none; } .tab-panel.active { display: block; }
+.person { display: flex; align-items: center; gap: 13px; }
+.person .av { width: 50px; height: 50px; font-size: 17px; }
+.person .n { font-weight: 600; font-size: 15px; } .person .r { font-size: 12.5px; color: var(--muted); }
+.contact-row { display: flex; gap: 8px; margin-top: 16px; }
+.cbtn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 13px 8px; border-radius: 13px; background: var(--surface-2); border: 1px solid var(--border); font-size: 12px; font-weight: 600; transition: all .15s; }
+.cbtn:hover { background: var(--blue-050); border-color: var(--blue-100); color: var(--blue-700); }
+.cbtn svg { width: 19px; height: 19px; }
+.ev-item { display: flex; gap: 16px; padding: 16px 0; border-top: 1px solid var(--border); }
+.ev-item:first-child { border-top: none; }
+.ev-date { width: 56px; flex-shrink: 0; text-align: center; }
+.ev-date .d { font-size: 23px; font-weight: 800; line-height: 1; } .ev-date .m { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-top: 3px; }
+.ev-body { flex: 1; min-width: 0; } .ev-title { font-weight: 600; font-size: 14.5px; }
+.ev-sub { font-size: 12.5px; color: var(--muted); margin-top: 5px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ev-part { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.ev-del { color: var(--muted-2); padding: 4px; border-radius: 8px; } .ev-del:hover { background: var(--red-100); color: var(--red-500); }
+.ev-del svg { width: 16px; height: 16px; }
+.ev-photos { display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; }
+.ev-thumb { position:relative; width:54px; height:54px; border-radius:9px; overflow:hidden; border:1.5px solid var(--border); flex-shrink:0; }
+.ev-thumb img { width:100%; height:100%; object-fit:cover; cursor:pointer; }
+.ev-thumb .ph-del { position:absolute; top:2px; right:2px; background:rgba(0,0,0,.55); color:#fff; border:none; border-radius:5px; width:18px; height:18px; font-size:12px; line-height:18px; text-align:center; cursor:pointer; display:none; padding:0; }
+.ev-thumb:hover .ph-del { display:block; }
+.photo-preview { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.photo-preview .pp { position:relative; width:72px; height:72px; border-radius:11px; overflow:hidden; border:1.5px solid var(--border); }
+.photo-preview .pp img { width:100%; height:100%; object-fit:cover; }
+.photo-preview .pp button { position:absolute; top:2px; right:2px; background:rgba(0,0,0,.6); color:#fff; border:none; border-radius:5px; width:18px; height:18px; font-size:13px; cursor:pointer; padding:0; line-height:18px; text-align:center; }
+.gallery { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.gallery image-slot { width: 100%; height: 150px; }
+.gal-cell { position: relative; }
+.gal-cap { font-size: 12px; color: var(--muted); margin-top: 6px; font-weight: 500; }
+.file-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid var(--border); }
+.file-row:first-child { border-top: none; }
+.file-ic { width: 44px; height: 44px; border-radius: 11px; display: grid; place-items: center; font-weight: 800; font-size: 11px; color: #fff; flex-shrink: 0; }
+.file-ic.pdf { background: #DC4338; } .file-ic.doc { background: #1F59DD; } .file-ic.ppt { background: #E5891F; } .file-ic.zip { background: #7659E0; } .file-ic.img { background: #1AA56C; } .file-ic.other { background: #6A7A98; }
+.file-meta { flex: 1; min-width: 0; } .file-meta b { font-size: 14px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-meta span { font-size: 12px; color: var(--muted); }
+.hist-item { display: flex; gap: 14px; }
+.hist-line { display: flex; flex-direction: column; align-items: center; }
+.hist-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--blue-600); border: 2px solid var(--blue-100); margin-top: 5px; }
+.hist-bar { width: 2px; flex: 1; background: var(--border); }
+.hist-body { padding-bottom: 18px; }
+.edit-pen { background: var(--surface-2); border: 1px solid var(--border-2); }
+@media (max-width: 880px){ .sch-hero { grid-template-columns: 1fr; } .gallery { grid-template-columns: repeat(2,1fr); } .sch-stat-row { grid-template-columns: repeat(2,1fr); } }
+</style>
+</head>
+<body>
+<div class="app" id="shell"></div>
+
+<!-- Edit school modal -->
+<div class="modal-scrim" id="editModal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head"><div class="section-title">Редагувати заклад</div><button class="icon-btn" onclick="closeModal('editModal')" id="closeEdit"></button></div>
+    <div class="modal-body col" style="gap:14px">
+      <div class="field"><label>Повна назва закладу</label><input class="input" id="e_name"></div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Тип</label><input class="input" id="e_type" placeholder="Ліцей / Гімназія / Школа"></div>
+        <div class="field"><label>Місто / село</label><input class="input" id="e_city" placeholder="м. Вільнянськ"></div>
+      </div>
+      <div class="field"><label>Адреса</label><input class="input" id="e_address"></div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Широта (lat)</label><input class="input" type="number" step="0.000001" id="e_lat" placeholder="47.84"></div>
+        <div class="field"><label>Довгота (lng)</label><input class="input" type="number" step="0.000001" id="e_lng" placeholder="35.13"></div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:-6px">Координати можна скопіювати з Google Maps (правий клік → «Що тут?»)</div>
+      <div style="border-top:1px solid var(--border);padding-top:14px;font-weight:600;font-size:13px;color:var(--text-2)">Адміністрація закладу</div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Директор (ПІБ)</label><input class="input" id="e_director" placeholder="Прізвище Ім'я По-батькові"></div>
+        <div class="field"><label>Телефон закладу</label><input class="input" id="e_phone" placeholder="+380…"></div>
+      </div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Email закладу</label><input class="input" id="e_email" placeholder="school@…"></div>
+        <div class="field"><label>Вебсайт</label><input class="input" id="e_website" placeholder="https://…"></div>
+      </div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Telegram</label><input class="input" id="e_telegram" placeholder="@назва або посилання"></div>
+        <div class="field"><label>Загальна кількість учнів (контингент)</label><input class="input" type="number" id="e_students" placeholder="0"></div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:14px;font-weight:600;font-size:13px;color:var(--text-2)">Показники (коригуються вручну)</div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Заходів проведено</label><input class="input" type="number" id="e_events" placeholder="0"></div>
+        <div class="field"><label>Учасників охоплено</label><input class="input" type="number" id="e_participants" placeholder="0"></div>
+      </div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Консультацій</label><input class="input" type="number" id="e_consultations" placeholder="0"></div>
+        <div class="field"><label>Рейтинг (0–100)</label><input class="input" type="number" id="e_rating" min="0" max="100" placeholder="0"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('editModal')">Скасувати</button><button class="btn btn-primary" id="saveEdit">Зберегти зміни</button></div>
+  </div>
+</div>
+
+<!-- Add event modal -->
+<div class="modal-scrim" id="eventModal">
+  <div class="modal">
+    <div class="modal-head"><div class="section-title" id="evModalTitle">Додати захід</div><button class="icon-btn" onclick="closeModal('eventModal')" id="closeEvent"></button></div>
+    <div class="modal-body col" style="gap:14px">
+      <div class="field"><label>Назва заходу</label><input class="input" id="ev_title" placeholder="Напр. Лекція «Безпека в інтернеті»"></div>
+      <div class="grid-2" style="gap:14px">
+        <div class="field"><label>Дата</label><input class="input" type="date" id="ev_date" min="2020-01-01" max="2050-12-31"></div>
+        <div class="field"><label>Тип заходу</label><select class="input" id="ev_type"></select></div>
+      </div>
+      <div class="grid-2" style="gap:14px">
+        <div class="field"><label>Аудиторія</label><input class="input" id="ev_audience" placeholder="Напр. 8–11 класи, батьки, педагоги…"></div>
+        <div class="field"><label>Учасників</label><input class="input" type="number" id="ev_participants" placeholder="0" min="0"></div>
+      </div>
+      <div class="field"><label>Примітка (необов'язково)</label><input class="input" id="ev_note" placeholder="Короткий опис або результат заходу"></div>
+      <div class="field">
+        <label>Фото заходу (необов'язково)</label>
+        <div id="photoDropzone" style="border:1.5px dashed var(--border-strong);border-radius:var(--radius);padding:14px 16px;cursor:pointer;text-align:center;color:var(--muted);font-size:13px;transition:background .15s" onclick="document.getElementById('evPhotoInput').click()">
+          <span id="photoDzText">Натисніть або перетягніть фото сюди</span>
+        </div>
+        <input type="file" id="evPhotoInput" accept="image/*" multiple style="display:none">
+        <div class="photo-preview" id="photoPreview"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('eventModal')">Скасувати</button><button class="btn btn-primary" id="saveEvent">Додати захід</button></div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" multiple style="display:none">
+
+<!-- Cancel event modal -->
+<div class="modal-scrim" id="cancelModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head"><div class="section-title">Скасувати захід</div><button class="icon-btn" onclick="closeModal('cancelModal')" id="closeCancelBtn"></button></div>
+    <div class="modal-body col" style="gap:14px">
+      <p style="color:var(--muted);font-size:14px">Вкажіть причину скасування. Захід буде переміщено до архіву і може бути відновлено.</p>
+      <div class="field"><label>Причина скасування <span style="color:var(--red-500)">*</span></label><textarea class="input" id="cancelReason" rows="3" placeholder="Наприклад: повітряна тривога, хвороба педагога, карантин…" style="resize:vertical"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('cancelModal')">Назад</button>
+      <button class="btn" style="background:var(--red-500);color:#fff" id="confirmCancel">Скасувати захід</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/shell.js"></script>
+<script src="assets/image-slot.js"></script>
+<script>
+const S = window.SOB, F = window.fmt, I = window.ICON;
+const params = new URLSearchParams(location.search);
+const sid = params.get('id') || (window.SOBStore.serviced()[0]||S.schools[0]).id;
+let s = S.schools.find(x => x.id === sid) || S.schools[0];
+const ins = S.inspectors[s.inspector] || {};
+const insInit = (ins.name||'СОБ').split(' ').map(w=>w[0]).slice(0,2).join('');
+const canEdit = window.SOBAuth.canEditSchool(s.id);
+
+SOBShell.render({ active: 'schools', crumb: ['СОБ', 'Заклади освіти', s.name] });
+document.getElementById('closeEdit').innerHTML = I.close;
+document.getElementById('closeEvent').innerHTML = I.close;
+
+const MONTHS = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+const fmtDate = iso => { const d=new Date(iso); return {d:d.getDate(), m:MONTHS[d.getMonth()]}; };
+
+// fill event types from eventTypes array
+document.getElementById('ev_type').innerHTML = (S.eventTypes||S.galleryTopics.map(l=>({label:l}))).map(t=>`<option value="${t.id||t.label}">${t.label}</option>`).join('');
+
+const otherSchools = window.SOBStore.serviced().filter(x=>x.id!==s.id).map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
+const fileIcType = n => { const e=(n.split('.').pop()||'').toLowerCase(); if(e==='pdf')return'pdf'; if(['doc','docx'].includes(e))return'doc'; if(['ppt','pptx'].includes(e))return'ppt'; if(['zip','rar','7z'].includes(e))return'zip'; if(['jpg','jpeg','png','gif','webp'].includes(e))return'img'; return'other'; };
+
+function render(){
+  const allEvents = window.SOBStore.eventsFor(s.id);
+  const events         = allEvents.filter(e => e.status !== 'cancelled');
+  const cancelledEvents = allEvents.filter(e => e.status === 'cancelled');
+  const files = window.SOBStore.filesFor(s.id);
+
+  function eventCard(e, archived) {
+    const dt = fmtDate(e.date);
+    const typeLabel = (S.eventTypes||[]).find(t=>t.id===e.type)?.label || e.type;
+    const evPhotos = (S.gallery||[]).filter(g=>g.eventId===e.id && g.dataUrl);
+    const photosHtml = evPhotos.length ? `<div class="ev-photos">${evPhotos.map(p=>`<div class="ev-thumb"><img src="${p.dataUrl}" onclick="openPhoto('${p.dataUrl}')" title="Фото заходу"><button class="ph-del" data-pdel="${p.id}" title="Видалити фото">✕</button></div>`).join('')}</div>` : '';
+    const actions = canEdit ? (archived
+      ? `<button class="ev-del" data-restore="${e.id}" title="Відновити" style="color:var(--green-600)">${I.check}</button><button class="ev-del" data-del="${e.id}" title="Видалити">${I.trash}</button>`
+      : `<button class="ev-del" data-cancel="${e.id}" title="Скасувати захід" style="color:var(--gold-600)">${I.close}</button><button class="ev-del" data-del="${e.id}" title="Видалити">${I.trash}</button>`) : '';
+    return `<div class="ev-item" ${archived?'style="opacity:.7"':''}>
+      <div class="ev-date"><div class="d">${dt.d}</div><div class="m">${dt.m}</div></div>
+      <div class="ev-body">
+        <div class="ev-title">${e.title}${archived?` <span class="tag" style="background:var(--red-100);color:var(--red-500);font-size:11px">Скасовано</span>`:''}</div>
+        <div class="ev-sub"><span class="tag blue">${typeLabel}</span><span>${e.audience||''}</span>${e.note?`<span style="color:var(--muted-2)">${e.note}</span>`:''}</div>
+        ${archived && e.cancelReason ? `<div style="font-size:12.5px;color:var(--red-500);margin-top:5px">Причина: ${e.cancelReason}</div>` : ''}
+        ${photosHtml}
+      </div>
+      <div class="row" style="gap:10px"><div class="ev-part">${I.users} ${F(e.participants||0)}</div>${actions}</div>
+    </div>`;
+  }
+
+  const eventsHtml = events.length
+    ? events.map(e => eventCard(e, false)).join('')
+    : `<div style="padding:24px;text-align:center;color:var(--muted)">Заходів ще немає${canEdit?'. Натисніть «Додати захід».':''}</div>`;
+
+  const archiveHtml = cancelledEvents.length
+    ? cancelledEvents.map(e => eventCard(e, true)).join('')
+    : `<div style="padding:24px;text-align:center;color:var(--muted)">Скасованих заходів немає</div>`;
+
+  const galleryItems = (S.gallery||[]).filter(g=>g.schoolId===s.id && g.dataUrl)
+    .sort((a,b)=>((b.date||b.createdAt||'') > (a.date||a.createdAt||'') ? 1 : -1));
+  const galleryHtml = galleryItems.length ? galleryItems.map(g=>{
+    const evName = g.eventId ? (S.schoolEvents||[]).find(e=>e.id===g.eventId)?.title||'' : '';
+    const dtStr  = g.date ? new Date(g.date).toLocaleDateString('uk-UA') : '';
+    const author = g.author || '';
+    return `<div class="gal-cell">
+      <div style="position:relative;border-radius:14px;overflow:hidden;height:150px;background:var(--surface-2);cursor:pointer" onclick="openPhoto('${g.dataUrl}')">
+        <img src="${g.dataUrl}" style="width:100%;height:100%;object-fit:cover">
+        ${canEdit?`<button class="ph-del" style="display:block;position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:6px;width:22px;height:22px;font-size:14px;cursor:pointer;padding:0;line-height:22px;text-align:center" data-pdel="${g.id}" onclick="event.stopPropagation()">✕</button>`:''}
+      </div>
+      <div class="gal-cap">${evName||g.title||'Без опису'}</div>
+      ${(dtStr||author)?`<div style="font-size:11px;color:var(--muted-2);margin-top:1px">${dtStr}${author?' · '+author:''}</div>`:''}
+    </div>`;
+  }).join('') : `<div style="padding:32px;text-align:center;color:var(--muted)">Фото ще немає. Натисніть «Додати фото» або завантажте під час створення заходу.</div>`;
+
+  const filesHtml = files.length ? files.map(f => `<div class="file-row">
+    <div class="file-ic ${fileIcType(f.name)}">${(f.name.split('.').pop()||'').toUpperCase().slice(0,4)}</div>
+    <div class="file-meta"><b>${f.name}</b><span>${f.size||''} · ${f.date||''}</span></div>
+    ${f.dataUrl?`<a class="btn btn-ghost btn-sm" href="${f.dataUrl}" download="${f.name}">${I.download} Завантажити</a>`:'<span class="tag gray">Файл</span>'}
+    ${canEdit?`<button class="ev-del" data-fdel="${f.id}">${I.trash}</button>`:''}
+  </div>`).join('') : `<div style="padding:24px;text-align:center;color:var(--muted)">Файлів ще немає${canEdit?'. Завантажте документи нижче.':''}</div>`;
+
+  document.getElementById('content').innerHTML = `
+    <div class="row between wrap" style="margin-bottom:18px;gap:12px">
+      <a class="btn btn-ghost btn-sm" href="schools.html"><span style="display:inline-flex;transform:scaleX(-1)">${I.chevron}</span> Усі заклади</a>
+      <div class="row gap-8">
+        <div class="pill-select">${I.school}<select id="schPick"><option value="${s.id}" selected>${s.name}</option>${otherSchools}</select></div>
+        ${canEdit?`<button class="btn btn-primary btn-sm" id="editBtn">${I.edit} Редагувати</button>`:''}
+      </div>
+    </div>
+
+    <section class="sch-hero anim">
+      <div class="sch-photo card" style="padding:0"><image-slot id="hero-${s.id}" shape="rounded" radius="22" placeholder="Фото закладу освіти"></image-slot></div>
+      <div class="sch-info">
+        <div class="row-top">
+          <div>
+            <div class="eyebrow">${s.type} · ${s.city||S.org.region}</div>
+            <h1 style="margin-top:6px">${s.name}</h1>
+            <div class="addr">${I.pin}${s.address}</div>
+          </div>
+          <span class="tag gold" style="font-size:14px;padding:7px 13px">${I.star} Рейтинг ${s.rating||0}</span>
+        </div>
+        <div class="sch-stat-row">
+          <div class="ss"><div class="v tnum">${s.events||0}</div><div class="l">Заходів</div></div>
+          <div class="ss"><div class="v tnum">${s.prevention||0}</div><div class="l">Профілактичні</div></div>
+          <div class="ss"><div class="v tnum">${F(s.participants||0)}</div><div class="l">Охоплено заходами</div></div>
+          <div class="ss"><div class="v tnum">${F(s.students||0)||'—'}</div><div class="l">Дітей у закладі</div></div>
+          <div class="ss"><div class="v tnum">${s.consultations||0}</div><div class="l">Консультацій</div></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="tabs anim">
+      <div class="tab active" data-tab="overview">Огляд</div>
+      <div class="tab" data-tab="calendar">Календар заходів</div>
+      <div class="tab" data-tab="archive">Архів скасованих</div>
+      <div class="tab" data-tab="gallery">Фотогалерея</div>
+      <div class="tab" data-tab="files">Файли та документи</div>
+      <div class="tab" data-tab="history">Історія</div>
+    </div>
+
+    <div class="tab-panel active" data-panel="overview">
+      <div class="grid-2">
+        <div class="col" style="gap:18px">
+          <div class="card card-pad">
+            <div class="section-title" style="margin-bottom:16px">${I.shield} Відповідальний інспектор СОБ</div>
+            <div class="person"><div class="avatar-init av">${insInit}</div><div><div class="n">${ins.name||'—'}</div><div class="r">${ins.rank||'Інспектор СОБ'}</div></div></div>
+            <div class="contact-row">
+              <a class="cbtn" href="tel:${(ins.phone||'').replace(/[^+\\d]/g,'')}">${I.phone} Подзвонити</a>
+              <a class="cbtn" href="mailto:${ins.email||''}">${I.mail} Написати</a>
+              <a class="cbtn" href="communication.html">${I.video} Відеозв'язок</a>
+            </div>
+          </div>
+          <div class="card card-pad">
+            <div class="card-head"><div class="section-title">${I.building} Адміністрація закладу</div>${canEdit?`<button class="btn btn-soft btn-sm" id="editBtn2">${I.edit} Редагувати</button>`:''}</div>
+            <div class="row between"><span class="muted">Директор</span><b>${s.director||'—'}</b></div><div class="divider"></div>
+            <div class="row between"><span class="muted">Телефон</span>${s.phone?`<a href="tel:${s.phone.replace(/[^+\d]/g,'')}" style="font-weight:600;color:var(--blue-600)">${s.phone}</a>`:'<b>—</b>'}</div><div class="divider"></div>
+            ${s.email?`<div class="row between"><span class="muted">Email</span><a href="mailto:${s.email}" style="font-weight:600;color:var(--blue-600)">${s.email}</a></div><div class="divider"></div>`:''}
+            ${s.website?`<div class="row between"><span class="muted">Сайт</span><a href="${s.website}" target="_blank" style="font-weight:600;color:var(--blue-600)">${s.website.replace(/^https?:\/\//,'')}</a></div><div class="divider"></div>`:''}
+            ${s.telegram?`<div class="row between"><span class="muted">Telegram</span><b>${s.telegram}</b></div><div class="divider"></div>`:''}
+            <div class="row between"><span class="muted">Учнів</span><b class="tnum">${F(s.students||0)}</b></div><div class="divider"></div>
+            <div class="row between"><span class="muted">Консультацій</span><b class="tnum">${s.consultations||0}</b></div>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <div class="card-head"><div class="section-title">${I.calendar} Останні заходи</div>${canEdit?`<button class="btn btn-soft btn-sm" id="addEvBtn2">${I.plus} Додати</button>`:''}</div>
+          ${eventsHtml}
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" data-panel="calendar">
+      <div class="card card-pad">
+        <div class="card-head"><div class="section-title">${I.calendar} Календар заходів закладу</div>${canEdit?`<button class="btn btn-primary btn-sm" id="addEvBtn">${I.plus} Додати захід</button>`:''}</div>
+        ${eventsHtml}
+      </div>
+    </div>
+
+    <div class="tab-panel" data-panel="archive">
+      <div class="card card-pad">
+        <div class="card-head"><div class="section-title">${I.close} Архів скасованих заходів</div><span class="muted" style="font-size:13px">${cancelledEvents.length} записів</span></div>
+        ${archiveHtml}
+      </div>
+    </div>
+
+    <div class="tab-panel" data-panel="gallery">
+      <div class="card card-pad">
+        <div class="card-head">
+          <div class="section-title">${I.image} Фотогалерея</div>
+          <div class="row gap-8">
+            <span class="muted" style="font-size:13px">${galleryItems.length} фото</span>
+            ${canEdit?`<button class="btn btn-primary btn-sm" id="addGalleryBtn">${I.upload} Додати фото</button>`:''}
+          </div>
+        </div>
+        ${canEdit?`<div class="dropzone" id="galDropzone" style="margin-bottom:16px"><div class="dz-ic">${I.image}</div><div style="font-weight:600">Перетягніть фото сюди або натисніть «Додати фото»</div><div class="muted" style="font-size:13px;margin-top:4px">JPG, PNG, WEBP — необмежена кількість</div></div><input type="file" id="galInput" accept="image/*" multiple style="display:none">`:''}
+        <div class="gallery">${galleryHtml}</div>
+      </div>
+    </div>
+
+    <div class="tab-panel" data-panel="files">
+      <div class="card card-pad">
+        <div class="card-head"><div class="section-title">${I.file} Файли та документи</div>${canEdit?`<button class="btn btn-primary btn-sm" id="uploadBtn">${I.upload} Завантажити файл</button>`:''}</div>
+        ${filesHtml}
+        ${canEdit?`<div class="dropzone" id="dropzone" style="margin-top:16px"><div class="dz-ic">${I.upload}</div><div style="font-weight:600">Перетягніть файли сюди або натисніть</div><div class="muted" style="font-size:13px;margin-top:4px">PDF, DOCX, PPTX, ZIP, зображення</div></div>`:''}
+      </div>
+    </div>
+
+    <div class="tab-panel" data-panel="history">
+      <div class="card card-pad">
+        <div class="section-title" style="margin-bottom:18px">${I.clock} Історія діяльності</div>
+        ${events.length?events.map((e,i,arr)=>{const dt=new Date(e.date).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'});return `<div class="hist-item"><div class="hist-line"><div class="hist-dot"></div>${i<arr.length-1?'<div class="hist-bar"></div>':''}</div><div class="hist-body"><div style="font-size:12px;color:var(--muted)">${dt}</div><div style="font-weight:600;margin-top:2px">${e.title}</div><div style="font-size:13px;color:var(--text-2);margin-top:3px">${e.type} · охоплено ${F(e.participants||0)} учасників</div></div></div>`;}).join(''):`<div style="padding:14px;text-align:center;color:var(--muted)">Історія порожня</div>`}
+      </div>
+    </div>`;
+
+  bindEvents();
+}
+
+function bindEvents(){
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.querySelector(`.tab-panel[data-panel="${t.dataset.tab}"]`).classList.add('active');
+  }));
+  document.getElementById('schPick')?.addEventListener('change', e => location.href = 'school.html?id=' + e.target.value);
+  document.getElementById('editBtn')?.addEventListener('click', openEdit);
+  document.getElementById('editBtn2')?.addEventListener('click', openEdit);
+  document.getElementById('addEvBtn')?.addEventListener('click', openEvent);
+  document.getElementById('addEvBtn2')?.addEventListener('click', openEvent);
+  document.getElementById('uploadBtn')?.addEventListener('click', ()=>document.getElementById('fileInput').click());
+  const dz = document.getElementById('dropzone');
+  if(dz){ dz.addEventListener('click', ()=>document.getElementById('fileInput').click());
+    dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('drag');});
+    dz.addEventListener('dragleave', ()=>dz.classList.remove('drag'));
+    dz.addEventListener('drop', e=>{e.preventDefault();dz.classList.remove('drag');handleFiles(e.dataTransfer.files);});
+  }
+  document.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', e=>{ e.stopPropagation(); if(confirm('Видалити захід назавжди?')){ const eid=b.dataset.del; (S.gallery||[]).filter(g=>g.eventId===eid).forEach(g=>window.SOBStore.deleteGallery(g.id)); window.SOBStore.deleteEvent(eid); toast('Захід видалено','navy'); render(); }}));
+  document.querySelectorAll('[data-cancel]').forEach(b=>b.addEventListener('click', e=>{ e.stopPropagation(); openCancelModal(b.dataset.cancel); }));
+  document.querySelectorAll('[data-restore]').forEach(b=>b.addEventListener('click', e=>{ e.stopPropagation(); window.SOBStore.restoreEvent(b.dataset.restore); toast('Захід відновлено'); render(); }));
+  document.querySelectorAll('[data-fdel]').forEach(b=>b.addEventListener('click', ()=>{ if(confirm('Видалити файл?')){ window.SOBStore.deleteFile(b.dataset.fdel); toast('Файл видалено','navy'); render(); }}));
+  document.querySelectorAll('[data-pdel]').forEach(b=>b.addEventListener('click', e=>{ e.stopPropagation(); if(confirm('Видалити фото?')){ window.SOBStore.deleteGallery(b.dataset.pdel); toast('Фото видалено','navy'); render(); }}));
+}
+
+/* Modals */
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+window.closeModal = closeModal;
+
+function openEdit(){
+  const fields = ['name','address','type','city','lat','lng','director','phone','email','website','telegram','students','events','participants','consultations','rating'];
+  fields.forEach(k=>{ const el=document.getElementById('e_'+k); if(el) el.value = s[k] ?? ''; });
+  openModal('editModal');
+}
+document.getElementById('saveEdit').addEventListener('click', ()=>{
+  const g = id => document.getElementById(id)?.value.trim() ?? '';
+  const gn = id => +document.getElementById(id)?.value || 0;
+  const patch = {
+    name: g('e_name'), address: g('e_address'), type: g('e_type'), city: g('e_city'),
+    lat: +document.getElementById('e_lat').value || s.lat,
+    lng: +document.getElementById('e_lng').value || s.lng,
+    director: g('e_director'), phone: g('e_phone'), email: g('e_email'),
+    website: g('e_website'), telegram: g('e_telegram'),
+    students: gn('e_students'), events: gn('e_events'),
+    participants: gn('e_participants'), consultations: gn('e_consultations'),
+    rating: Math.min(100, gn('e_rating')),
+  };
+  if(!patch.name){ toast('Введіть назву закладу','red'); return; }
+  window.SOBStore.updateSchool(s.id, patch);
+  s = S.schools.find(x=>x.id===s.id);
+  closeModal('editModal'); toast('Зміни збережено'); render();
+});
+
+let pendingPhotos = [];
+function openEvent(){
+  document.getElementById('ev_date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('ev_title').value='';
+  document.getElementById('ev_audience').value='';
+  document.getElementById('ev_participants').value='';
+  document.getElementById('ev_note').value='';
+  pendingPhotos=[];
+  document.getElementById('photoPreview').innerHTML='';
+  document.getElementById('evPhotoInput').value='';
+  openModal('eventModal');
+}
+document.getElementById('evPhotoInput').addEventListener('change', e=>addPendingPhotos(e.target.files));
+const pdz = document.getElementById('photoDropzone');
+pdz.addEventListener('dragover', e=>{e.preventDefault(); pdz.style.background='var(--blue-050)';});
+pdz.addEventListener('dragleave', ()=>pdz.style.background='');
+pdz.addEventListener('drop', e=>{e.preventDefault(); pdz.style.background=''; addPendingPhotos(e.dataTransfer.files);});
+function addPendingPhotos(fileList){
+  [...fileList].filter(f=>f.type.startsWith('image/')).forEach(file=>{
+    const r=new FileReader();
+    r.onload=()=>{
+      const id='pp-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+      pendingPhotos.push({id, dataUrl:r.result, name:file.name});
+      const prev=document.getElementById('photoPreview');
+      const el=document.createElement('div'); el.className='pp'; el.dataset.id=id;
+      el.innerHTML=`<img src="${r.result}"><button type="button" title="Видалити">✕</button>`;
+      el.querySelector('button').addEventListener('click',()=>{ pendingPhotos=pendingPhotos.filter(p=>p.id!==id); el.remove(); });
+      prev.appendChild(el);
+    };
+    r.readAsDataURL(file);
+  });
+}
+document.getElementById('saveEvent').addEventListener('click', ()=>{
+  const title = document.getElementById('ev_title').value.trim();
+  if(!title){ toast('Введіть назву заходу','red'); return; }
+  const parts = +document.getElementById('ev_participants').value||0;
+  const ev = window.SOBStore.addEvent({ schoolId: s.id, title, date: document.getElementById('ev_date').value, type: document.getElementById('ev_type').value, audience: document.getElementById('ev_audience').value.trim(), participants: parts, note: document.getElementById('ev_note').value.trim() });
+  if(pendingPhotos.length){
+    pendingPhotos.forEach(p=>window.SOBStore.addGallery({ schoolId: s.id, eventId: ev.id, dataUrl: p.dataUrl, title: p.name, date: document.getElementById('ev_date').value }));
+  }
+  window.SOBStore.updateSchool(s.id, { events: (s.events||0)+1, participants: (s.participants||0)+parts });
+  s = S.schools.find(x=>x.id===s.id);
+  pendingPhotos=[];
+  closeModal('eventModal'); toast('Захід додано'); render();
+});
+
+/* Gallery direct upload */
+function handleGalleryFiles(fileList) {
+  const U = window.SOBAuth.current();
+  const today = new Date().toISOString().slice(0,10);
+  [...fileList].filter(f=>f.type.startsWith('image/')).forEach(file=>{
+    const r = new FileReader();
+    r.onload = () => {
+      window.SOBStore.addGallery({ schoolId: s.id, dataUrl: r.result, title: file.name.replace(/\.[^.]+$/,''), date: today, author: U.name||'' });
+      toast('Фото додано до галереї');
+      render();
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+document.addEventListener('click', e => {
+  if(e.target.closest('#addGalleryBtn')) document.getElementById('galInput')?.click();
+});
+document.addEventListener('change', e => {
+  if(e.target.id==='galInput') { handleGalleryFiles(e.target.files); e.target.value=''; }
+});
+document.addEventListener('dragover', e => { if(e.target.closest('#galDropzone')) e.preventDefault(); });
+document.addEventListener('drop', e => {
+  const dz = e.target.closest('#galDropzone');
+  if(!dz) return;
+  e.preventDefault();
+  handleGalleryFiles(e.dataTransfer.files);
+});
+
+/* File upload (persist metadata + small files as dataURL) */
+document.getElementById('fileInput').addEventListener('change', e=>handleFiles(e.target.files));
+function humanSize(b){ if(b<1024)return b+' Б'; if(b<1048576)return (b/1024).toFixed(0)+' КБ'; return (b/1048576).toFixed(1)+' МБ'; }
+function handleFiles(fileList){
+  [...fileList].forEach(file=>{
+    const meta = { name: file.name, size: humanSize(file.size), date: new Date().toISOString().slice(0,10), schoolId: s.id, inspector: s.inspector };
+    if(file.size < 1.8*1048576){ const r=new FileReader(); r.onload=()=>{ meta.dataUrl=r.result; window.SOBStore.addFile(meta); toast('Файл завантажено'); render(); }; r.readAsDataURL(file); }
+    else { window.SOBStore.addFile(meta); toast('Файл додано (великий — без вмісту)','navy'); render(); }
+  });
+  document.getElementById('fileInput').value='';
+}
+
+/* Cancel event modal */
+let cancellingEventId = null;
+document.getElementById('closeCancelBtn').innerHTML = I.close;
+function openCancelModal(eid) {
+  cancellingEventId = eid;
+  document.getElementById('cancelReason').value = '';
+  openModal('cancelModal');
+}
+document.getElementById('confirmCancel').addEventListener('click', () => {
+  const reason = document.getElementById('cancelReason').value.trim();
+  if(!reason) { toast('Вкажіть причину скасування', 'red'); return; }
+  window.SOBStore.cancelEvent(cancellingEventId, reason);
+  closeModal('cancelModal');
+  toast('Захід скасовано та переміщено до архіву', 'navy');
+  render();
+});
+window.openCancelModal = openCancelModal;
+
+document.querySelectorAll('.modal-scrim').forEach(m=>m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('show'); }));
+
+/* Перегляд фото на весь екран */
+window.openPhoto = function(src){
+  let lbox = document.getElementById('lightbox');
+  if(!lbox){
+    lbox = document.createElement('div');
+    lbox.id = 'lightbox';
+    lbox.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+    lbox.innerHTML='<img style="max-width:92vw;max-height:88vh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6)">';
+    lbox.addEventListener('click',()=>lbox.style.display='none');
+    document.body.appendChild(lbox);
+  }
+  lbox.querySelector('img').src=src;
+  lbox.style.display='flex';
+};
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ const lb=document.getElementById('lightbox'); if(lb) lb.style.display='none'; }});
+
+render();
+</script>
+</body>
+</html>

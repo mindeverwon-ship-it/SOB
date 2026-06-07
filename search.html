@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СОБ · Пошук</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+.sr-section { margin-bottom: 24px; }
+.sr-head { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.sr-item { display: flex; gap: 14px; align-items: flex-start; padding: 13px 16px; border-radius: var(--radius); transition: background .12s; cursor: pointer; }
+.sr-item:hover { background: var(--surface-2); }
+.sr-ic { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; flex-shrink: 0; }
+.sr-ic svg { width: 18px; height: 18px; }
+.sr-body { flex: 1; min-width: 0; }
+.sr-title { font-weight: 600; font-size: 14px; }
+.sr-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.search-big { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 2px solid var(--border-2); border-radius: var(--radius-lg); padding: 14px 20px; margin-bottom: 28px; box-shadow: var(--shadow-sm); }
+.search-big:focus-within { border-color: var(--blue-400); box-shadow: 0 0 0 4px var(--blue-050); }
+.search-big svg { width: 22px; height: 22px; color: var(--muted); flex-shrink: 0; }
+.search-big input { border: none; background: none; outline: none; font-size: 17px; font-family: inherit; width: 100%; color: var(--text); }
+.search-big input::placeholder { color: var(--muted-2); }
+.filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+.fchip { padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .14s; background: var(--surface); border: 1px solid var(--border-2); color: var(--text-2); }
+.fchip.on { background: var(--navy-800); color: #fff; border-color: transparent; }
+.no-results { text-align: center; padding: 60px 20px; color: var(--muted); }
+.no-results svg { width: 48px; height: 48px; margin: 0 auto 14px; opacity: .35; display: block; }
+.hl { background: var(--gold-100); color: var(--navy-800); border-radius: 3px; padding: 0 2px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="app" id="shell"></div>
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/shell.js"></script>
+<script>
+const S = window.SOB, I = window.ICON;
+SOBShell.render({ active: 'search', crumb: ['СОБ', 'Пошук'] });
+
+const params = new URLSearchParams(location.search);
+let searchQ    = params.get('q') || '';
+let filterCat  = 'all';
+
+function hl(text, q) {
+  if(!q || !text) return text||'';
+  const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.replace(new RegExp(`(${safe})`, 'gi'), '<span class="hl">$1</span>');
+}
+
+function buildResults(q) {
+  const lq = q.toLowerCase();
+  const res = { schools:[], events:[], incidents:[], assignments:[], inspectors:[] };
+  if(!lq) return res;
+
+  (S.schools||[]).forEach(s => {
+    if((s.name||'').toLowerCase().includes(lq)||(s.city||'').toLowerCase().includes(lq)||(s.address||'').toLowerCase().includes(lq))
+      res.schools.push(s);
+  });
+
+  (S.schoolEvents||[]).forEach(ev => {
+    const sc = S.schools.find(x=>x.id===ev.schoolId);
+    if((ev.title||'').toLowerCase().includes(lq)||(ev.note||'').toLowerCase().includes(lq)||(sc?.name||'').toLowerCase().includes(lq))
+      res.events.push({...ev, schoolName: sc?.name||''});
+  });
+
+  (S.incidents||[]).forEach(x => {
+    const sc  = S.schools.find(s=>s.id===x.school);
+    const ins = S.inspectors[x.inspector];
+    const ti  = S.incidentTypes.find(t=>t.id===x.type);
+    if((x.title||'').toLowerCase().includes(lq)||(x.desc||'').toLowerCase().includes(lq)||(sc?.name||'').toLowerCase().includes(lq)||(ins?.name||'').toLowerCase().includes(lq)||(ti?.label||'').toLowerCase().includes(lq))
+      res.incidents.push({...x, schoolName: sc?.name||'', inspName: ins?.name||''});
+  });
+
+  (S.assignments||[]).forEach(x => {
+    const ins = S.inspectors[x.assignee];
+    const sc  = S.schools.find(s=>s.id===x.school);
+    if((x.title||'').toLowerCase().includes(lq)||(x.desc||'').toLowerCase().includes(lq)||(ins?.name||'').toLowerCase().includes(lq)||(sc?.name||'').toLowerCase().includes(lq))
+      res.assignments.push({...x, inspName: ins?.name||''});
+  });
+
+  Object.entries(S.inspectors||{}).forEach(([k,ins]) => {
+    if((ins.name||'').toLowerCase().includes(lq)||(ins.position||'').toLowerCase().includes(lq))
+      res.inspectors.push({id:k,...ins});
+  });
+
+  return res;
+}
+
+function statusTag(s, map) {
+  const labels = map||{ new:'Нове', wip:'В роботі', done:'Виконано', closed:'Закрито' };
+  const cls = s==='done'||s==='closed'?'green':s==='wip'?'gold':'blue';
+  return `<span class="tag ${cls}">${labels[s]||s}</span>`;
+}
+
+function render() {
+  const q   = searchQ.trim();
+  const res = buildResults(q);
+
+  const total = res.schools.length + res.events.length + res.incidents.length + res.assignments.length + res.inspectors.length;
+
+  const categories = [
+    { id:'all',         label:'Усі',            cnt: total },
+    { id:'schools',     label:'Заклади',        cnt: res.schools.length },
+    { id:'events',      label:'Заходи',         cnt: res.events.length },
+    { id:'incidents',   label:'Інциденти',      cnt: res.incidents.length },
+    { id:'assignments', label:'Доручення',      cnt: res.assignments.length },
+    { id:'inspectors',  label:'Інспектори',     cnt: res.inspectors.length },
+  ].filter(c => c.id==='all' || c.cnt > 0);
+
+  let sectionsHtml = '';
+
+  const show = cat => filterCat === 'all' || filterCat === cat;
+
+  if(show('schools') && res.schools.length) {
+    sectionsHtml += `<div class="sr-section">
+      <div class="sr-head"><span>${I.school} Заклади освіти</span><span>${res.schools.length}</span></div>
+      ${res.schools.map(s=>`<a class="sr-item" href="school.html?id=${s.id}">
+        <div class="sr-ic" style="background:var(--blue-100);color:var(--blue-600)">${I.school}</div>
+        <div class="sr-body">
+          <div class="sr-title">${hl(s.name,q)}</div>
+          <div class="sr-sub">${s.city||''} ${s.district?' · '+s.district:''} ${s.inspector?'· '+((S.inspectors[s.inspector])?.name||''):''}</div>
+        </div>
+        <span class="tag ${s.serviced?'blue':'gray'}">${s.serviced?'СОБ':'Не обслуговується'}</span>
+      </a>`).join('')}
+    </div>`;
+  }
+
+  if(show('events') && res.events.length) {
+    const ET = S.eventTypes||[];
+    sectionsHtml += `<div class="sr-section">
+      <div class="sr-head"><span>${I.calendar} Заходи</span><span>${res.events.length}</span></div>
+      ${res.events.slice(0,20).map(ev=>{
+        const t = ET.find(x=>x.id===ev.type)||{color:'#93A0B8',icon:'doc'};
+        return `<a class="sr-item" href="school.html?id=${ev.schoolId}">
+          <div class="sr-ic" style="background:${t.color}22;color:${t.color}">${I[t.icon]||I.calendar}</div>
+          <div class="sr-body">
+            <div class="sr-title">${hl(ev.title,q)}</div>
+            <div class="sr-sub">${ev.schoolName} ${ev.date?' · '+new Date(ev.date).toLocaleDateString('uk-UA'):''}</div>
+          </div>
+        </a>`;
+      }).join('')}
+    </div>`;
+  }
+
+  if(show('incidents') && res.incidents.length) {
+    sectionsHtml += `<div class="sr-section">
+      <div class="sr-head"><span>${I.alert} Інциденти</span><span>${res.incidents.length}</span></div>
+      ${res.incidents.slice(0,15).map(x=>{
+        const ti = S.incidentTypes.find(t=>t.id===x.type)||{color:'#93A0B8',icon:'doc'};
+        return `<a class="sr-item" href="incidents.html">
+          <div class="sr-ic" style="background:${ti.color}22;color:${ti.color}">${I[ti.icon]||I.alert}</div>
+          <div class="sr-body">
+            <div class="sr-title">${hl(x.title,q)}</div>
+            <div class="sr-sub">${x.schoolName}${x.inspName?' · '+x.inspName:''}</div>
+          </div>
+          ${statusTag(x.status,{new:'Новий',wip:'В роботі',done:'Вирішено',closed:'Закрито'})}
+        </a>`;
+      }).join('')}
+    </div>`;
+  }
+
+  if(show('assignments') && res.assignments.length) {
+    sectionsHtml += `<div class="sr-section">
+      <div class="sr-head"><span>${I.doc} Доручення</span><span>${res.assignments.length}</span></div>
+      ${res.assignments.slice(0,15).map(x=>`<a class="sr-item" href="assignments.html">
+        <div class="sr-ic" style="background:var(--blue-100);color:var(--blue-600)">${I.doc}</div>
+        <div class="sr-body">
+          <div class="sr-title">${hl(x.title,q)}</div>
+          <div class="sr-sub">${x.inspName}${x.deadline?' · до '+new Date(x.deadline).toLocaleDateString('uk-UA'):''}</div>
+        </div>
+        ${statusTag(x.status,{new:'Нове',wip:'Виконується',done:'Виконано'})}
+      </a>`).join('')}
+    </div>`;
+  }
+
+  if(show('inspectors') && res.inspectors.length) {
+    sectionsHtml += `<div class="sr-section">
+      <div class="sr-head"><span>${I.users} Інспектори</span><span>${res.inspectors.length}</span></div>
+      ${res.inspectors.map(ins=>`<a class="sr-item" href="admin.html">
+        <div class="sr-ic" style="background:var(--navy-800);color:#fff">
+          <span style="font-weight:700;font-size:13px">${(ins.name||'').split(' ').map(w=>w[0]).slice(0,2).join('')}</span>
+        </div>
+        <div class="sr-body">
+          <div class="sr-title">${hl(ins.name,q)}</div>
+          <div class="sr-sub">${ins.position||ins.rank||''}</div>
+        </div>
+      </a>`).join('')}
+    </div>`;
+  }
+
+  if(!sectionsHtml && q) {
+    sectionsHtml = `<div class="no-results">${I.search}<div style="font-size:17px;font-weight:700;margin-bottom:8px">Нічого не знайдено</div><div>Спробуйте змінити запит або перевірте правопис</div></div>`;
+  }
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-head">
+      <div><h1 class="page-title">Глобальний пошук</h1><div class="page-sub">Пошук по всій платформі: заклади, заходи, інциденти, доручення</div></div>
+    </div>
+
+    <div class="search-big">
+      ${I.search}
+      <input type="text" id="searchInput" placeholder="Введіть запит…" value="${searchQ}" autofocus>
+      ${searchQ ? `<button onclick="document.getElementById('searchInput').value='';searchQ='';render()" style="color:var(--muted);font-size:20px;line-height:1;padding:0 4px">✕</button>` : ''}
+    </div>
+
+    ${q ? `<div class="filter-row">
+      ${categories.map(c=>`<button class="fchip ${filterCat===c.id?'on':''}" data-cat="${c.id}">${c.label}${c.cnt?' ('+c.cnt+')':''}</button>`).join('')}
+    </div>` : ''}
+
+    <div id="srResults">
+      ${q ? sectionsHtml : `<div class="no-results">${I.search}<div style="font-size:17px;font-weight:700;margin-bottom:8px">Почніть пошук</div><div>Введіть ключове слово для пошуку по закладах, заходах, інцидентах та дорученнях</div></div>`}
+    </div>
+  `;
+
+  document.getElementById('searchInput')?.addEventListener('input', e => {
+    const pos = e.target.selectionStart;
+    searchQ = e.target.value;
+    const url = new URL(location);
+    url.searchParams.set('q', searchQ);
+    history.replaceState({}, '', url);
+    render();
+    const ni = document.getElementById('searchInput');
+    ni?.focus(); ni?.setSelectionRange(pos, pos);
+  });
+
+  document.querySelectorAll('.fchip[data-cat]').forEach(b => {
+    b.addEventListener('click', () => { filterCat = b.dataset.cat; render(); });
+  });
+}
+
+document.addEventListener('sob:synced', () => render());
+render();
+</script>
+</body>
+</html>
