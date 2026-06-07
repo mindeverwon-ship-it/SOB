@@ -23,6 +23,7 @@ window.SOBStore = {
     const saved = this._loadLocal();
     if (saved) {
       this.collections.forEach(k => { if (saved[k] !== undefined) window.SOB[k] = saved[k]; });
+      (window.SOB.schools || []).forEach(s => this.recalcSchool(s.id));
     }
     if (this.FB && this.FB !== 'YOUR_FIREBASE_URL') {
       this._fetchCloud();
@@ -40,8 +41,10 @@ window.SOBStore = {
       const data = await res.json();
       if (!data) return;
       this.collections.forEach(k => { if (data[k] !== undefined) window.SOB[k] = data[k]; });
+      // перерахувати кешовані лічильники після завантаження з хмари
+      (window.SOB.schools || []).forEach(s => this.recalcSchool(s.id));
       // зберегти в localStorage як кеш
-      try { localStorage.setItem(this.KEY, JSON.stringify(data)); } catch(e){}
+      try { localStorage.setItem(this.KEY, JSON.stringify(this._snapshot())); } catch(e){}
       // сповістити сторінку що дані оновились
       document.dispatchEvent(new CustomEvent('sob:synced'));
     } catch(e) { console.warn('Firebase недоступний, працюємо локально', e); }
@@ -52,8 +55,7 @@ window.SOBStore = {
   },
 
   save() {
-    const out = {};
-    this.collections.forEach(k => out[k] = window.SOB[k]);
+    const out = this._snapshot();
     // зберегти локально одразу
     try { localStorage.setItem(this.KEY, JSON.stringify(out)); } catch(e) {
       console.warn('localStorage переповнений', e);
@@ -70,8 +72,25 @@ window.SOBStore = {
     return true;
   },
 
+  _snapshot() {
+    const out = {};
+    this.collections.forEach(k => out[k] = window.SOB[k]);
+    return out;
+  },
+
   reset() { localStorage.removeItem(this.KEY); localStorage.removeItem('sob_imgslots'); },
   uid(p) { return p + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); },
+
+  /* ---- Очистити всі заходи і обнулити лічильники ---- */
+  clearAllEvents() {
+    window.SOB.schoolEvents = [];
+    (window.SOB.schools || []).forEach(s => {
+      s.events = 0; s.participants = 0; s.prevention = 0; s.rating = 0;
+    });
+    this.logAudit('delete', 'events', 'all', 'Всі заходи видалено, лічильники обнулено');
+    this.save();
+    if (typeof toast === 'function') toast('Всі заходи видалено, лічильники обнулено', 'navy');
+  },
 
   /* ---- Заклади ---- */
   addSchool(s) { s.id = s.id || this.uid('sch'); if (s.serviced === undefined) s.serviced = true; window.SOB.schools.push(s); this.save(); return s; },
@@ -84,12 +103,43 @@ window.SOBStore = {
     this.save();
   },
 
+  /* ---- Перерахунок статистики закладу ---- */
+  recalcSchool(schoolId) {
+    const s = window.SOB.schools.find(x => x.id === schoolId);
+    if (!s) return;
+    const evs = window.SOB.schoolEvents.filter(x => x.schoolId === schoolId && x.status !== 'cancelled');
+    s.events       = evs.length;
+    s.participants = evs.reduce((sum, e) => sum + (e.participants || 0), 0);
+    s.prevention   = evs.filter(e => ['prevention','mine','evacuation','cyber','buling','legal'].includes(e.type)).length;
+    s.rating       = s.events + Math.round(s.participants / 10);
+  },
+
   /* ---- Заходи ---- */
-  addEvent(ev) { ev.id = ev.id || this.uid('ev'); ev.createdAt = ev.createdAt || new Date().toISOString(); window.SOB.schoolEvents.unshift(ev); this.logAudit('create','event',ev.id,'Захід додано: '+(ev.title||'')); this.save(); return ev; },
-  updateEvent(id, patch) { const e = window.SOB.schoolEvents.find(x => x.id === id); if (e) { Object.assign(e, patch); this.logAudit('update','event',id,'Захід оновлено'); this.save(); } return e; },
-  cancelEvent(id, reason) { const e = window.SOB.schoolEvents.find(x => x.id === id); if(e){ e.status='cancelled'; e.cancelReason=reason; e.cancelledAt=new Date().toISOString(); this.logAudit('cancel','event',id,'Захід скасовано: '+reason); this.save(); } return e; },
-  restoreEvent(id) { const e = window.SOB.schoolEvents.find(x => x.id === id); if(e){ e.status='active'; delete e.cancelReason; delete e.cancelledAt; this.logAudit('restore','event',id,'Захід відновлено'); this.save(); } return e; },
-  deleteEvent(id) { window.SOB.schoolEvents = window.SOB.schoolEvents.filter(x => x.id !== id); this.logAudit('delete','event',id,'Захід видалено'); this.save(); },
+  addEvent(ev) {
+    ev.id = ev.id || this.uid('ev'); ev.createdAt = ev.createdAt || new Date().toISOString();
+    window.SOB.schoolEvents.unshift(ev);
+    this.recalcSchool(ev.schoolId);
+    this.logAudit('create','event',ev.id,'Захід додано: '+(ev.title||'')); this.save(); return ev;
+  },
+  updateEvent(id, patch) {
+    const e = window.SOB.schoolEvents.find(x => x.id === id);
+    if (e) { Object.assign(e, patch); this.recalcSchool(e.schoolId); this.logAudit('update','event',id,'Захід оновлено'); this.save(); } return e;
+  },
+  cancelEvent(id, reason) {
+    const e = window.SOB.schoolEvents.find(x => x.id === id);
+    if(e){ e.status='cancelled'; e.cancelReason=reason; e.cancelledAt=new Date().toISOString(); this.recalcSchool(e.schoolId); this.logAudit('cancel','event',id,'Захід скасовано: '+reason); this.save(); } return e;
+  },
+  restoreEvent(id) {
+    const e = window.SOB.schoolEvents.find(x => x.id === id);
+    if(e){ e.status='active'; delete e.cancelReason; delete e.cancelledAt; this.recalcSchool(e.schoolId); this.logAudit('restore','event',id,'Захід відновлено'); this.save(); } return e;
+  },
+  deleteEvent(id) {
+    const e = window.SOB.schoolEvents.find(x => x.id === id);
+    const schoolId = e?.schoolId;
+    window.SOB.schoolEvents = window.SOB.schoolEvents.filter(x => x.id !== id);
+    if (schoolId) this.recalcSchool(schoolId);
+    this.logAudit('delete','event',id,'Захід видалено'); this.save();
+  },
   eventsFor(schoolId) { return window.SOB.schoolEvents.filter(x => x.schoolId === schoolId); },
 
   /* ---- Файли ---- */

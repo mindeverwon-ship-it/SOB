@@ -283,12 +283,58 @@ input, textarea, select { font-family: inherit; color: inherit; }
 *::-webkit-scrollbar-thumb:hover { background: var(--muted-2); background-clip: padding-box; }
 .sb-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); background-clip: padding-box; }
 
-/* Entrance — transform-only so content is ALWAYS visible (no opacity-0 trap) */
-@keyframes riseIn { from { transform: translateY(12px); } to { transform: none; } }
-.anim { opacity: 1; }
-@media (prefers-reduced-motion: no-preference) { body.js-anim .anim { animation: riseIn .5s var(--ease) both; } }
-.anim-1 { animation-delay: .04s; } .anim-2 { animation-delay: .09s; } .anim-3 { animation-delay: .14s; }
-.anim-4 { animation-delay: .19s; } .anim-5 { animation-delay: .24s; } .anim-6 { animation-delay: .29s; }
+/* ── Entrance animations ── */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(.93) translateY(10px); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* Анімації — тільки коли body має клас js-anim */
+body.js-anim .anim       { opacity: 0; }
+body.js-anim .anim-fade  { opacity: 0; }
+body.js-anim .anim-pop   { opacity: 0; }
+body.js-anim .anim-slide { opacity: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  body.js-anim .anim        { animation: riseIn      .55s var(--ease) both; }
+  body.js-anim .anim-fade   { animation: fadeIn      .5s  ease        both; }
+  body.js-anim .anim-pop    { animation: popIn       .5s  var(--ease) both; }
+  body.js-anim .anim-slide  { animation: slideRight  .5s  var(--ease) both; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.js-anim .anim,
+  body.js-anim .anim-fade,
+  body.js-anim .anim-pop,
+  body.js-anim .anim-slide { opacity: 1 !important; animation: none !important; }
+}
+
+.anim-1  { animation-delay: .04s; }
+.anim-2  { animation-delay: .09s; }
+.anim-3  { animation-delay: .14s; }
+.anim-4  { animation-delay: .19s; }
+.anim-5  { animation-delay: .24s; }
+.anim-6  { animation-delay: .29s; }
+.anim-7  { animation-delay: .34s; }
+.anim-8  { animation-delay: .39s; }
+
+/* Page-level fade */
+@keyframes pageFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+body.js-anim #content { animation: pageFade .4s var(--ease) both; }
 
 /* Utility */
 .row { display: flex; align-items: center; gap: 12px; }
