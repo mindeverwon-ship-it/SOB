@@ -66,14 +66,15 @@ const NAV_ALL = {
   ai:          { id: "ai",          label: "AI-помічник",         icon: "ai",       href: "assistant.html" },
   cabinet:     { id: "cabinet",     label: "Кабінет інспектора",  icon: "folder",   href: "cabinet.html" },
   admin:       { id: "admin",       label: "Адмін-панель",        icon: "settings", href: "admin.html" },
+  monitoring:  { id: "monitoring",  label: "Моніторинг соцмереж", icon: "alert",    href: "monitoring.html" },
 };
 
 // які розділи бачить кожна роль (у заданому порядку)
 const NAV_BY_ROLE = {
   public:     ["dashboard","schools","map","gallery","analytics","comm","search","ai"],
-  leadership: ["dashboard","schools","map","analytics","incidents","gallery","comm","search","ai"],
-  inspector:  ["dashboard","cabinet","schools","map","incidents","assignments","analytics","gallery","comm","search","ai"],
-  admin:      ["dashboard","admin","schools","map","incidents","assignments","analytics","gallery","comm","search","ai"],
+  leadership: ["dashboard","schools","map","analytics","incidents","monitoring","gallery","comm","search","ai"],
+  inspector:  ["dashboard","cabinet","schools","map","incidents","assignments","monitoring","analytics","gallery","comm","search","ai"],
+  admin:      ["dashboard","admin","schools","map","incidents","assignments","monitoring","analytics","gallery","comm","search","ai"],
 };
 
 window.SOBShell = {

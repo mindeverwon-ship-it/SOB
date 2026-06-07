@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СОБ · Моніторинг соцмереж</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+.mon-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+.mon-stat { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px 20px; }
+.mon-stat .v { font-size:28px; font-weight:800; letter-spacing:-.02em; }
+.mon-stat .l { font-size:12.5px; color:var(--muted); margin-top:3px; }
+
+.threat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px 20px; display:flex; gap:16px; align-items:flex-start; transition:box-shadow .15s; }
+.threat-card:hover { box-shadow:var(--shadow); }
+.threat-card + .threat-card { margin-top:10px; }
+
+.thr-badge { width:46px; height:46px; border-radius:13px; display:grid; place-items:center; flex-shrink:0; color:#fff; font-size:20px; }
+.thr-body { flex:1; min-width:0; }
+.thr-title { font-weight:700; font-size:15px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.thr-meta { font-size:12.5px; color:var(--muted); margin-top:5px; display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+.thr-text { font-size:13.5px; color:var(--text-2); margin-top:10px; background:var(--surface-2); border-left:3px solid var(--border-strong); padding:10px 14px; border-radius:0 10px 10px 0; font-style:italic; white-space:pre-wrap; word-break:break-word; }
+.thr-link { font-size:12px; color:var(--blue-600); font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:4px; margin-top:8px; }
+.thr-link:hover { text-decoration:underline; }
+.thr-actions { display:flex; gap:6px; flex-shrink:0; align-items:flex-start; }
+.tact { color:var(--muted-2); padding:7px; border-radius:8px; transition:all .14s; background:none; border:none; cursor:pointer; }
+.tact:hover { background:var(--surface-3); color:var(--text); }
+.tact.del:hover { background:var(--red-100); color:var(--red-500); }
+.tact svg { width:16px; height:16px; display:block; }
+
+/* threat levels */
+.lvl-critical { background:#DC2626; }
+.lvl-high     { background:#EA580C; }
+.lvl-medium   { background:#D97706; }
+.lvl-low      { background:#6B7280; }
+.badge-critical { background:var(--red-100); color:#DC2626; }
+.badge-high     { background:#FEF3C7; color:#D97706; }
+.badge-medium   { background:#FEF9C3; color:#854D0E; }
+.badge-low      { background:var(--surface-3); color:var(--muted); }
+
+/* platform icons */
+.plat { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; padding:3px 9px; border-radius:20px; }
+.plat-tiktok  { background:#000; color:#fff; }
+.plat-insta   { background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color:#fff; }
+.plat-tg      { background:#2CA5E0; color:#fff; }
+.plat-facebook{ background:#1877F2; color:#fff; }
+.plat-youtube { background:#FF0000; color:#fff; }
+.plat-other   { background:var(--surface-3); color:var(--text-2); }
+
+.status-badge { font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:20px; }
+.st-new      { background:var(--blue-100); color:var(--blue-700); }
+.st-checking { background:#FEF9C3; color:#854D0E; }
+.st-reacted  { background:var(--green-100); color:var(--green-600); }
+.st-false    { background:var(--surface-3); color:var(--muted); }
+
+.filters-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:20px; }
+.filters-row .f-search { flex:1; min-width:220px; position:relative; }
+.filters-row .f-search input { width:100%; padding:9px 14px 9px 36px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; background:var(--surface-2); outline:none; }
+.filters-row .f-search input:focus { border-color:var(--blue-400); box-shadow:0 0 0 3px var(--blue-050); }
+.filters-row .f-search .si { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--muted); }
+.filters-row .f-search .si svg { width:16px; height:16px; }
+
+.beta-banner { background:linear-gradient(135deg,var(--navy-800),var(--navy-950)); color:#fff; border-radius:var(--radius-lg); padding:18px 22px; display:flex; align-items:center; gap:16px; margin-bottom:24px; }
+.beta-banner .bb-icon { width:44px; height:44px; background:rgba(255,255,255,.1); border-radius:12px; display:grid; place-items:center; flex-shrink:0; }
+.beta-banner .bb-title { font-weight:800; font-size:15px; }
+.beta-banner .bb-sub { font-size:13px; color:rgba(255,255,255,.6); margin-top:3px; }
+.beta-tag { background:var(--gold-500); color:#000; font-size:11px; font-weight:800; padding:2px 8px; border-radius:20px; letter-spacing:.04em; }
+
+.empty-mon { text-align:center; padding:60px 20px; color:var(--muted); }
+.empty-mon svg { width:48px; height:48px; opacity:.3; margin-bottom:16px; }
+.empty-mon p { font-size:15px; }
+
+@media(max-width:860px){ .mon-stats { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:520px){ .mon-stats { grid-template-columns:1fr 1fr; } .threat-card { flex-wrap:wrap; } }
+</style>
+</head>
+<body>
+<div class="app" id="shell"></div>
+
+<!-- Add threat modal -->
+<div class="modal-scrim" id="monModal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head">
+      <div class="section-title" id="monModalTitle">Зафіксувати загрозу</div>
+      <button class="icon-btn" id="closeMonBtn"></button>
+    </div>
+    <div class="modal-body col" style="gap:15px">
+
+      <div class="grid-2" style="gap:13px">
+        <div class="field">
+          <label>Платформа <span style="color:var(--red-500)">*</span></label>
+          <select class="input" id="mon_platform">
+            <option value="tiktok">TikTok</option>
+            <option value="insta">Instagram</option>
+            <option value="tg">Telegram</option>
+            <option value="facebook">Facebook</option>
+            <option value="youtube">YouTube</option>
+            <option value="other">Інше</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Акаунт (username)</label>
+          <input class="input" id="mon_account" placeholder="@username або назва">
+        </div>
+      </div>
+
+      <div class="grid-2" style="gap:13px">
+        <div class="field">
+          <label>Рівень загрози <span style="color:var(--red-500)">*</span></label>
+          <select class="input" id="mon_level">
+            <option value="critical">🔴 Критичний — пряма загроза</option>
+            <option value="high">🟠 Високий — агресія / зброя</option>
+            <option value="medium" selected>🟡 Середній — булінг / цькування</option>
+            <option value="low">⚪ Низький — підозріла активність</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Заклад освіти</label>
+          <select class="input" id="mon_school"><option value="">— Оберіть заклад —</option></select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Тип загрози <span style="color:var(--red-500)">*</span></label>
+        <select class="input" id="mon_type">
+          <option value="weapon">Зброя / насилля</option>
+          <option value="threat">Погрози конкретній особі</option>
+          <option value="bulling">Булінг / цькування</option>
+          <option value="suicide">Суїцидальні наміри</option>
+          <option value="drugs">Наркотики</option>
+          <option value="extremism">Екстремізм / радикалізм</option>
+          <option value="other">Інше</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Посилання на пост / сторінку</label>
+        <input class="input" id="mon_url" placeholder="https://tiktok.com/@username/video/...">
+      </div>
+
+      <div class="field">
+        <label>Текст / опис контенту <span style="color:var(--red-500)">*</span></label>
+        <textarea class="input" id="mon_text" rows="4" placeholder="Вставте текст посту або опишіть що зафіксовано…" style="resize:vertical"></textarea>
+      </div>
+
+      <div class="grid-2" style="gap:13px">
+        <div class="field">
+          <label>Дата виявлення</label>
+          <input class="input" type="date" id="mon_date">
+        </div>
+        <div class="field">
+          <label>Статус</label>
+          <select class="input" id="mon_status">
+            <option value="new">Нове — потребує перевірки</option>
+            <option value="checking">Опрацьовується</option>
+            <option value="reacted">Відреаговано</option>
+            <option value="false">Хибна тривога</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Примітки / вжиті заходи</label>
+        <textarea class="input" id="mon_notes" rows="2" placeholder="Що зроблено або планується…" style="resize:vertical"></textarea>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('monModal')">Скасувати</button>
+      <button class="btn btn-primary" id="saveMonBtn">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/shell.js"></script>
+<script>
+const S = window.SOB, I = window.ICON;
+const canEdit = window.SOBAuth.canEdit();
+
+// Init monitoring collection
+if (!S.monitoring) S.monitoring = [];
+
+SOBShell.render({ active: 'monitoring', crumb: ['СОБ', 'Моніторинг соцмереж'] });
+
+// ---- helpers ----
+const PLATFORMS = {
+  tiktok:   { label: 'TikTok',    cls: 'plat-tiktok',   icon: '♪' },
+  insta:    { label: 'Instagram', cls: 'plat-insta',    icon: '📷' },
+  tg:       { label: 'Telegram',  cls: 'plat-tg',       icon: '✈' },
+  facebook: { label: 'Facebook',  cls: 'plat-facebook', icon: 'f' },
+  youtube:  { label: 'YouTube',   cls: 'plat-youtube',  icon: '▶' },
+  other:    { label: 'Інше',      cls: 'plat-other',    icon: '🌐' },
+};
+const LEVELS = {
+  critical: { label: 'Критичний',  cls: 'lvl-critical', badge: 'badge-critical', emoji: '🔴' },
+  high:     { label: 'Високий',    cls: 'lvl-high',     badge: 'badge-high',     emoji: '🟠' },
+  medium:   { label: 'Середній',   cls: 'lvl-medium',   badge: 'badge-medium',   emoji: '🟡' },
+  low:      { label: 'Низький',    cls: 'lvl-low',      badge: 'badge-low',      emoji: '⚪' },
+};
+const TYPES = {
+  weapon:    'Зброя / насилля',
+  threat:    'Погрози особі',
+  bulling:   'Булінг',
+  suicide:   'Суїцидальні наміри',
+  drugs:     'Наркотики',
+  extremism: 'Екстремізм',
+  other:     'Інше',
+};
+const STATUSES = {
+  new:      { label: 'Нове',           cls: 'st-new' },
+  checking: { label: 'Опрацьовується', cls: 'st-checking' },
+  reacted:  { label: 'Відреаговано',   cls: 'st-reacted' },
+  false:    { label: 'Хибна тривога',  cls: 'st-false' },
+};
+
+function fmtDate(d){ if(!d) return '—'; const dt=new Date(d); return dt.toLocaleDateString('uk-UA',{day:'2-digit',month:'short',year:'numeric'}); }
+
+// ---- filters state ----
+let fLevel = '', fStatus = '', fPlatform = '', fSearch = '';
+
+// ---- render ----
+function render() {
+  const list = S.monitoring || [];
+
+  // stats
+  document.getElementById('statTotal').textContent    = list.length;
+  document.getElementById('statCritical').textContent = list.filter(x => x.level === 'critical').length;
+  document.getElementById('statNew').textContent      = list.filter(x => x.status === 'new').length;
+  document.getElementById('statReacted').textContent  = list.filter(x => x.status === 'reacted').length;
+
+  // filter
+  let filtered = list.filter(x => {
+    if (fLevel    && x.level    !== fLevel)    return false;
+    if (fStatus   && x.status   !== fStatus)   return false;
+    if (fPlatform && x.platform !== fPlatform) return false;
+    if (fSearch) {
+      const q = fSearch.toLowerCase();
+      if (!(x.account||'').toLowerCase().includes(q) &&
+          !(x.text||'').toLowerCase().includes(q) &&
+          !(x.notes||'').toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  const wrap = document.getElementById('monList');
+  if (!filtered.length) {
+    wrap.innerHTML = `<div class="empty-mon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 10l4.553-2.069A1 1 0 0121 8.806V15.19a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
+      <p>${list.length ? 'Нічого не знайдено за фільтрами' : 'Записів ще немає — зафіксуйте першу загрозу'}</p>
+    </div>`;
+    return;
+  }
+
+  wrap.innerHTML = filtered.map(item => {
+    const lv = LEVELS[item.level] || LEVELS.low;
+    const pl = PLATFORMS[item.platform] || PLATFORMS.other;
+    const st = STATUSES[item.status] || STATUSES.new;
+    const school = (S.schools||[]).find(s => s.id === item.schoolId);
+    return `<div class="threat-card">
+      <div class="thr-badge ${lv.cls}">${lv.emoji}</div>
+      <div class="thr-body">
+        <div class="thr-title">
+          <span>${window.esc(TYPES[item.type] || item.type || 'Загроза')}</span>
+          <span class="badge ${lv.badge}">${lv.label}</span>
+          <span class="status-badge ${st.cls}">${st.label}</span>
+        </div>
+        <div class="thr-meta">
+          <span class="plat ${pl.cls}">${pl.icon} ${pl.label}</span>
+          ${item.account ? `<span>👤 ${window.esc(item.account)}</span>` : ''}
+          ${school ? `<span>🏫 ${window.esc(school.name)}</span>` : ''}
+          <span>📅 ${fmtDate(item.date || item.createdAt)}</span>
+        </div>
+        ${item.text ? `<div class="thr-text">${window.esc(item.text)}</div>` : ''}
+        ${item.url ? `<a class="thr-link" href="${window.esc(item.url)}" target="_blank" rel="noopener">🔗 Переглянути пост →</a>` : ''}
+        ${item.notes ? `<div style="font-size:13px;color:var(--muted);margin-top:8px">📝 ${window.esc(item.notes)}</div>` : ''}
+      </div>
+      ${canEdit ? `<div class="thr-actions">
+        <button class="tact" onclick="openEdit('${item.id}')" title="Редагувати">${I.edit}</button>
+        <button class="tact del" onclick="deleteThreat('${item.id}')" title="Видалити">${I.trash}</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ---- modal ----
+let editId = null;
+
+function openAdd() {
+  if (!canEdit) { toast('Недостатньо прав', 'red'); return; }
+  editId = null;
+  document.getElementById('monModalTitle').textContent = 'Зафіксувати загрозу';
+  document.getElementById('mon_account').value  = '';
+  document.getElementById('mon_text').value     = '';
+  document.getElementById('mon_url').value      = '';
+  document.getElementById('mon_notes').value    = '';
+  document.getElementById('mon_date').value     = new Date().toISOString().slice(0,10);
+  document.getElementById('mon_platform').value = 'tiktok';
+  document.getElementById('mon_level').value    = 'medium';
+  document.getElementById('mon_type').value     = 'bulling';
+  document.getElementById('mon_status').value   = 'new';
+  document.getElementById('mon_school').value   = '';
+  openModal('monModal');
+}
+
+function openEdit(id) {
+  const item = (S.monitoring||[]).find(x => x.id === id);
+  if (!item) return;
+  editId = id;
+  document.getElementById('monModalTitle').textContent = 'Редагувати запис';
+  document.getElementById('mon_account').value  = item.account || '';
+  document.getElementById('mon_text').value     = item.text    || '';
+  document.getElementById('mon_url').value      = item.url     || '';
+  document.getElementById('mon_notes').value    = item.notes   || '';
+  document.getElementById('mon_date').value     = (item.date||item.createdAt||'').slice(0,10);
+  document.getElementById('mon_platform').value = item.platform || 'tiktok';
+  document.getElementById('mon_level').value    = item.level    || 'medium';
+  document.getElementById('mon_type').value     = item.type     || 'other';
+  document.getElementById('mon_status').value   = item.status   || 'new';
+  document.getElementById('mon_school').value   = item.schoolId || '';
+  openModal('monModal');
+}
+
+document.getElementById('saveMonBtn').addEventListener('click', () => {
+  const text = document.getElementById('mon_text').value.trim();
+  if (!text) { toast('Введіть текст / опис контенту', 'red'); return; }
+
+  const data = {
+    platform:  document.getElementById('mon_platform').value,
+    account:   document.getElementById('mon_account').value.trim(),
+    level:     document.getElementById('mon_level').value,
+    type:      document.getElementById('mon_type').value,
+    schoolId:  document.getElementById('mon_school').value,
+    url:       document.getElementById('mon_url').value.trim(),
+    text,
+    date:      document.getElementById('mon_date').value,
+    status:    document.getElementById('mon_status').value,
+    notes:     document.getElementById('mon_notes').value.trim(),
+  };
+
+  if (editId) {
+    const idx = S.monitoring.findIndex(x => x.id === editId);
+    if (idx !== -1) Object.assign(S.monitoring[idx], data);
+    window.SOBStore.save();
+    toast('Запис оновлено', 'blue');
+  } else {
+    data.id = window.SOBStore.uid('mon');
+    data.createdAt = new Date().toISOString();
+    if (!S.monitoring) S.monitoring = [];
+    S.monitoring.unshift(data);
+    window.SOBStore.collections = [...new Set([...window.SOBStore.collections, 'monitoring'])];
+    window.SOBStore.save();
+    toast('Загрозу зафіксовано', 'navy');
+  }
+
+  closeModal('monModal');
+  render();
+});
+
+function deleteThreat(id) {
+  if (!confirm('Видалити цей запис?')) return;
+  S.monitoring = (S.monitoring||[]).filter(x => x.id !== id);
+  window.SOBStore.save();
+  toast('Видалено', 'red');
+  render();
+}
+
+// ---- populate schools ----
+(function(){
+  const sel = document.getElementById('mon_school');
+  (S.schools||[]).filter(s=>s.serviced!==false).sort((a,b)=>(a.name||'').localeCompare(b.name||'')).forEach(s=>{
+    const o = document.createElement('option');
+    o.value = s.id; o.textContent = s.name;
+    sel.appendChild(o);
+  });
+})();
+
+// ---- toolbar ----
+document.getElementById('closeMonBtn').innerHTML = I.x;
+document.getElementById('addMonBtn').addEventListener('click', openAdd);
+
+// filters
+document.getElementById('fSearch').addEventListener('input',   e => { fSearch   = e.target.value; render(); });
+document.getElementById('fLevel').addEventListener('change',   e => { fLevel    = e.target.value; render(); });
+document.getElementById('fStatus').addEventListener('change',  e => { fStatus   = e.target.value; render(); });
+document.getElementById('fPlatform').addEventListener('change',e => { fPlatform = e.target.value; render(); });
+
+// sync
+document.addEventListener('sob:synced', () => { if (!S.monitoring) S.monitoring = []; render(); });
+
+render();
+</script>
+
+<!-- Toolbar injected AFTER shell renders -->
+<script>
+(function injectToolbar(){
+  const hdr = document.querySelector('.page-header') || document.querySelector('.content-header');
+  if (!hdr) { setTimeout(injectToolbar, 100); return; }
+  const toolbar = document.createElement('div');
+  toolbar.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:24px;';
+  toolbar.innerHTML = `
+    <div class="filters-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;width:100%">
+      <div class="f-search" style="flex:1;min-width:200px;position:relative">
+        <span class="si" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
+        <input id="fSearch" class="input" style="padding-left:36px" placeholder="Пошук по акаунту або тексту…">
+      </div>
+      <select id="fLevel" class="input" style="width:auto;min-width:160px">
+        <option value="">Всі рівні</option>
+        <option value="critical">🔴 Критичний</option>
+        <option value="high">🟠 Високий</option>
+        <option value="medium">🟡 Середній</option>
+        <option value="low">⚪ Низький</option>
+      </select>
+      <select id="fStatus" class="input" style="width:auto;min-width:160px">
+        <option value="">Всі статуси</option>
+        <option value="new">Нове</option>
+        <option value="checking">Опрацьовується</option>
+        <option value="reacted">Відреаговано</option>
+        <option value="false">Хибна тривога</option>
+      </select>
+      <select id="fPlatform" class="input" style="width:auto;min-width:130px">
+        <option value="">Всі платформи</option>
+        <option value="tiktok">TikTok</option>
+        <option value="insta">Instagram</option>
+        <option value="tg">Telegram</option>
+        <option value="facebook">Facebook</option>
+        <option value="youtube">YouTube</option>
+      </select>
+      ${window.SOBAuth.canEdit() ? `<button id="addMonBtn" class="btn btn-primary" style="flex-shrink:0"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px;vertical-align:-2px"><path d="M12 5v14M5 12h14"/></svg>Зафіксувати загрозу</button>` : ''}
+    </div>`;
+
+  const content = document.querySelector('#content') || document.querySelector('.content') || document.querySelector('.app > div:last-child');
+  if (content) {
+    const inner = content.querySelector('.content-inner') || content;
+    inner.prepend(toolbar);
+  }
+})();
+</script>
+
+<!-- Page content -->
+<script>
+(function injectContent(){
+  const content = document.querySelector('#content') || document.querySelector('.content');
+  if (!content) { setTimeout(injectContent, 150); return; }
+  const inner = content.querySelector('.content-inner') || content;
+
+  const main = document.createElement('div');
+  main.innerHTML = `
+    <div class="beta-banner">
+      <div class="bb-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10l4.553-2.069A1 1 0 0121 8.806V15.19a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg></div>
+      <div style="flex:1">
+        <div class="bb-title">Моніторинг соціальних мереж <span class="beta-tag">БЕТА</span></div>
+        <div class="bb-sub">Цифровий журнал загроз — фіксуйте підозрілий контент з TikTok, Instagram, Telegram та інших платформ. Перший подібний інструмент для поліції Запорізького району.</div>
+      </div>
+    </div>
+
+    <div class="mon-stats">
+      <div class="mon-stat"><div class="v" id="statTotal">0</div><div class="l">Всього записів</div></div>
+      <div class="mon-stat"><div class="v" style="color:#DC2626" id="statCritical">0</div><div class="l">Критичних загроз</div></div>
+      <div class="mon-stat"><div class="v" style="color:var(--blue-600)" id="statNew">0</div><div class="l">Нових / не перевірено</div></div>
+      <div class="mon-stat"><div class="v" style="color:var(--green-600)" id="statReacted">0</div><div class="l">Відреаговано</div></div>
+    </div>
+
+    <div id="monList"></div>
+  `;
+  inner.appendChild(main);
+})();
+</script>
+</body>
+</html>
