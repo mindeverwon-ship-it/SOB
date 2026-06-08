@@ -1,44 +1,32 @@
 /* ============================================================
-   СОБ · Firebase Storage — завантаження фото та файлів
+   СОБ · Cloudinary Storage — завантаження фото та файлів
    ------------------------------------------------------------
-   Використовує Firebase Storage REST API (без SDK).
-   Ліміт безкоштовного плану: 5 ГБ зберігання, 1 ГБ/день скачування.
-
-   НАЛАШТУВАННЯ: вставте Web API Key з Firebase Console →
-   Project Settings → General → Your apps → Web API Key
+   Використовує Cloudinary REST API (безкоштовно, без картки).
+   Безкоштовний план: 25 ГБ зберігання, 25 ГБ/місяць трафік.
    ============================================================ */
 
-const FIREBASE_API_KEY    = 'AIzaSyCURW01X-T0GEeqOLPJ0CCFyZRtCQsiJ6o';
-const FIREBASE_STORAGE_BUCKET = 'sob-c90ba.firebasestorage.app';
-const STORAGE_BASE = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_STORAGE_BUCKET}/o`;
+const CLOUDINARY_CLOUD  = 'dvfmyfoce';
+const CLOUDINARY_PRESET = 'tfjb1hdt';
+const CLOUDINARY_URL    = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/upload`;
 
 window.SOBStorage = {
-  /* ---- Перевірка чи налаштовано ---- */
-  configured() {
-    return !FIREBASE_API_KEY.includes('PLACEHOLDER');
-  },
 
-  /* ---- Отримати download URL ---- */
-  _downloadUrl(path, token) {
-    return `${STORAGE_BASE}/${encodeURIComponent(path)}?alt=media&token=${token}`;
-  },
+  configured() { return true; },
 
-  /* ---- Завантажити файл у Firebase Storage ----
-     path    — шлях у сховищі, напр. 'photos/sch-125/img.jpg'
-     file    — File object
-     onProgress(0..100) — callback прогресу (необов'язково)
-     Повертає: { url, path, name, size }                       */
-  async upload(path, file, onProgress) {
-    if (!this.configured()) {
-      throw new Error('Firebase Storage не налаштовано. Додайте API Key у firebase-storage.js');
-    }
-
-    const url = `${STORAGE_BASE}/${encodeURIComponent(path)}?uploadType=media&name=${encodeURIComponent(path)}&key=${FIREBASE_API_KEY}`;
-
+  /* ---- Завантажити файл у Cloudinary ----
+     file        — File object
+     folder      — папка у Cloudinary (напр. 'sob/photos/sch-125')
+     onProgress  — callback(0..100), необов'язково
+     Повертає: { url, publicId, name, size }                   */
+  async upload(file, folder, onProgress) {
     return new Promise((resolve, reject) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', CLOUDINARY_PRESET);
+      fd.append('folder', folder || 'sob');
+
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', url);
-      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      xhr.open('POST', CLOUDINARY_URL);
 
       if (onProgress) {
         xhr.upload.onprogress = e => {
@@ -49,93 +37,48 @@ window.SOBStorage = {
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
-            const data = JSON.parse(xhr.responseText);
-            const downloadUrl = this._downloadUrl(data.name, data.downloadTokens);
-            resolve({ url: downloadUrl, path: data.name, name: file.name, size: file.size });
-          } catch(e) { reject(new Error('Помилка відповіді Firebase')); }
+            const d = JSON.parse(xhr.responseText);
+            resolve({ url: d.secure_url, publicId: d.public_id, name: file.name, size: file.size });
+          } catch(e) { reject(new Error('Помилка відповіді Cloudinary')); }
         } else {
-          reject(new Error(`Firebase Storage: ${xhr.status} ${xhr.statusText}`));
+          let msg = xhr.statusText;
+          try { msg = JSON.parse(xhr.responseText).error?.message || msg; } catch(_) {}
+          reject(new Error('Cloudinary: ' + msg));
         }
       };
       xhr.onerror = () => reject(new Error('Мережева помилка завантаження'));
-      xhr.send(file);
+      xhr.send(fd);
     });
   },
 
-  /* ---- Видалити файл ---- */
-  async delete(path) {
-    if (!this.configured()) return;
-    const url = `${STORAGE_BASE}/${encodeURIComponent(path)}?key=${FIREBASE_API_KEY}`;
-    try {
-      await fetch(url, { method: 'DELETE' });
-    } catch(e) { console.warn('Firebase Storage delete failed', e); }
-  },
-
   /* ---- Завантажити фото закладу ----
-     schoolId — ідентифікатор школи
-     file     — File object
-     Зберігає в gallery Firebase + SOB.gallery                 */
+     Зберігає в SOB.gallery + Firebase RTDB                    */
   async uploadPhoto(schoolId, file, inspectorKey) {
-    if (!this.configured()) {
-      // Fallback: base64 в RTDB (старий спосіб, до 1.8 МБ)
-      return this._uploadPhotoBase64(schoolId, file, inspectorKey);
-    }
-    const ext = file.name.split('.').pop() || 'jpg';
-    const path = `photos/${schoolId}/${Date.now()}.${ext}`;
-
     if (typeof toast === 'function') toast('Завантаження фото…', 'blue');
-
     try {
-      const result = await this.upload(path, file);
+      const folder = `sob/photos/${schoolId}`;
+      const result = await this.upload(file, folder);
       const g = {
         schoolId,
         inspector: inspectorKey,
         url: result.url,
-        storagePath: result.path,
+        publicId: result.publicId,
         name: file.name,
         date: new Date().toISOString().slice(0, 10),
-        source: 'firebase-storage'
+        source: 'cloudinary'
       };
       window.SOBStore.addGallery(g);
       if (typeof toast === 'function') toast('Фото збережено ✓', 'green');
       return g;
     } catch(e) {
-      console.error('Firebase Storage upload failed:', e);
-      if (typeof toast === 'function') toast('Помилка завантаження: ' + e.message, 'red');
+      console.error('Cloudinary upload failed:', e);
+      if (typeof toast === 'function') toast('Помилка: ' + e.message, 'red');
       throw e;
     }
   },
 
-  /* ---- Fallback: base64 в RTDB (якщо Storage не налаштовано) ---- */
-  _uploadPhotoBase64(schoolId, file, inspectorKey) {
-    return new Promise((resolve, reject) => {
-      if (file.size > 1.8 * 1048576) {
-        if (typeof toast === 'function') toast('Файл > 1.8 МБ. Налаштуйте Firebase Storage для великих фото.', 'red');
-        reject(new Error('File too large for base64 fallback'));
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        const g = {
-          schoolId,
-          inspector: inspectorKey,
-          url: reader.result,
-          name: file.name,
-          date: new Date().toISOString().slice(0, 10),
-          source: 'base64'
-        };
-        window.SOBStore.addGallery(g);
-        if (typeof toast === 'function') toast('Фото збережено (base64)', 'green');
-        resolve(g);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  },
-
   /* ---- Завантажити документ ----
-     schoolId — ідентифікатор школи
-     file     — File object                                     */
+     Документи зберігаються як raw у Cloudinary або base64 (< 1.8 МБ) */
   async uploadFile(schoolId, file, inspectorKey) {
     function humanSize(b) {
       if (b < 1024) return b + ' Б';
@@ -151,47 +94,52 @@ window.SOBStorage = {
       inspector: inspectorKey
     };
 
-    if (!this.configured() || file.size > 1.8 * 1048576) {
-      // base64 для малих файлів
-      if (file.size <= 1.8 * 1048576) {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            meta.dataUrl = reader.result;
-            meta.source = 'base64';
-            window.SOBStore.addFile(meta);
-            if (typeof toast === 'function') toast('Файл завантажено');
-            resolve(meta);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-      }
-    }
+    const isImage = file.type.startsWith('image/');
 
-    if (this.configured()) {
-      const ext = file.name.split('.').pop() || 'bin';
-      const path = `files/${schoolId}/${Date.now()}_${file.name}`;
-      if (typeof toast === 'function') toast('Завантаження файлу…', 'blue');
+    /* Зображення — через Cloudinary */
+    if (isImage) {
+      if (typeof toast === 'function') toast('Завантаження…', 'blue');
       try {
-        const result = await this.upload(path, file);
+        const result = await this.upload(file, `sob/files/${schoolId}`);
         meta.dataUrl = result.url;
-        meta.storagePath = result.path;
-        meta.source = 'firebase-storage';
+        meta.publicId = result.publicId;
+        meta.source = 'cloudinary';
         window.SOBStore.addFile(meta);
         if (typeof toast === 'function') toast('Файл завантажено ✓', 'green');
         return meta;
       } catch(e) {
-        console.error('Firebase Storage file upload failed:', e);
         if (typeof toast === 'function') toast('Помилка: ' + e.message, 'red');
         throw e;
       }
     }
 
-    // файл без dataUrl (просто метадані)
+    /* Документи (PDF, DOC тощо) — base64 для малих, метадані для великих */
+    if (file.size <= 1.8 * 1048576) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          meta.dataUrl = reader.result;
+          meta.source = 'base64';
+          window.SOBStore.addFile(meta);
+          if (typeof toast === 'function') toast('Файл завантажено ✓', 'green');
+          resolve(meta);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    /* Великий файл — зберігаємо лише метадані */
     meta.source = 'meta-only';
     window.SOBStore.addFile(meta);
-    if (typeof toast === 'function') toast('Файл додано (лише метадані — великий файл)', 'navy');
+    if (typeof toast === 'function') toast('Файл додано (великий файл — лише метадані)', 'navy');
     return meta;
+  },
+
+  /* ---- Видалити фото (лише з SOB.gallery, з Cloudinary без серверного ключа не можна) ---- */
+  async delete(publicId) {
+    /* Видалення з Cloudinary потребує server-side підпису.
+       Файл залишиться у Cloudinary але буде видалений з платформи. */
+    console.info('Cloudinary: видалення з хмари потребує серверного ключа. Видалено лише з платформи.');
   }
 };
