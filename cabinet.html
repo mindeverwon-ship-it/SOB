@@ -35,10 +35,11 @@
 .gate .ic{width:64px;height:64px;border-radius:18px;background:var(--blue-100);color:var(--blue-600);display:grid;place-items:center;margin:0 auto 18px}
 .gate .ic svg{width:30px;height:30px}
 .photo-up { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
-.photo-up image-slot{width:100%;height:120px}
-@media (max-width:1080px){.qa-grid{grid-template-columns:repeat(2,1fr)}.mine-grid{grid-template-columns:1fr}.photo-up{grid-template-columns:repeat(3,1fr)}}
-@media (max-width:640px){.photo-up{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:420px){.qa-grid{grid-template-columns:1fr}.photo-up{grid-template-columns:repeat(2,1fr)}}
+.photo-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+.photo-thumb { position:relative; }
+@media (max-width:1080px){.qa-grid{grid-template-columns:repeat(2,1fr)}.mine-grid{grid-template-columns:1fr}.photo-up,.photo-grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:640px){.photo-up,.photo-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:420px){.qa-grid{grid-template-columns:1fr}.photo-up,.photo-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -67,7 +68,7 @@
 <script src="js/data.js"></script>
 <script src="js/store.js"></script>
 <script src="js/shell.js"></script>
-<script src="assets/image-slot.js"></script>
+<script src="js/firebase-storage.js"></script>
 <script>
 const S = window.SOB, F = window.fmt, I = window.ICON;
 const U = window.SOBAuth.current();
@@ -138,8 +139,20 @@ if(U.role !== 'inspector' && U.role !== 'admin'){
       </div>
 
       <div class="card card-pad" style="margin-top:20px" id="photos">
-        <div class="card-head"><div class="section-title">${I.image} Фотозвіти</div><span class="muted" style="font-size:13px">Перетягніть фото у комірки — вони збережуться</span></div>
-        <div class="photo-up">${Array.from({length:10}).map((_,i)=>`<image-slot id="cab-photo-${myKey}-${i}" shape="rounded" radius="13" placeholder="Фото"></image-slot>`).join('')}</div>
+        <div class="card-head">
+          <div class="section-title">${I.image} Фотозвіти</div>
+          <button class="btn btn-soft btn-sm" id="upPhotoBtn">${I.upload} Додати фото</button>
+        </div>
+        <input type="file" id="photoInput" accept="image/*" multiple style="display:none">
+        <div class="photo-grid" id="photoGrid">
+          ${(S.gallery||[]).filter(g=>ids.includes(g.schoolId)).slice(0,20).map(g=>`
+            <div class="photo-thumb" style="position:relative">
+              <img src="${g.url}" alt="${g.name||'фото'}" style="width:100%;height:120px;object-fit:cover;border-radius:12px;display:block">
+              <button class="adm-photo-del" data-gdel="${g.id}" style="opacity:1;position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:8px;padding:5px 7px;font-size:12px;cursor:pointer">${I.trash}</button>
+              <div style="font-size:11px;color:var(--muted);padding:3px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g.date||''}</div>
+            </div>`).join('')}
+          ${!(S.gallery||[]).filter(g=>ids.includes(g.schoolId)).length ? `<div style="padding:30px;text-align:center;color:var(--muted);width:100%">Фотозвітів ще немає — натисніть «Додати фото»</div>` : ''}
+        </div>
       </div>
     `;
     bind();
@@ -150,8 +163,17 @@ if(U.role !== 'inspector' && U.role !== 'admin'){
     document.getElementById('addEvBtn2')?.addEventListener('click', openEvent);
     document.getElementById('upFileBtn')?.addEventListener('click', ()=>document.getElementById('fileInput').click());
     document.getElementById('upFileBtn2')?.addEventListener('click', ()=>document.getElementById('fileInput').click());
+    document.getElementById('upPhotoBtn')?.addEventListener('click', ()=>document.getElementById('photoInput').click());
     document.querySelectorAll('[data-fdel]').forEach(b=>b.addEventListener('click', ()=>{ if(confirm('Видалити файл?')){window.SOBStore.deleteFile(b.dataset.fdel);toast('Файл видалено','navy');render();}}));
     document.querySelectorAll('[data-edel]').forEach(b=>b.addEventListener('click', ()=>{ if(confirm('Видалити захід?')){window.SOBStore.deleteEvent(b.dataset.edel);toast('Захід видалено','navy');render();}}));
+    document.querySelectorAll('[data-gdel]').forEach(b=>b.addEventListener('click', async ()=>{
+      if(!confirm('Видалити фото?')) return;
+      const g = (S.gallery||[]).find(x=>x.id===b.dataset.gdel);
+      if(g?.storagePath) await window.SOBStorage.delete(g.storagePath).catch(()=>{});
+      window.SOBStore.deleteGallery(b.dataset.gdel);
+      toast('Фото видалено','navy'); render();
+    }));
+    document.getElementById('photoInput')?.addEventListener('change', e=>handlePhotos(e.target.files));
   }
 
   function openModal(id){document.getElementById(id).classList.add('show');}
@@ -163,22 +185,30 @@ if(U.role !== 'inspector' && U.role !== 'admin'){
     const schoolId=document.getElementById('ev_school').value;
     const parts=+document.getElementById('ev_participants').value||0;
     window.SOBStore.addEvent({schoolId,title,date:document.getElementById('ev_date').value,type:document.getElementById('ev_type').value,audience:document.getElementById('ev_audience').value.trim(),participants:parts});
-    const sc=S.schools.find(x=>x.id===schoolId); window.SOBStore.updateSchool(schoolId,{events:(sc.events||0)+1,participants:(sc.participants||0)+parts});
     document.getElementById('ev_title').value='';document.getElementById('ev_audience').value='';document.getElementById('ev_participants').value='';
     window.closeModal('eventModal'); toast('Захід додано'); render();
   });
 
   document.getElementById('fileInput').addEventListener('change', e=>handleFiles(e.target.files));
-  function humanSize(b){if(b<1024)return b+' Б';if(b<1048576)return(b/1024).toFixed(0)+' КБ';return(b/1048576).toFixed(1)+' МБ';}
-  function handleFiles(list){
-    const schoolId=ids[0];
-    [...list].forEach(file=>{
-      const meta={name:file.name,size:humanSize(file.size),date:new Date().toISOString().slice(0,10),schoolId,inspector:myKey};
-      if(file.size<1.8*1048576){const r=new FileReader();r.onload=()=>{meta.dataUrl=r.result;window.SOBStore.addFile(meta);toast('Файл завантажено');render();};r.readAsDataURL(file);}
-      else{window.SOBStore.addFile(meta);toast('Файл додано','navy');render();}
-    });
+
+  async function handlePhotos(list){
+    const schoolId = ids[0];
+    for(const file of [...list]){
+      try { await window.SOBStorage.uploadPhoto(schoolId, file, myKey); render(); }
+      catch(e){ console.error(e); }
+    }
+    document.getElementById('photoInput').value='';
+  }
+
+  async function handleFiles(list){
+    const schoolId = ids[0];
+    for(const file of [...list]){
+      try { await window.SOBStorage.uploadFile(schoolId, file, myKey); render(); }
+      catch(e){ console.error(e); }
+    }
     document.getElementById('fileInput').value='';
   }
+
   document.querySelectorAll('.modal-scrim').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
   render();
 }

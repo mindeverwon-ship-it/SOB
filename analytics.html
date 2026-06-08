@@ -214,7 +214,7 @@ function render(){
     const worker = S.workers && s.inspector ? S.workers[s.inspector] : null;
     return `<tr style="cursor:pointer" onclick="location.href='school.html?id=${s.id}'">
       <td><div class="rk ${i<3?'g'+(i+1):''}">${i+1}</div></td>
-      <td><b>${s.name.split('"')[1]||s.name.split(' ').slice(0,4).join(' ')}</b><div style="font-size:11.5px;color:var(--muted)">${s.city||''} · ${worker?worker.name:''}</div></td>
+      <td><b>${s.name}</b><div style="font-size:11.5px;color:var(--muted)">${s.city||''} · ${worker?worker.name:''}</div></td>
       <td class="tnum">${s.events||0}</td>
       <td class="tnum">${F(s.participants||0)}</td>
       <td class="tnum">${cov.uniqueStudents}</td>
@@ -249,7 +249,7 @@ function render(){
       <span style="font-size:13px;color:var(--muted);font-weight:600">${I.filter} Фільтр за закладом:</span>
       <select class="input" id="filterSchoolEl" style="max-width:300px">
         <option value="all">— Усі заклади —</option>
-        ${(S.schools||[]).filter(s=>s.serviced).map(s=>`<option value="${s.id}" ${filterSchool===s.id?'selected':''}>${s.name.split('"')[1]||s.name.split(' ').slice(0,3).join(' ')}</option>`).join('')}
+        ${(S.schools||[]).filter(s=>s.serviced).map(s=>`<option value="${s.id}" ${filterSchool===s.id?'selected':''}>${s.name}</option>`).join('')}
       </select>
       ${filterSchool!=='all'?`<button class="btn btn-ghost btn-sm" onclick="filterSchool='all';render()">Скинути</button>`:''}
     </div>

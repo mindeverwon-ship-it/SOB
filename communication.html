@@ -166,7 +166,7 @@ function render() {
     const init = ins.name.split(' ').map(w=>w[0]).slice(0,2).join('');
     const clr  = ins.color || '#0E274D';
     const schCnt = S.schools.filter(s=>s.serviced && s.inspector===key).length;
-    const schNames = S.schools.filter(s=>s.serviced && s.inspector===key).map(s=>s.name.split(' ').slice(0,4).join(' ')).join(', ');
+    const schNames = S.schools.filter(s=>s.serviced && s.inspector===key).map(s=>s.name).join(', ');
 
     return `<div class="ic-card">
       <div class="ic-top">
