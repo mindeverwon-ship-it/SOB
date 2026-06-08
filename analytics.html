@@ -130,11 +130,11 @@ function calcData(){
   /* Топ закладів */
   const ranked = [...serviced].sort((a,b)=>(b.events||0)-(a.events||0));
 
-  /* Динаміка по місяцях — з реальних даних data.js */
-  const eb = S.charts?.eventsByMonth || {};
-  const mLabels   = eb.labels       || [];
-  const mEvents   = eb.events       || [];
-  const mParts    = eb.participants || []; /* охоплені учні (col AE) */
+  /* Динаміка по місяцях: Excel-база + платформні заходи з журналу */
+  const mc = window.calcMonthlyChart ? window.calcMonthlyChart() : (S.charts?.eventsByMonth || {});
+  const mLabels   = mc.labels       || [];
+  const mEvents   = mc.events       || [];
+  const mParts    = mc.participants || []; /* охоплені учні */
 
   return { serviced, totEvents, totParticipations, totConsult, totStudents, totPrevention, totUnique, covPct, avgRating,
            catStats, ranked, mLabels, mEvents, mParts, zrupStats, gunpStats };

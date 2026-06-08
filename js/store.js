@@ -128,21 +128,22 @@ window.SOBStore = {
   },
 
   /* ---- Перерахунок статистики закладу ----
-     Якщо у журналі schoolEvents немає жодного запису для цього закладу —
-     статичні дані (імпортовані з Excel) не чіпаємо, щоб не обнуляти
-     накопичену статистику при ініціалізації сторінки.               */
+     Завжди: базові показники (Excel, data.js) + платформні заходи з журналу.
+     baseEvents/baseParticipants/basePrevention — незмінна Excel-база.      */
   recalcSchool(schoolId) {
     const s = window.SOB.schools.find(x => x.id === schoolId);
     if (!s) return;
     const evs = window.SOB.schoolEvents.filter(x => x.schoolId === schoolId && x.status !== 'cancelled');
-    // Є платформні заходи — рахуємо з журналу
-    if (evs.length > 0) {
-      s.events       = evs.length;
-      s.participants = evs.reduce((sum, e) => sum + (e.participants || 0), 0);
-      s.prevention   = evs.filter(e => ['prevention','mine','evacuation','cyber','buling','legal'].includes(e.type)).length;
-      s.rating       = s.events + Math.round(s.participants / 10);
-    }
-    // Немає платформних заходів — залишаємо статичні дані (Excel / data.js)
+    const base     = s.baseEvents       ?? s.events       ?? 0;
+    const basePart = s.baseParticipants ?? s.participants  ?? 0;
+    const basePrev = s.basePrevention   ?? s.prevention   ?? 0;
+    // зберігаємо базові значення щоб не втратити при повторних викликах
+    if (s.baseEvents === undefined) { s.baseEvents = base; s.baseParticipants = basePart; s.basePrevention = basePrev; }
+    const prevTypes = ['prevention','mine','evacuation','cyber','buling','legal'];
+    s.events       = base     + evs.length;
+    s.participants = basePart + evs.reduce((sum, e) => sum + (e.participants || 0), 0);
+    s.prevention   = basePrev + evs.filter(e => prevTypes.includes(e.type)).length;
+    s.rating       = s.events + Math.round(s.participants / 10);
   },
 
   /* ---- Заходи ---- */

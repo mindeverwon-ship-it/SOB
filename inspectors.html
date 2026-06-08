@@ -187,13 +187,16 @@ function render() {
 
   function renderCard([key, ins]) {
     const color = insColor(key);
-    const schCount = schoolsCount(key);
-    const evCount = eventsCount(key);
-    const uniqCount = uniqueCoverage(key);
-    const stuCount = totalStudents(key);
-    const covPct = stuCount > 0 ? Math.round(uniqCount/stuCount*100) : 0;
+    const isChief = (ins.rank||'').includes('Начальник') && S.schools.filter(s=>s.serviced&&s.inspector===key).length===0;
     const isActive = ins.status !== 'inactive';
     const schoolsList = S.schools.filter(s=>s.serviced&&s.inspector===key);
+    /* Якщо начальник без закріплених шкіл — показуємо зведені дані підрозділу */
+    const divSchools = isChief ? S.schools.filter(s=>s.serviced&&(S.workers[s.inspector]||{}).category===ins.category) : [];
+    const schCount = isChief ? divSchools.length : schoolsCount(key);
+    const evCount  = isChief ? divSchools.reduce((s,x)=>s+(x.events||0),0) : eventsCount(key);
+    const uniqCount= isChief ? divSchools.reduce((s,x)=>{const c=window.calcCoverage?window.calcCoverage(x):{uniqueStudents:x.participants||0};return s+c.uniqueStudents;},0) : uniqueCoverage(key);
+    const stuCount = isChief ? divSchools.reduce((s,x)=>s+(x.students||0),0) : totalStudents(key);
+    const covPct = stuCount > 0 ? Math.round(uniqCount/stuCount*100) : 0;
 
     return `<div class="ins-card ${!isActive?'inactive':''}">
       <div class="ins-top">
@@ -224,9 +227,9 @@ function render() {
       ${schoolsList.length?`<div class="ins-districts">${schoolsList.slice(0,3).map(s=>`<span class="ins-school-tag">${esc(s.name.split('"')[1]||s.name.split(' ').slice(0,3).join(' '))}</span>`).join('')}${schoolsList.length>3?`<span class="ins-district-tag">+${schoolsList.length-3}</span>`:''}</div>`:''}
 
       <div class="ins-stats-row">
-        <div class="ins-stat"><div class="v">${schCount}</div><div class="l">Заклади</div></div>
-        <div class="ins-stat"><div class="v">${evCount}</div><div class="l">Заходи</div></div>
-        <div class="ins-stat"><div class="v">${uniqCount}</div><div class="l">Унікально охоплено</div></div>
+        <div class="ins-stat"><div class="v">${schCount}</div><div class="l">${isChief?'Закл. (підрозд.)':'Заклади'}</div></div>
+        <div class="ins-stat"><div class="v">${evCount}</div><div class="l">${isChief?'Заходи (підрозд.)':'Заходи'}</div></div>
+        <div class="ins-stat"><div class="v">${uniqCount}</div><div class="l">Охоплено</div></div>
       </div>
 
       ${stuCount>0?`<div class="ins-coverage-row">

@@ -145,20 +145,25 @@ const S = window.SOB, F = window.fmt, I = window.ICON;
 const U = window.SOBAuth.current();
 const canEdit = window.SOBAuth.canEdit();
 
-/* KPI — авторозрахунок з реальних даних */
+/* KPI — сукупно: Excel-база + платформні заходи */
 const now = new Date();
 const thisMonth = (ev) => { if(!ev.date) return false; const d=new Date(ev.date); return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth(); };
 const prevTypes = ['prevention','mine','evacuation','cyber','buling','legal'];
 const eventsThisMonth = (S.schoolEvents||[]).filter(thisMonth);
+const allPlatformEvs = (S.schoolEvents||[]).filter(e=>e.status!=='cancelled');
+/* calcTotalStats підсумовує s.events по школах (base+journal після recalcSchool) */
+const liveStats = window.calcTotalStats ? window.calcTotalStats() : {};
 const kpiValues = {
-  events:       eventsThisMonth.length,
-  prevention:   eventsThisMonth.filter(e=>prevTypes.includes(e.type)).length,
-  participants: eventsThisMonth.reduce((s,e)=>s+(e.participants||0),0),
+  events:       liveStats.events       ?? S.kpis.find(k=>k.id==='events')?.value       ?? 0,
+  prevention:   liveStats.prevention   ?? S.kpis.find(k=>k.id==='prevention')?.value   ?? 0,
+  participants: liveStats.participations?? S.kpis.find(k=>k.id==='participants')?.value ?? 0,
   schools:      (S.schools||[]).filter(s=>s.serviced!==false).length,
 };
+const kpiThisMonth = eventsThisMonth.length;
 const kpiHtml = S.kpis.map((k, i) => {
   const val = kpiValues[k.id] ?? k.value;
-  return `<div class="kpi anim anim-${i+1}"><div class="ic ${k.color}">${I[k.icon] || I.grid}</div><span class="delta flat">за місяць</span><div class="val tnum">${F(val)}</div><div class="lbl">${k.label}</div></div>`;
+  const sub = k.id==='events'&&kpiThisMonth>0 ? `+${kpiThisMonth} цього місяця` : 'накопичено';
+  return `<div class="kpi anim anim-${i+1}"><div class="ic ${k.color}">${I[k.icon] || I.grid}</div><span class="delta flat">${sub}</span><div class="val tnum">${F(val)}</div><div class="lbl">${k.label}</div></div>`;
 }).join('');
 
 const ranked = [...S.schools].filter(s=>s.serviced!==false).sort((a,b) => b.rating - a.rating).slice(0, 6);
