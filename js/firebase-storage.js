@@ -18,37 +18,20 @@ window.SOBStorage = {
      folder      — папка у Cloudinary (напр. 'sob/photos/sch-125')
      onProgress  — callback(0..100), необов'язково
      Повертає: { url, publicId, name, size }                   */
-  async upload(file, folder, onProgress) {
-    return new Promise((resolve, reject) => {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('upload_preset', CLOUDINARY_PRESET);
-      fd.append('folder', folder || 'sob');
+  async upload(file, folder) {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_PRESET);
+    if (folder) fd.append('folder', folder);
 
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', CLOUDINARY_URL);
-
-      if (onProgress) {
-        xhr.upload.onprogress = e => {
-          if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100));
-        };
-      }
-
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const d = JSON.parse(xhr.responseText);
-            resolve({ url: d.secure_url, publicId: d.public_id, name: file.name, size: file.size });
-          } catch(e) { reject(new Error('Помилка відповіді Cloudinary')); }
-        } else {
-          let msg = xhr.statusText;
-          try { msg = JSON.parse(xhr.responseText).error?.message || msg; } catch(_) {}
-          reject(new Error('Cloudinary: ' + msg));
-        }
-      };
-      xhr.onerror = () => reject(new Error('Мережева помилка завантаження'));
-      xhr.send(fd);
-    });
+    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
+    if (!res.ok) {
+      let msg = res.statusText;
+      try { const d = await res.json(); msg = d.error?.message || msg; } catch(_) {}
+      throw new Error('Cloudinary: ' + msg);
+    }
+    const d = await res.json();
+    return { url: d.secure_url, publicId: d.public_id, name: file.name, size: file.size };
   },
 
   /* ---- Завантажити фото закладу ----
