@@ -9,20 +9,39 @@
    ============================================================ */
 
 const FIREBASE_URL = 'https://sob-c90ba-default-rtdb.europe-west1.firebasedatabase.app'; // ← сюди вставити URL з Firebase
-const DATA_VERSION = 'v3'; // змінюйте при глобальному оновленні даних — скидає старий кеш
+const DATA_VERSION = 'v4'; // змінюйте при глобальному оновленні даних — скидає старий кеш
+
+/* Поля шкіл, які зберігаються у Firebase/localStorage (введені користувачами).
+   Статичні поля (monthlyData, events, participants, students тощо) беруться
+   ТІЛЬКИ з data.js і НЕ перезаписуються даними хмари.                       */
+const SCHOOL_SYNC_FIELDS = ['inspector','director','phone','phone2','email','telegram','notes','serviced','tg'];
 
 window.SOBStore = {
-  KEY: 'sob_data_v3',
+  KEY: 'sob_data_v4',
   FB: FIREBASE_URL,
   collections: ['schools', 'schoolEvents', 'gallery', 'files', 'inspectors', 'kpis', 'secondary', 'org', 'incidents', 'assignments', 'auditLog'],
+
+  // Merge saved schools: оновлюємо тільки поля, введені користувачами;
+  // monthlyData/events/participants залишаються з data.js
+  _mergeSchools(savedSchools) {
+    if (!Array.isArray(savedSchools)) return;
+    savedSchools.forEach(fb => {
+      const local = (window.SOB.schools || []).find(s => s.id === fb.id);
+      if (!local) return;
+      SCHOOL_SYNC_FIELDS.forEach(k => { if (fb[k] !== undefined) local[k] = fb[k]; });
+    });
+  },
 
   // --- Ініціалізація: спочатку localStorage, потім Firebase ---
   init() {
     // очищаємо старі версії кешу
-    ['sob_data_v1','sob_data_v2'].forEach(k => localStorage.removeItem(k));
+    ['sob_data_v1','sob_data_v2','sob_data_v3'].forEach(k => localStorage.removeItem(k));
     const saved = this._loadLocal();
     if (saved) {
-      this.collections.forEach(k => { if (saved[k] !== undefined) window.SOB[k] = saved[k]; });
+      // schools — merge тільки користувацькі поля, решта колекцій — повністю
+      const nonSchool = this.collections.filter(k => k !== 'schools');
+      nonSchool.forEach(k => { if (saved[k] !== undefined) window.SOB[k] = saved[k]; });
+      this._mergeSchools(saved.schools);
       (window.SOB.schools || []).forEach(s => this.recalcSchool(s.id));
     }
     if (this.FB && this.FB !== 'YOUR_FIREBASE_URL') {
@@ -40,7 +59,10 @@ window.SOBStore = {
       if (!res.ok) return;
       const data = await res.json();
       if (!data) return;
-      this.collections.forEach(k => { if (data[k] !== undefined) window.SOB[k] = data[k]; });
+      // schools — merge тільки користувацькі поля
+      const nonSchool = this.collections.filter(k => k !== 'schools');
+      nonSchool.forEach(k => { if (data[k] !== undefined) window.SOB[k] = data[k]; });
+      this._mergeSchools(data.schools);
       // перерахувати кешовані лічильники після завантаження з хмари
       (window.SOB.schools || []).forEach(s => this.recalcSchool(s.id));
       // зберегти в localStorage як кеш
