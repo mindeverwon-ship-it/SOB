@@ -28,9 +28,18 @@ window.SOBStore = {
   _mergeSchools(savedSchools) {
     if (!Array.isArray(savedSchools)) return;
     savedSchools.forEach(fb => {
+      if (!fb) return;
       const local = (window.SOB.schools || []).find(s => s.id === fb.id);
       if (!local) return;
-      SCHOOL_SYNC_FIELDS.forEach(k => { if (fb[k] !== undefined) local[k] = fb[k]; });
+      SCHOOL_SYNC_FIELDS.forEach(k => {
+        if (fb[k] !== undefined) {
+          local[k] = fb[k];
+        } else if (Object.prototype.hasOwnProperty.call(fb, 'id')) {
+          // школа є в Firebase, але поле відсутнє = було явно знято (null→Firebase видалив)
+          // скидаємо в порожній стан тільки "очищувані" поля
+          if (k === 'inspector' || k === 'photoMain' || k === 'inspectorHistory') local[k] = k === 'inspectorHistory' ? [] : null;
+        }
+      });
     });
   },
 
@@ -133,7 +142,7 @@ window.SOBStore = {
     if (prev === inspectorKey) return s;
     if (!s.inspectorHistory) s.inspectorHistory = [];
     if (prev) s.inspectorHistory.push({ key: prev, assignedUntil: new Date().toISOString().slice(0,10) });
-    s.inspector = inspectorKey || null;
+    s.inspector = inspectorKey || '';   // '' замість null — Firebase не видаляє порожній рядок
     this.save();
     this.logAudit('update','school',schoolId,`Відповідальний змінено: ${prev||'—'} → ${inspectorKey||'—'}`);
     document.dispatchEvent(new CustomEvent('sob:synced'));
