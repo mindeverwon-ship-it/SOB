@@ -53,17 +53,17 @@ window.ICON = ICON;
 
 /* Навігація залежно від ролі. lock=true → пункт лише для авторизованих ролей. */
 const NAV_ALL = {
-  dashboard:   { id: "dashboard",   label: "Огляд",               icon: "grid",     href: "index.html" },
+  dashboard:   { id: "dashboard",   label: "Оперативний центр",   icon: "grid",     href: "index.html" },
   map:         { id: "map",         label: "Карта закладів",      icon: "map",      href: "map.html" },
   schools:     { id: "schools",     label: "Заклади освіти",      icon: "school",   href: "schools.html" },
+  inspectors:  { id: "inspectors",  label: "Інспектори СОБ",      icon: "users",    href: "inspectors.html" },
   gallery:     { id: "gallery",     label: "Фотогалерея",         icon: "gallery",  href: "gallery.html" },
   analytics:   { id: "analytics",   label: "Аналітика",           icon: "chart",    href: "analytics.html" },
-  rating:      { id: "rating",      label: "Рейтинг активності",  icon: "trophy",   href: "index.html#rating" },
   incidents:   { id: "incidents",   label: "Інциденти",           icon: "alert",    href: "incidents.html" },
   assignments: { id: "assignments", label: "Доручення",           icon: "doc",      href: "assignments.html" },
   search:      { id: "search",      label: "Пошук",               icon: "search",   href: "search.html" },
   comm:        { id: "comm",        label: "Комунікаційний центр", icon: "chat",    href: "communication.html" },
-  ai:          { id: "ai",          label: "AI-помічник",         icon: "ai",       href: "assistant.html" },
+  ai:          { id: "ai",          label: "AI-аналітик",         icon: "ai",       href: "assistant.html" },
   cabinet:     { id: "cabinet",     label: "Кабінет інспектора",  icon: "folder",   href: "cabinet.html" },
   admin:       { id: "admin",       label: "Адмін-панель",        icon: "settings", href: "admin.html" },
   monitoring:  { id: "monitoring",  label: "Моніторинг соцмереж", icon: "alert",    href: "monitoring.html" },
@@ -72,9 +72,9 @@ const NAV_ALL = {
 // які розділи бачить кожна роль (у заданому порядку)
 const NAV_BY_ROLE = {
   public:     ["dashboard","schools","map","gallery","analytics","comm","search","ai"],
-  leadership: ["dashboard","schools","map","analytics","incidents","monitoring","gallery","comm","search","ai"],
+  leadership: ["dashboard","inspectors","schools","map","analytics","incidents","monitoring","gallery","comm","search","ai"],
   inspector:  ["dashboard","cabinet","schools","map","incidents","assignments","monitoring","analytics","gallery","comm","search","ai"],
-  admin:      ["dashboard","admin","schools","map","incidents","assignments","monitoring","analytics","gallery","comm","search","ai"],
+  admin:      ["dashboard","admin","inspectors","schools","map","incidents","assignments","monitoring","analytics","gallery","comm","search","ai"],
 };
 
 window.SOBShell = {

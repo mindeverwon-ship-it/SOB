@@ -82,8 +82,13 @@
     <div class="modal-body col" style="gap:14px">
       <div class="field"><label>ПІБ <span style="color:var(--red-500)">*</span></label><input class="input" id="i_name" placeholder="Прізвище Ім'я По-батькові"></div>
       <div class="grid-2" style="gap:13px">
-        <div class="field"><label>Звання</label><input class="input" id="i_rank_title" placeholder="майор поліції"></div>
-        <div class="field"><label>Посада</label><input class="input" id="i_position" placeholder="Старший інспектор ССОБ"></div>
+        <div class="field"><label>Посада / звання</label><input class="input" id="i_rank_title" placeholder="Старший інспектор ССОБ"></div>
+        <div class="field"><label>Підрозділ <span style="color:var(--red-500)">*</span></label>
+          <select class="input" id="i_category">
+            <option value="ЗРУП">ССОБ ЗРУП</option>
+            <option value="ГУНП">ГУНП</option>
+          </select>
+        </div>
       </div>
       <div class="grid-2" style="gap:13px">
         <div class="field"><label>Службовий телефон</label><input class="input" id="i_phone" placeholder="+380 (61) …" type="tel"></div>
@@ -93,8 +98,18 @@
         <div class="field"><label>Email</label><input class="input" id="i_email" placeholder="@gp.npu.gov.ua" type="email"></div>
         <div class="field"><label>Telegram</label><input class="input" id="i_telegram" placeholder="@username або +380…"></div>
       </div>
-      <div class="field"><label>Відділ / підрозділ</label><input class="input" id="i_department" placeholder="ССОБ Запорізького ВП"></div>
-      <div class="field"><label>Примітка (необов'язково)</label><input class="input" id="i_note" placeholder="Додаткова інформація"></div>
+      <div class="grid-2" style="gap:13px">
+        <div class="field"><label>Район обслуговування</label><input class="input" id="i_district" placeholder="Вільнянська ТГ"></div>
+        <div class="field"><label>Дата призначення</label><input class="input" type="date" id="i_appointedAt"></div>
+      </div>
+      <div class="field">
+        <label>Статус</label>
+        <div style="display:flex;gap:16px;margin-top:6px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600"><input type="radio" name="i_status" value="active" id="i_active" style="accent-color:var(--blue-600)"> Активний</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600"><input type="radio" name="i_status" value="inactive" id="i_inactive" style="accent-color:var(--red-500)"> Неактивний</label>
+        </div>
+      </div>
+      <div class="field"><label>Примітки</label><textarea class="input" id="i_note" rows="2" placeholder="Додаткова інформація…" style="resize:vertical"></textarea></div>
       <div class="field">
         <label>Колір аватара</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap" id="colorPicker"></div>
@@ -156,6 +171,7 @@ if(U.role!=='admin'){
   document.getElementById('closeIns').innerHTML=I.close;
   let tab='schools', editingId=null, editingInsKey=null;
   let schSearch='', insSearch='';
+  window._insFilterCat = 'all';
 
   /* ── color picker ── */
   const COLORS=['#1F59DD','#1AA56C','#E84545','#7B4FD1','#FF7A00','#0E274D','#1E9E6A','#C8390B'];
@@ -180,44 +196,47 @@ if(U.role!=='admin'){
   function openIns(key){
     editingInsKey=key;
     document.getElementById('insModalTitle').textContent=key?'Редагувати інспектора':'Додати інспектора';
-    const ins=key?S.inspectors[key]:{};
+    const ins=key?(S.inspectors[key]||{}):{};
     document.getElementById('i_name').value=ins.name||'';
-    document.getElementById('i_rank_title').value=ins.rankTitle||ins.rank||'';
-    document.getElementById('i_position').value=ins.position||ins.rank||'Інспектор ССОБ';
+    document.getElementById('i_rank_title').value=ins.rank||ins.rankTitle||'';
+    document.getElementById('i_category').value=ins.category||'ЗРУП';
     document.getElementById('i_phone').value=ins.phone||'';
     document.getElementById('i_phone2').value=ins.phone2||'';
     document.getElementById('i_email').value=ins.email||'';
     document.getElementById('i_telegram').value=ins.telegram||'';
-    document.getElementById('i_department').value=ins.department||'';
-    document.getElementById('i_note').value=ins.note||'';
+    document.getElementById('i_district').value=ins.district||'';
+    document.getElementById('i_appointedAt').value=ins.appointedAt||'';
+    document.getElementById('i_note').value=ins.note||ins.notes||'';
+    document.getElementById(ins.status==='inactive'?'i_inactive':'i_active').checked=true;
     selectColor(ins.color||'#1F59DD');
     openModal('insModal');
   }
   document.getElementById('saveIns').addEventListener('click',()=>{
     const name=document.getElementById('i_name').value.trim();
     if(!name){toast('Введіть ПІБ інспектора','red');return;}
-    const position=document.getElementById('i_position').value.trim()||'Інспектор ССОБ';
+    const category=document.getElementById('i_category').value;
     const data={
       name,
-      rank: position,
-      rankTitle: document.getElementById('i_rank_title').value.trim(),
-      position,
-      phone:  document.getElementById('i_phone').value.trim(),
-      phone2: document.getElementById('i_phone2').value.trim(),
-      email:  document.getElementById('i_email').value.trim(),
-      telegram: document.getElementById('i_telegram').value.trim(),
-      department: document.getElementById('i_department').value.trim(),
-      note: document.getElementById('i_note').value.trim(),
-      color: document.getElementById('i_color').value,
+      rank: document.getElementById('i_rank_title').value.trim()||'Інспектор ССОБ',
+      category,
+      department: category==='ГУНП'?'ГУНП':'ССОБ ЗРУП',
+      phone:       document.getElementById('i_phone').value.trim(),
+      phone2:      document.getElementById('i_phone2').value.trim(),
+      email:       document.getElementById('i_email').value.trim(),
+      telegram:    document.getElementById('i_telegram').value.trim(),
+      district:    document.getElementById('i_district').value.trim(),
+      appointedAt: document.getElementById('i_appointedAt').value,
+      status:      document.querySelector('input[name="i_status"]:checked')?.value||'active',
+      notes:       document.getElementById('i_note').value.trim(),
+      color:       document.getElementById('i_color').value,
     };
     if(editingInsKey){
       S.inspectors[editingInsKey]=Object.assign(S.inspectors[editingInsKey]||{},data);
     } else {
-      const key=name.toLowerCase().replace(/\s+/g,'').slice(0,8)+Date.now().toString(36).slice(-3);
-      S.inspectors[key]=data;
+      const key=name.toLowerCase().replace(/\s+/g,'').slice(0,6)+Date.now().toString(36).slice(-3);
+      S.inspectors[key]=Object.assign({schools:[]},data);
     }
     window.SOBStore.save();
-    // оновити select у модалі заклада
     buildInspectorSelect();
     toast(editingInsKey?'Інспектора оновлено':'Інспектора додано');
     closeModal('insModal');
@@ -444,26 +463,35 @@ if(U.role!=='admin'){
           <span class="si">${I.search||'🔍'}</span>
           <input id="insSearchInput" placeholder="Пошук за ПІБ, посадою, підрозділом…" value="${insSearch}">
         </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <span style="font-size:13px;color:var(--muted);align-self:center">Підрозділ:</span>
+          ${['all','ЗРУП','ГУНП'].map(cat=>`<button class="btn btn-ghost btn-sm ${window._insFilterCat===cat?'btn-primary':''}" data-inscat="${cat}">${cat==='all'?'Усі':cat}</button>`).join('')}
+        </div>
         <div class="ins-grid">
         ${entries.map(([k,ins])=>{
-          const init=ins.name.split(' ').map(w=>w[0]).slice(0,2).join('');
+          const cat=ins.category||'ЗРУП';
+          if(window._insFilterCat&&window._insFilterCat!=='all'&&cat!==window._insFilterCat) return '';
+          const init=ins.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
           const cnt=S.schools.filter(s=>s.serviced&&s.inspector===k).length;
-          const clr=ins.color||'#0E274D';
-          return `<div class="ins-card">
+          const clr=ins.color||(cat==='ГУНП'?'#0E274D':'#1F59DD');
+          const isActive=ins.status!=='inactive';
+          return `<div class="ins-card" style="${!isActive?'opacity:.6':''}">
             <div class="ins-top">
               <div class="av" style="background:${clr}">${init}</div>
-              <div>
+              <div style="flex:1;min-width:0">
                 <div class="ins-name">${ins.name}</div>
-                <div class="ins-rank">${ins.rankTitle?ins.rankTitle+' · ':''}${ins.position||ins.rank||'Інспектор ССОБ'}</div>
-                ${ins.department?`<div style="font-size:11px;color:var(--muted);margin-top:1px">${ins.department}</div>`:''}
+                <div class="ins-rank">${ins.rank||'Інспектор ССОБ'}</div>
+                <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
+                  <span style="width:7px;height:7px;border-radius:50%;background:${isActive?'var(--green-500)':'var(--muted-2)'};display:inline-block"></span>
+                  <span style="font-size:11px;color:var(--muted)">${isActive?'Активний':'Неактивний'}</span>
+                  <span style="font-size:11px;padding:2px 7px;border-radius:8px;font-weight:700;background:${cat==='ГУНП'?'var(--navy-050,#f0f4ff)':'var(--blue-050)'};color:${cat==='ГУНП'?'var(--navy-800)':'var(--blue-700)'}">${cat}</span>
+                </div>
               </div>
             </div>
             <div class="ins-contacts">
               ${ins.phone?`<div class="ins-contact-line">${I.phone}<a href="tel:${ins.phone.replace(/[^+\d]/g,'')}" style="color:var(--blue-600);font-weight:600">${ins.phone}</a></div>`:''}
-              ${ins.phone2?`<div class="ins-contact-line">${I.phone}<a href="tel:${ins.phone2.replace(/[^+\d]/g,'')}" style="color:var(--text-2)">${ins.phone2}</a></div>`:''}
               ${ins.email?`<div class="ins-contact-line">${I.mail}<a href="mailto:${ins.email}" style="color:var(--blue-600)">${ins.email}</a></div>`:''}
-              ${ins.telegram?`<div class="ins-contact-line"><svg viewBox="0 0 24 24" width="14" height="14" fill="var(--blue-600)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8-1.7 8.02c-.12.57-.47.7-.95.44l-2.62-1.93-1.27 1.22c-.14.14-.26.26-.53.26l.19-2.68 4.84-4.37c.21-.19-.05-.29-.32-.1L7.58 15.1l-2.58-.8c-.56-.17-.57-.56.12-.83l10.07-3.88c.46-.17.87.11.71.83h-.26z"/></svg><span>${ins.telegram}</span></div>`:''}
-              ${ins.note?`<div style="font-size:12px;color:var(--muted);padding-top:4px;border-top:1px solid var(--border)">${ins.note}</div>`:''}
+              ${ins.district?`<div class="ins-contact-line">${I.pin||I.map}<span>${ins.district}</span></div>`:''}
               <div style="font-size:12px;color:var(--muted-2);padding-top:2px">Закладів: <b style="color:var(--text-2)">${cnt}</b></div>
             </div>
             <div class="ins-actions">
@@ -483,6 +511,9 @@ if(U.role!=='admin'){
       const ni=document.getElementById('insSearchInput');
       ni.focus(); ni.setSelectionRange(pos,pos);
     });
+    document.querySelectorAll('[data-inscat]').forEach(b=>b.addEventListener('click',()=>{
+      window._insFilterCat=b.dataset.inscat; renderInspectors();
+    }));
     document.querySelectorAll('[data-eins]').forEach(b=>b.addEventListener('click',()=>openIns(b.dataset.eins)));
     document.querySelectorAll('[data-dins]').forEach(b=>b.addEventListener('click',()=>{
       const k=b.dataset.dins, ins=S.inspectors[k];
