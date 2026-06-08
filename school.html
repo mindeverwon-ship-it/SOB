@@ -291,12 +291,16 @@ function render(){
               <div class="person"><div class="avatar-init av">${insInit}</div><div><div class="n">${ins.name||'—'}</div><div class="r">${ins.rank||'Працівник СОБ'}</div><div style="font-size:11px;color:var(--blue-600);margin-top:2px">Переглянути профіль →</div></div></div>
             </a>
             <div id="changeInspPanel" style="display:none;margin-top:12px;padding:12px;background:var(--surface-2);border-radius:10px;border:1px solid var(--border)">
-              <label style="font-size:12.5px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px">Призначити нового відповідального:</label>
+              <label style="font-size:12.5px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px">Відповідальний працівник:</label>
               <div class="row gap-8">
-                <select class="input" id="newInspSelect" style="flex:1">${Object.entries(S.workers||S.inspectors||{}).map(([k,v])=>`<option value="${k}" ${k===s.inspector?'selected':''}>${v.name}</option>`).join('')}</select>
-                <button class="btn btn-primary btn-sm" id="confirmInspBtn">Призначити</button>
+                <select class="input" id="newInspSelect" style="flex:1">
+                  <option value="">— Зняти відповідального —</option>
+                  ${Object.entries(S.workers||S.inspectors||{}).map(([k,v])=>`<option value="${k}" ${k===s.inspector?'selected':''}>${v.name}</option>`).join('')}
+                </select>
+                <button class="btn btn-primary btn-sm" id="confirmInspBtn">Зберегти</button>
                 <button class="btn btn-ghost btn-sm" id="cancelInspBtn">✕</button>
               </div>
+              ${s.inspector?`<button id="removeInspBtn" class="btn btn-sm" style="margin-top:8px;width:100%;background:var(--red-050,#fff0f0);color:var(--red-500);border:1px solid var(--red-200,#fcc)">Зняти поточного відповідального</button>`:''}
             </div>
             ${(s.inspectorHistory||[]).length?`<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px">Попередні відповідальні:</div>${s.inspectorHistory.map(h=>{const w=(S.workers||S.inspectors||{})[h.key];return `<div style="font-size:12px;display:flex;gap:8px;padding:3px 0;color:var(--text-2)"><span>${w?w.name:h.key}</span><span style="color:var(--muted)">→ до ${h.assignedUntil||'?'}</span></div>`;}).join('')}</div>`:''}
             <div class="contact-row">
@@ -402,10 +406,17 @@ function bindEvents(){
   changeInspBtn?.addEventListener('click', ()=>{ changeInspPanel.style.display = changeInspPanel.style.display==='none'?'block':'none'; });
   cancelInspBtn?.addEventListener('click', ()=>{ changeInspPanel.style.display='none'; });
   confirmInspBtn?.addEventListener('click', ()=>{
-    const newKey = document.getElementById('newInspSelect').value;
+    const newKey = document.getElementById('newInspSelect').value || null;
     window.SOBStore.setSchoolInspector(s.id, newKey);
     s = S.schools.find(x=>x.id===s.id);
-    toast('Відповідального змінено');
+    toast(newKey ? 'Відповідального призначено' : 'Відповідального знято');
+    render();
+  });
+  document.getElementById('removeInspBtn')?.addEventListener('click', ()=>{
+    if(!confirm('Зняти поточного відповідального?')) return;
+    window.SOBStore.setSchoolInspector(s.id, null);
+    s = S.schools.find(x=>x.id===s.id);
+    toast('Відповідального знято', 'navy');
     render();
   });
 }
