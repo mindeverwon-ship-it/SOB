@@ -73,9 +73,10 @@ window.SOBStore = {
       const nonSchool = this.collections.filter(k => k !== 'schools');
       nonSchool.forEach(k => { if (saved[k] !== undefined) window.SOB[k] = saved[k]; });
       this._mergeSchools(saved.schools);
-      this._applyInspectorOverrides(); // перекриває будь-які дані з localStorage/Firebase
       (window.SOB.schools || []).forEach(s => this.recalcSchool(s.id));
     }
+    // ЗАВЖДИ застосовуємо override — навіть якщо немає збережених даних
+    this._applyInspectorOverrides();
     if (this.FB && this.FB !== 'YOUR_FIREBASE_URL') {
       this._fetchCloud();
       // синхронізуємо при поверненні на вкладку (замість постійного setInterval)
@@ -83,6 +84,22 @@ window.SOBStore = {
         if (document.visibilityState === 'visible') this._fetchCloud();
       });
     }
+    // bfcache: якщо браузер відновив сторінку з кешу (кнопка "Назад"),
+    // повторно застосовуємо overrides та оновлюємо відображення
+    window.addEventListener('pageshow', (ev) => {
+      if (ev.persisted) {
+        this._applyInspectorOverrides();
+        (window.SOB.schools || []).forEach(s => this.recalcSchool(s.id));
+        document.dispatchEvent(new CustomEvent('sob:synced'));
+      }
+    });
+    // cross-tab: якщо інша вкладка змінила override — оновлюємо цю
+    window.addEventListener('storage', (ev) => {
+      if (ev.key === this.INS_OV_KEY || ev.key === this.KEY) {
+        this._applyInspectorOverrides();
+        document.dispatchEvent(new CustomEvent('sob:synced'));
+      }
+    });
   },
 
   async _fetchCloud() {
