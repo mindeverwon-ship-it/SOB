@@ -65,6 +65,19 @@
 </div>
 <input type="file" id="fileInput" multiple style="display:none">
 
+<!-- Event photos modal -->
+<div class="modal-scrim" id="evPhotoModal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head"><div class="section-title" id="evPhotoTitle">Фото заходу</div><button class="icon-btn" id="closeEvPhoto" onclick="closeModal('evPhotoModal')"></button></div>
+    <div class="modal-body">
+      <div id="evPhotoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px"></div>
+      <button class="btn btn-soft" id="evPhotoUpBtn">📷 Додати фото до заходу</button>
+      <input type="file" id="evPhotoInput" accept="image/*" multiple style="display:none">
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('evPhotoModal')">Закрити</button></div>
+  </div>
+</div>
+
 <script src="js/data.js"></script>
 <script src="js/store.js"></script>
 <script src="js/shell.js"></script>
@@ -135,7 +148,21 @@ if(U.role !== 'inspector' && U.role !== 'admin'){
 
       <div class="card card-pad" style="margin-top:20px">
         <div class="card-head"><div class="section-title">${I.calendar} Останні заходи</div><button class="btn btn-primary btn-sm" id="addEvBtn2">${I.plus} Додати захід</button></div>
-        ${myEvents.length?myEvents.map(e=>{const sc=S.schools.find(x=>x.id===e.schoolId);return `<div class="file-row"><div class="file-ic" style="background:var(--blue-600)">${fmtDate(e.date).split(' ')[0]}</div><div class="file-meta"><b>${e.title}</b><span>${sc?sc.name:''} · ${e.type} · ${F(e.participants||0)} уч.</span></div><button class="del" data-edel="${e.id}">${I.trash}</button></div>`;}).join(''):`<div style="padding:20px;text-align:center;color:var(--muted)">Заходів ще немає — натисніть «Додати захід»</div>`}
+        ${myEvents.length?myEvents.map(e=>{
+          const sc=S.schools.find(x=>x.id===e.schoolId);
+          const evPhotos=(S.gallery||[]).filter(g=>g.eventId===e.id);
+          const tl=(S.eventTypes||[]).find(t=>t.id===e.type);
+          return `<div class="file-row" style="flex-wrap:wrap;gap:8px">
+            <div class="file-ic" style="background:var(--blue-600)">${fmtDate(e.date).split(' ')[0]}</div>
+            <div class="file-meta" style="flex:1;min-width:0">
+              <b>${e.title}</b>
+              <span>${sc?sc.name:''} · ${tl?tl.label:e.type} · ${F(e.participants||0)} уч.</span>
+              ${evPhotos.length?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px">${evPhotos.slice(0,4).map(g=>`<img src="${g.url||g.dataUrl}" style="width:48px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--border)">`).join('')}${evPhotos.length>4?`<span style="font-size:11px;color:var(--muted);align-self:center">+${evPhotos.length-4}</span>`:''}</div>`:''}
+            </div>
+            <button class="btn btn-soft btn-sm" data-ephoto="${e.id}" data-eschool="${e.schoolId}" title="Фото заходу">${I.image} Фото ${evPhotos.length?`(${evPhotos.length})`:''}</button>
+            <button class="del" data-edel="${e.id}">${I.trash}</button>
+          </div>`;
+        }).join(''):`<div style="padding:20px;text-align:center;color:var(--muted)">Заходів ще немає — натисніть «Додати захід»</div>`}
       </div>
 
       <div class="card card-pad" style="margin-top:20px" id="photos">
@@ -174,7 +201,52 @@ if(U.role !== 'inspector' && U.role !== 'admin'){
       toast('Фото видалено','navy'); render();
     }));
     document.getElementById('photoInput')?.addEventListener('change', e=>handlePhotos(e.target.files));
+    /* ── Фото до заходу ── */
+    document.querySelectorAll('[data-ephoto]').forEach(btn => {
+      btn.addEventListener('click', () => openEvPhotoModal(btn.dataset.ephoto, btn.dataset.eschool));
+    });
   }
+
+  /* ── Event-photo modal ── */
+  let _evPhotoId = null, _evSchoolId = null;
+  document.getElementById('closeEvPhoto').innerHTML = I.close;
+  function openEvPhotoModal(eventId, schoolId) {
+    _evPhotoId = eventId; _evSchoolId = schoolId;
+    const ev = (S.schoolEvents||[]).find(e=>e.id===eventId);
+    document.getElementById('evPhotoTitle').textContent = ev ? 'Фото: '+ev.title : 'Фото заходу';
+    renderEvPhotoGrid();
+    document.getElementById('evPhotoModal').classList.add('show');
+  }
+  function renderEvPhotoGrid() {
+    const photos = (S.gallery||[]).filter(g=>g.eventId===_evPhotoId);
+    document.getElementById('evPhotoGrid').innerHTML = photos.length
+      ? photos.map(g=>`<div style="position:relative">
+          <img src="${g.url||g.dataUrl||''}" style="width:100%;height:100px;object-fit:cover;border-radius:10px" loading="lazy">
+          <button data-gdevdel="${g.id}" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:6px;padding:3px 6px;cursor:pointer;font-size:11px">${I.trash}</button>
+        </div>`).join('')
+      : '<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:16px">Фото ще немає — завантажте нижче</div>';
+    document.querySelectorAll('[data-gdevdel]').forEach(b=>b.addEventListener('click', ()=>{
+      if(!confirm('Видалити фото?')) return;
+      window.SOBStore.deleteGallery(b.dataset.gdevdel);
+      renderEvPhotoGrid(); render();
+    }));
+  }
+  document.getElementById('evPhotoUpBtn').addEventListener('click', ()=>document.getElementById('evPhotoInput').click());
+  document.getElementById('evPhotoInput').addEventListener('change', async e=>{
+    const files = Array.from(e.target.files);
+    if(!files.length) return;
+    toast('Завантаження фото…','blue');
+    for(const file of files){
+      try {
+        const result = await window.SOBStorage.upload(file, `sob/events/${_evSchoolId}/${_evPhotoId}`);
+        const g = { schoolId:_evSchoolId, eventId:_evPhotoId, inspector:myKey, url:result.url, publicId:result.publicId, name:file.name, date:new Date().toISOString().slice(0,10), source:'cloudinary' };
+        window.SOBStore.addGallery(g);
+      } catch(err) { toast('Помилка: '+err.message,'red'); }
+    }
+    e.target.value='';
+    renderEvPhotoGrid(); render();
+    toast('Фото збережено ✓','green');
+  });
 
   function openModal(id){document.getElementById(id).classList.add('show');}
   window.closeModal=id=>document.getElementById(id).classList.remove('show');

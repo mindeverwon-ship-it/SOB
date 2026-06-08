@@ -99,7 +99,7 @@ function render(){
     const mine = U.role==='inspector' && s.inspector===U.inspector;
     return `<div class="sch-card" onclick="location.href='school.html?id=${s.id}'">
       <div class="ph serv">
-        <image-slot id="card-${s.id}" shape="rect" placeholder="Фото закладу"></image-slot>
+        ${(()=>{ const ph=(S.gallery||[]).find(g=>g.schoolId===s.id&&(g.url||g.dataUrl)); return ph?`<img src="${ph.url||ph.dataUrl}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0" loading="lazy" alt="${s.name}">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--surface-2);position:absolute;inset:0;color:var(--muted-2);font-size:32px">${I.school||'🏫'}</div>`; })()}
         <div class="badges"><span class="tag gold" style="background:rgba(255,196,46,.95)">${I.star} ${s.rating||0}</span>${mine?`<span class="tag blue" style="background:rgba(255,255,255,.92)">Мій заклад</span>`:''}</div>
       </div>
       <div class="body">

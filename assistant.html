@@ -261,7 +261,7 @@ function analyticAnswer(q) {
   if(lq.includes('фото') || lq.includes('звіт') || lq.includes('без')) {
     const noPhoto = schools.filter(s => !(s.gallery||[]).length);
     if(!noPhoto.length) return `Всі заклади під наглядом подали фотозвіти. Відмінний результат!`;
-    const list = noPhoto.slice(0,10).map(s=>`- **${s.name.slice(0,50)}** (${S.workers[s.inspector]?.name?.split(' ')[0]||'?'})`).join('\n');
+    const list = noPhoto.slice(0,10).map(s=>`- **${s.name}** (${S.workers[s.inspector]?.name?.split(' ')[0]||'?'})`).join('\n');
     return `## Заклади без фотозвітів\n\n${noPhoto.length} закладів ще не подали фотозвіти:\n\n${list}${noPhoto.length>10?`\n\n...та ще ${noPhoto.length-10} закладів.`:''}\n\n**Рекомендація:** Нагадати відповідним працівникам СОБ про необхідність завантаження фотозвітів.`;
   }
 

@@ -250,7 +250,7 @@ function render(){
     </div>
 
     <section class="sch-hero anim">
-      <div class="sch-photo card" style="padding:0"><image-slot id="hero-${s.id}" shape="rounded" radius="22" placeholder="Фото закладу освіти"></image-slot></div>
+      <div class="sch-photo card" style="padding:0;overflow:hidden">${(()=>{const ph=(S.gallery||[]).find(g=>g.schoolId===s.id&&(g.url||g.dataUrl));return ph?`<img src="${ph.url||ph.dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--surface-2);min-height:200px;color:var(--muted-2);font-size:48px">${I.school||'🏫'}</div>`;})()}</div>
       <div class="sch-info">
         <div class="row-top">
           <div>
