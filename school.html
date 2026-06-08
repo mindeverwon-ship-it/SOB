@@ -141,6 +141,7 @@
 </div>
 
 <input type="file" id="fileInput" multiple style="display:none">
+<input type="file" id="mainPhotoInput" accept="image/*" style="display:none">
 
 <!-- Cancel event modal -->
 <div class="modal-scrim" id="cancelModal">
@@ -217,18 +218,20 @@ function render(){
     ? cancelledEvents.map(e => eventCard(e, true)).join('')
     : `<div style="padding:24px;text-align:center;color:var(--muted)">Скасованих заходів немає</div>`;
 
-  const galleryItems = (S.gallery||[]).filter(g=>g.schoolId===s.id && g.dataUrl)
+  /* School gallery = всі фото школи (включно з заходами для перегляду), окрім головного */
+  const galleryItems = (S.gallery||[]).filter(g=>g.schoolId===s.id && (g.dataUrl||g.url))
     .sort((a,b)=>((b.date||b.createdAt||'') > (a.date||a.createdAt||'') ? 1 : -1));
   const galleryHtml = galleryItems.length ? galleryItems.map(g=>{
     const evName = g.eventId ? (S.schoolEvents||[]).find(e=>e.id===g.eventId)?.title||'' : '';
     const dtStr  = g.date ? new Date(g.date).toLocaleDateString('uk-UA') : '';
     const author = g.author || '';
+    const src = g.url||g.dataUrl;
     return `<div class="gal-cell">
-      <div style="position:relative;border-radius:14px;overflow:hidden;height:150px;background:var(--surface-2);cursor:pointer" onclick="openPhoto('${g.dataUrl}')">
-        <img src="${g.dataUrl}" style="width:100%;height:100%;object-fit:cover">
+      <div style="position:relative;border-radius:14px;overflow:hidden;height:150px;background:var(--surface-2);cursor:pointer" onclick="openPhoto('${src}')">
+        <img src="${src}" style="width:100%;height:100%;object-fit:cover">
         ${canEdit?`<button class="ph-del" style="display:block;position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:6px;width:22px;height:22px;font-size:14px;cursor:pointer;padding:0;line-height:22px;text-align:center" data-pdel="${g.id}" onclick="event.stopPropagation()">✕</button>`:''}
       </div>
-      <div class="gal-cap">${evName||g.title||'Без опису'}</div>
+      <div class="gal-cap">${evName?`📅 ${evName}`:g.title||'Фото закладу'}</div>
       ${(dtStr||author)?`<div style="font-size:11px;color:var(--muted-2);margin-top:1px">${dtStr}${author?' · '+author:''}</div>`:''}
     </div>`;
   }).join('') : `<div style="padding:32px;text-align:center;color:var(--muted)">Фото ще немає. Натисніть «Додати фото» або завантажте під час створення заходу.</div>`;
@@ -250,7 +253,7 @@ function render(){
     </div>
 
     <section class="sch-hero anim">
-      <div class="sch-photo card" style="padding:0;overflow:hidden">${(()=>{const ph=(S.gallery||[]).find(g=>g.schoolId===s.id&&(g.url||g.dataUrl));return ph?`<img src="${ph.url||ph.dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--surface-2);min-height:200px;color:var(--muted-2);font-size:48px">${I.school||'🏫'}</div>`;})()}</div>
+      <div class="sch-photo card" style="padding:0;overflow:hidden;position:relative">${(()=>{const mp=s.photoMain;const gp=(S.gallery||[]).find(g=>g.schoolId===s.id&&!g.eventId&&(g.url||g.dataUrl));const src=mp?(mp.url||mp.dataUrl||null):gp?(gp.url||gp.dataUrl):null;return (src?`<img id="heroPhotoImg" src="${src}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">`:`<div id="heroPhotoImg" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--surface-2);min-height:200px;color:var(--muted-2);font-size:48px">${I.school||'🏫'}</div>`)+(canEdit?`<button onclick="document.getElementById('mainPhotoInput').click()" style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.62);color:#fff;border:none;border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px">${I.image||'📷'} Головне фото</button>`:'');})()}</div>
       <div class="sch-info">
         <div class="row-top">
           <div>
@@ -283,10 +286,19 @@ function render(){
       <div class="grid-2">
         <div class="col" style="gap:18px">
           <div class="card card-pad">
-            <div class="section-title" style="margin-bottom:16px">${I.shield} Відповідальний працівник СОБ</div>
+            <div class="card-head" style="margin-bottom:16px"><div class="section-title">${I.shield} Відповідальний працівник СОБ</div>${canEdit?`<button class="btn btn-soft btn-sm" id="changeInspBtn">${I.edit} Змінити</button>`:''}</div>
             <a href="inspectors.html?key=${s.inspector||''}" style="text-decoration:none;color:inherit;display:block;border-radius:10px;padding:6px 8px;margin:-6px -8px 8px;transition:background .15s" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">
               <div class="person"><div class="avatar-init av">${insInit}</div><div><div class="n">${ins.name||'—'}</div><div class="r">${ins.rank||'Працівник СОБ'}</div><div style="font-size:11px;color:var(--blue-600);margin-top:2px">Переглянути профіль →</div></div></div>
             </a>
+            <div id="changeInspPanel" style="display:none;margin-top:12px;padding:12px;background:var(--surface-2);border-radius:10px;border:1px solid var(--border)">
+              <label style="font-size:12.5px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px">Призначити нового відповідального:</label>
+              <div class="row gap-8">
+                <select class="input" id="newInspSelect" style="flex:1">${Object.entries(S.workers||S.inspectors||{}).map(([k,v])=>`<option value="${k}" ${k===s.inspector?'selected':''}>${v.name}</option>`).join('')}</select>
+                <button class="btn btn-primary btn-sm" id="confirmInspBtn">Призначити</button>
+                <button class="btn btn-ghost btn-sm" id="cancelInspBtn">✕</button>
+              </div>
+            </div>
+            ${(s.inspectorHistory||[]).length?`<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px">Попередні відповідальні:</div>${s.inspectorHistory.map(h=>{const w=(S.workers||S.inspectors||{})[h.key];return `<div style="font-size:12px;display:flex;gap:8px;padding:3px 0;color:var(--text-2)"><span>${w?w.name:h.key}</span><span style="color:var(--muted)">→ до ${h.assignedUntil||'?'}</span></div>`;}).join('')}</div>`:''}
             <div class="contact-row">
               <a class="cbtn" href="tel:${(ins.phone||'').replace(/[^+\\d]/g,'')}">${I.phone} Подзвонити</a>
               <a class="cbtn" href="mailto:${ins.email||''}">${I.mail} Написати</a>
@@ -381,6 +393,21 @@ function bindEvents(){
   document.querySelectorAll('[data-restore]').forEach(b=>b.addEventListener('click', e=>{ e.stopPropagation(); window.SOBStore.restoreEvent(b.dataset.restore); toast('Захід відновлено'); render(); }));
   document.querySelectorAll('[data-fdel]').forEach(b=>b.addEventListener('click', ()=>{ if(confirm('Видалити файл?')){ window.SOBStore.deleteFile(b.dataset.fdel); toast('Файл видалено','navy'); render(); }}));
   document.querySelectorAll('[data-pdel]').forEach(b=>b.addEventListener('click', e=>{ e.stopPropagation(); if(confirm('Видалити фото?')){ window.SOBStore.deleteGallery(b.dataset.pdel); toast('Фото видалено','navy'); render(); }}));
+
+  /* Inspector change */
+  const changeInspBtn = document.getElementById('changeInspBtn');
+  const changeInspPanel = document.getElementById('changeInspPanel');
+  const confirmInspBtn = document.getElementById('confirmInspBtn');
+  const cancelInspBtn = document.getElementById('cancelInspBtn');
+  changeInspBtn?.addEventListener('click', ()=>{ changeInspPanel.style.display = changeInspPanel.style.display==='none'?'block':'none'; });
+  cancelInspBtn?.addEventListener('click', ()=>{ changeInspPanel.style.display='none'; });
+  confirmInspBtn?.addEventListener('click', ()=>{
+    const newKey = document.getElementById('newInspSelect').value;
+    window.SOBStore.setSchoolInspector(s.id, newKey);
+    s = S.schools.find(x=>x.id===s.id);
+    toast('Відповідального змінено');
+    render();
+  });
 }
 
 /* Modals */
@@ -485,6 +512,20 @@ document.addEventListener('drop', e => {
   if(!dz) return;
   e.preventDefault();
   handleGalleryFiles(e.dataTransfer.files);
+});
+
+/* Main school photo upload */
+document.getElementById('mainPhotoInput').addEventListener('change', e=>{
+  const file = e.target.files[0]; if(!file||!file.type.startsWith('image/')) return;
+  const r = new FileReader();
+  r.onload = () => {
+    window.SOBStore.setSchoolPhoto(s.id, r.result, null);
+    s = S.schools.find(x=>x.id===s.id);
+    toast('Головне фото оновлено');
+    render();
+  };
+  r.readAsDataURL(file);
+  e.target.value='';
 });
 
 /* File upload (persist metadata + small files as dataURL) */

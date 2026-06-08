@@ -239,7 +239,19 @@ function render() {
         <div style="font-size:12px;font-weight:700">${uniqCount}/${stuCount}</div>
       </div>`:''}
 
-      ${canEdit?`<div class="ins-actions"><button class="btn btn-ghost btn-sm" data-edit="${key}">${I.edit} Редагувати</button></div>`:''}
+      ${canEdit?`<div class="ins-actions">
+        <button class="btn btn-ghost btn-sm" data-edit="${key}">${I.edit} Редагувати</button>
+        <button class="btn btn-ghost btn-sm" data-assign="${key}" style="flex:none">${I.school||'🏫'} Заклади</button>
+      </div>
+      <div class="ins-assign-panel" id="asgn-${key}" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <input type="text" class="input asgn-search" data-key="${key}" placeholder="Пошук закладу…" style="flex:1;height:34px;font-size:12.5px">
+          <button class="btn btn-primary btn-sm asgn-add" data-key="${key}" style="white-space:nowrap">${I.plus} Призначити</button>
+        </div>
+        <div class="asgn-results" id="asgnr-${key}" style="display:none;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;max-height:160px;overflow-y:auto;margin-bottom:8px"></div>
+        <div style="font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:5px">Закріплено (${schoolsList.length}):</div>
+        ${schoolsList.length?schoolsList.map(sch=>`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12.5px"><a href="school.html?id=${sch.id}" style="flex:1;color:var(--blue-600);font-weight:500;text-decoration:none;line-height:1.3">${esc(sch.name)}</a><button class="btn btn-ghost btn-sm" style="padding:2px 7px;font-size:11px;color:var(--red-500)" data-unassign="${sch.id}" data-from="${key}">Зняти</button></div>`).join(''):`<div style="color:var(--muted);font-size:12px">Жодного закладу не закріплено</div>`}
+      </div>`:''}
     </div>`;
   }
 
@@ -382,6 +394,52 @@ window.closeModal = closeModal;
 document.querySelectorAll('.modal-scrim').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
 document.addEventListener('sob:synced',()=>render());
 render();
+
+/* ── Inspector school assignment handlers ── */
+document.addEventListener('click', e => {
+  /* Toggle assign panel */
+  const assignBtn = e.target.closest('[data-assign]');
+  if (assignBtn) {
+    const key = assignBtn.dataset.assign;
+    const panel = document.getElementById('asgn-'+key);
+    if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    return;
+  }
+  /* Unassign school */
+  const unassignBtn = e.target.closest('[data-unassign]');
+  if (unassignBtn && confirm('Зняти заклад із цього інспектора?')) {
+    const schoolId = unassignBtn.dataset.unassign;
+    window.SOBStore.setSchoolInspector(schoolId, null);
+    toast('Заклад знято', 'navy');
+    render();
+    return;
+  }
+  /* Assign school from search result */
+  const resultItem = e.target.closest('[data-assign-school]');
+  if (resultItem) {
+    const schoolId = resultItem.dataset.assignSchool;
+    const key = resultItem.dataset.toKey;
+    window.SOBStore.setSchoolInspector(schoolId, key);
+    toast('Заклад закріплено');
+    render();
+    return;
+  }
+});
+
+/* Search school to assign */
+document.addEventListener('input', e => {
+  const inp = e.target.closest('.asgn-search');
+  if (!inp) return;
+  const key = inp.dataset.key;
+  const q = inp.value.trim().toLowerCase();
+  const resultsEl = document.getElementById('asgnr-'+key);
+  if (!resultsEl) return;
+  if (!q) { resultsEl.style.display='none'; resultsEl.innerHTML=''; return; }
+  const matches = S.schools.filter(sc => sc.serviced && sc.inspector !== key && sc.name.toLowerCase().includes(q));
+  if (!matches.length) { resultsEl.innerHTML='<div style="padding:8px 12px;color:var(--muted);font-size:12.5px">Не знайдено</div>'; resultsEl.style.display='block'; return; }
+  resultsEl.innerHTML = matches.slice(0,8).map(sc=>`<div data-assign-school="${sc.id}" data-to-key="${key}" style="padding:7px 12px;font-size:12.5px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s" onmouseover="this.style.background='var(--blue-050)'" onmouseout="this.style.background=''">${esc(sc.name)}${sc.inspector?`<span style="font-size:11px;color:var(--muted);margin-left:6px">(зараз: ${esc((S.workers[sc.inspector]||{name:sc.inspector}).name)})</span>`:''}</div>`).join('');
+  resultsEl.style.display = 'block';
+});
 
 /* Якщо перейшли з картки закладу з ?key=..., прокрутити до картки інспектора */
 (function(){
