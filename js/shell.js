@@ -56,7 +56,7 @@ const NAV_ALL = {
   dashboard:   { id: "dashboard",   label: "Оперативний центр",   icon: "grid",     href: "index.html" },
   map:         { id: "map",         label: "Карта закладів",      icon: "map",      href: "map.html" },
   schools:     { id: "schools",     label: "Заклади освіти",      icon: "school",   href: "schools.html" },
-  inspectors:  { id: "inspectors",  label: "Інспектори СОБ",      icon: "users",    href: "inspectors.html" },
+  workers:     { id: "workers",     label: "Працівники СОБ",      icon: "users",    href: "inspectors.html" },
   gallery:     { id: "gallery",     label: "Фотогалерея",         icon: "gallery",  href: "gallery.html" },
   analytics:   { id: "analytics",   label: "Аналітика",           icon: "chart",    href: "analytics.html" },
   incidents:   { id: "incidents",   label: "Інциденти",           icon: "alert",    href: "incidents.html" },
@@ -72,9 +72,9 @@ const NAV_ALL = {
 // які розділи бачить кожна роль (у заданому порядку)
 const NAV_BY_ROLE = {
   public:     ["dashboard","schools","map","gallery","analytics","comm","search","ai"],
-  leadership: ["dashboard","inspectors","schools","map","analytics","incidents","monitoring","gallery","comm","search","ai"],
-  inspector:  ["dashboard","cabinet","schools","map","incidents","assignments","monitoring","analytics","gallery","comm","search","ai"],
-  admin:      ["dashboard","admin","inspectors","schools","map","incidents","assignments","monitoring","analytics","gallery","comm","search","ai"],
+  leadership: ["dashboard","workers","schools","map","analytics","incidents","gallery","comm","search","ai"],
+  inspector:  ["dashboard","cabinet","schools","map","incidents","assignments","analytics","gallery","comm","search","ai"],
+  admin:      ["dashboard","admin","workers","schools","map","incidents","assignments","analytics","gallery","comm","search","ai"],
 };
 
 window.SOBShell = {
@@ -200,7 +200,7 @@ window.SOBShell = {
         .forEach(x => { html += row('incidents.html', ICON_ALT, '#E84545', x.title||'Інцидент', (x.desc||'').slice(0,60)); });
       (window.SOB.assignments||[]).filter(x=>(x.title||'').toLowerCase().includes(lq)).slice(0,4)
         .forEach(x => { html += row('assignments.html', ICON_DOC, 'var(--blue-600)', x.title||'Доручення', ''); });
-      Object.values(window.SOB.inspectors||{}).filter(ins=>(ins.name||'').toLowerCase().includes(lq)).slice(0,3)
+      Object.values(window.SOB.workers||{}).filter(ins=>(ins.name||'').toLowerCase().includes(lq)).slice(0,3)
         .forEach(ins => { html += row('admin.html', ICON_INS, 'var(--navy-800)', ins.name, ins.position||''); });
       if(!html) html = '<div style="padding:32px;text-align:center;color:var(--muted)">Нічого не знайдено</div>';
       else html += `<a href="search.html?q=${encodeURIComponent(q)}" style="display:block;padding:14px 16px;font-size:13.5px;font-weight:600;color:var(--blue-600);text-align:center">Показати всі результати →</a>`;
@@ -273,7 +273,7 @@ window.SOBShell = {
           s.name.toLowerCase().includes(q) || (s.city||'').toLowerCase().includes(q)
         ).slice(0, 5);
 
-        const insp = Object.entries(window.SOB.inspectors || {}).filter(([,ins]) =>
+        const insp = Object.entries(window.SOB.workers || window.SOB.inspectors || {}).filter(([,ins]) =>
           ins.name.toLowerCase().includes(q)
         ).slice(0, 3);
 
@@ -304,7 +304,7 @@ window.SOBShell = {
           html += schools.map(s => sugg_row(`school.html?id=${s.id}`, ICON_SCH, s.name, s.city||'')).join('');
         }
         if (insp.length) {
-          html += `<div style="padding:7px 14px 3px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--border)">Інспектори</div>`;
+          html += `<div style="padding:7px 14px 3px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--border)">Працівники СОБ</div>`;
           html += insp.map(([k, ins]) => sugg_row('admin.html', ICON_INS, ins.name, ins.position||ins.rank||'')).join('');
         }
         if (incidents.length) {

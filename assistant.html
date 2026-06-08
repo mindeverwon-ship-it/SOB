@@ -84,7 +84,7 @@ const S = window.SOB, I = window.ICON;
 
 /* Збір даних платформи для контексту */
 function buildContext() {
-  const ins = Object.entries(S.inspectors);
+  const ins = Object.entries(S.workers);
   const schools = S.schools.filter(s => s.serviced);
   const totalEvents = schools.reduce((s,sc) => s+(sc.events||0),0);
   const totalParticipants = schools.reduce((s,sc) => s+(sc.participants||0),0);
@@ -103,7 +103,7 @@ function buildContext() {
   const topList = Object.entries(topInspectors)
     .sort((a,b) => b[1].events - a[1].events)
     .slice(0,5)
-    .map(([k,v]) => `- ${S.inspectors[k]?.name || k}: ${v.events} заходів, ${v.participants} осіб, ${v.schools} закладів`).join('\n');
+    .map(([k,v]) => `- ${S.workers[k]?.name || k}: ${v.events} заходів, ${v.participants} осіб, ${v.schools} закладів`).join('\n');
 
   const noPhoto = schools.filter(s => !((s.gallery||[]).length) && s.events > 0).slice(0,5).map(s=>`- ${s.name}`).join('\n');
   const lowActivity = schools.filter(s => (s.events||0) < 3).slice(0,5).map(s=>`- ${s.name}: ${s.events||0} заходів`).join('\n');
@@ -115,8 +115,8 @@ function buildContext() {
 - Закладів під наглядом: ${schools.length}
 - Всього заходів: ${totalEvents}
 - Охоплено учасників: ${totalParticipants}
-- Інспекторів ЗРУП: ${zrup.length}
-- Інспекторів ГУНП: ${gunp.length}
+- Працівників ЗРУП: ${zrup.length}
+- Працівників ГУНП: ${gunp.length}
 
 ІНСПЕКТОРИ ЗРУП: ${zrup.map(([,v])=>v.name).join(', ')}
 ІНСПЕКТОРИ ГУНП: ${gunp.map(([,v])=>v.name).join(', ')}
@@ -137,7 +137,7 @@ ${lowActivity || '- Таких закладів немає'}
 const SYSTEM = `Ти — аналітичний AI-помічник керівника Служби освітньої безпеки (СОБ) при ГУНП Запорізької області. Відповідай ВИКЛЮЧНО українською мовою. Ти маєш прямий доступ до даних платформи.
 
 Твої задачі:
-- Аналізувати статистику роботи інспекторів
+- Аналізувати статистику роботи працівників СОБ
 - Виявляти проблемні заклади та напрямки
 - Формувати аналітичні довідки та рекомендації
 - Порівнювати показники ГУНП та ЗРУП
@@ -181,7 +181,7 @@ document.getElementById('content').innerHTML = `
           ${chips.map(t=>`<div class="chip" data-q="${t.label}">${I[t.icon]||I.ai} <span>${t.label}</span></div>`).join('')}
         </div>
         <div class="ai-input">
-          <textarea id="chatInput" rows="1" placeholder="Запитайте про статистику, інспекторів, проблемні заклади…"></textarea>
+          <textarea id="chatInput" rows="1" placeholder="Запитайте про статистику, працівників СОБ, проблемні заклади…"></textarea>
           <button class="ai-send" id="sendBtn" aria-label="Надіслати">${I.send}</button>
         </div>
       </div>
@@ -192,8 +192,8 @@ document.getElementById('content').innerHTML = `
         <div class="data-pill"><span>Всього заходів</span><b>${S.schools.filter(s=>s.serviced).reduce((s,sc)=>s+(sc.events||0),0)}</b></div>
         <div class="data-pill"><span>Охоплено осіб</span><b>${S.schools.filter(s=>s.serviced).reduce((s,sc)=>s+(sc.participants||0),0)}</b></div>
         <div class="data-pill"><span>Заклади під наглядом</span><b>${S.schools.filter(s=>s.serviced).length}</b></div>
-        <div class="data-pill"><span>Інспекторів ЗРУП</span><b>${Object.values(S.inspectors).filter(v=>v.category==='ЗРУП').length}</b></div>
-        <div class="data-pill"><span>Інспекторів ГУНП</span><b>${Object.values(S.inspectors).filter(v=>v.category==='ГУНП').length}</b></div>
+        <div class="data-pill"><span>Інспекторів ЗРУП</span><b>${Object.values(S.workers).filter(v=>v.category==='ЗРУП').length}</b></div>
+        <div class="data-pill"><span>Інспекторів ГУНП</span><b>${Object.values(S.workers).filter(v=>v.category==='ГУНП').length}</b></div>
       </div>
       <div class="side-section">
         <div class="section-title" style="margin-bottom:10px">${I.shield} Типові запити</div>
@@ -243,7 +243,7 @@ function hideTyping(){ document.getElementById('typing')?.remove(); }
 function analyticAnswer(q) {
   const lq = q.toLowerCase();
   const schools = S.schools.filter(s => s.serviced);
-  const ins = Object.entries(S.inspectors);
+  const ins = Object.entries(S.workers);
   const zrup = ins.filter(([,v]) => v.category==='ЗРУП');
   const gunp = ins.filter(([,v]) => v.category==='ГУНП');
 
@@ -252,17 +252,17 @@ function analyticAnswer(q) {
     const stat = {};
     schools.forEach(s => { if(!s.inspector) return; if(!stat[s.inspector]) stat[s.inspector]={ev:0,part:0,sc:0}; stat[s.inspector].ev+=s.events||0; stat[s.inspector].part+=s.participants||0; stat[s.inspector].sc++; });
     const top = Object.entries(stat).sort((a,b)=>b[1].ev-a[1].ev);
-    if(!top.length) return `За поточний місяць дані про заходи ще не внесені. Зверніться до інспекторів для актуалізації звітності.`;
-    const rows = top.map(([k,v],i)=>`${i+1}. **${S.inspectors[k]?.name||k}** — ${v.ev} заходів, ${v.part} охоплено, ${v.sc} закладів`).join('\n');
-    return `## Рейтинг активності інспекторів за ${S.org.period}\n\n${rows}\n\n**Рекомендація:** ${top[0]?`${S.inspectors[top[0][0]]?.name||top[0][0]} показує найвищу активність — варто поширити цей досвід.`:'Внесіть дані для аналізу.'}`;
+    if(!top.length) return `За поточний місяць дані про заходи ще не внесені. Зверніться до працівників СОБ для актуалізації звітності.`;
+    const rows = top.map(([k,v],i)=>`${i+1}. **${S.workers[k]?.name||k}** — ${v.ev} заходів, ${v.part} охоплено, ${v.sc} закладів`).join('\n');
+    return `## Рейтинг активності інспекторів за ${S.org.period}\n\n${rows}\n\n**Рекомендація:** ${top[0]?`${S.workers[top[0][0]]?.name||top[0][0]} показує найвищу активність — варто поширити цей досвід.`:'Внесіть дані для аналізу.'}`;
   }
 
   /* Проблемні заклади / без фотозвітів */
   if(lq.includes('фото') || lq.includes('звіт') || lq.includes('без')) {
     const noPhoto = schools.filter(s => !(s.gallery||[]).length);
     if(!noPhoto.length) return `Всі заклади під наглядом подали фотозвіти. Відмінний результат!`;
-    const list = noPhoto.slice(0,10).map(s=>`- **${s.name.slice(0,50)}** (${S.inspectors[s.inspector]?.name?.split(' ')[0]||'?'})`).join('\n');
-    return `## Заклади без фотозвітів\n\n${noPhoto.length} закладів ще не подали фотозвіти:\n\n${list}${noPhoto.length>10?`\n\n...та ще ${noPhoto.length-10} закладів.`:''}\n\n**Рекомендація:** Нагадати відповідним інспекторам про необхідність завантаження фотозвітів.`;
+    const list = noPhoto.slice(0,10).map(s=>`- **${s.name.slice(0,50)}** (${S.workers[s.inspector]?.name?.split(' ')[0]||'?'})`).join('\n');
+    return `## Заклади без фотозвітів\n\n${noPhoto.length} закладів ще не подали фотозвіти:\n\n${list}${noPhoto.length>10?`\n\n...та ще ${noPhoto.length-10} закладів.`:''}\n\n**Рекомендація:** Нагадати відповідним працівникам СОБ про необхідність завантаження фотозвітів.`;
   }
 
   /* Порівняння ГУНП vs ЗРУП */
@@ -272,7 +272,7 @@ function analyticAnswer(q) {
       return { ev: schList.reduce((s,sc)=>s+(sc.events||0),0), part: schList.reduce((s,sc)=>s+(sc.participants||0),0), sc: schList.length, ins: list.length };
     };
     const zs = calc(zrup), gs = calc(gunp);
-    return `## Порівняння ЗРУП та ГУНП — ${S.org.period}\n\n| Показник | ССОБ ЗРУП | ГУНП |\n|---|---|---|\n| Інспекторів | ${zs.ins} | ${gs.ins} |\n| Закладів | ${zs.sc} | ${gs.sc} |\n| Заходів | ${zs.ev} | ${gs.ev} |\n| Охоплено осіб | ${zs.part} | ${gs.part} |\n\n**Висновок:** ${zs.ev > gs.ev ? 'ЗРУП показує вищу активність за кількістю заходів.' : gs.ev > zs.ev ? 'ГУНП показує вищу активність.' : 'Показники рівні.'}`;
+    return `## Порівняння ЗРУП та ГУНП — ${S.org.period}\n\n| Показник | ССОБ ЗРУП | ГУНП |\n|---|---|---|\n| Працівників | ${zs.ins} | ${gs.ins} |\n| Закладів | ${zs.sc} | ${gs.sc} |\n| Заходів | ${zs.ev} | ${gs.ev} |\n| Охоплено осіб | ${zs.part} | ${gs.part} |\n\n**Висновок:** ${zs.ev > gs.ev ? 'ЗРУП показує вищу активність за кількістю заходів.' : gs.ev > zs.ev ? 'ГУНП показує вищу активність.' : 'Показники рівні.'}`;
   }
 
   /* Аналітична довідка */
@@ -283,7 +283,7 @@ function analyticAnswer(q) {
     const inactive = schools.filter(s=>!s.events||s.events===0).length;
     const zs_ev = schools.filter(s=>zrup.find(([k])=>k===s.inspector)).reduce((s,sc)=>s+(sc.events||0),0);
     const gs_ev = schools.filter(s=>gunp.find(([k])=>k===s.inspector)).reduce((s,sc)=>s+(sc.events||0),0);
-    return `## Аналітична довідка СОБ за ${S.org.period}\n\n**Загальні показники:**\n- Закладів під наглядом: ${schools.length}\n- Проведено заходів: ${totalEv}\n- Охоплено учасників: ${totalPart}\n- Активних закладів: ${active}\n- Без активності: ${inactive}\n\n**По підрозділах:**\n- ССОБ ЗРУП: ${zrup.length} інспекторів, ${zs_ev} заходів\n- ГУНП: ${gunp.length} інспекторів, ${gs_ev} заходів\n\n**Стан звітності:**\n- Фотозвіти відсутні у ${schools.filter(s=>!(s.gallery||[]).length).length} закладах\n\n**Рекомендації:**\n- Активізувати роботу в ${inactive} закладах без показників\n- Забезпечити повне охоплення фотозвітами\n- Провести нараду з інспекторами щодо підвищення показників`;
+    return `## Аналітична довідка СОБ за ${S.org.period}\n\n**Загальні показники:**\n- Закладів під наглядом: ${schools.length}\n- Проведено заходів: ${totalEv}\n- Охоплено учасників: ${totalPart}\n- Активних закладів: ${active}\n- Без активності: ${inactive}\n\n**По підрозділах:**\n- ССОБ ЗРУП: ${zrup.length} інспекторів, ${zs_ev} заходів\n- ГУНП: ${gunp.length} інспекторів, ${gs_ev} заходів\n\n**Стан звітності:**\n- Фотозвіти відсутні у ${schools.filter(s=>!(s.gallery||[]).length).length} закладах\n\n**Рекомендації:**\n- Активізувати роботу в ${inactive} закладах без показників\n- Забезпечити повне охоплення фотозвітами\n- Провести нараду з працівниками СОБ щодо підвищення показників`;
   }
 
   /* Проблемні напрямки */
@@ -296,7 +296,7 @@ function analyticAnswer(q) {
   /* Загальна аналітика */
   const totalEv = schools.reduce((s,sc)=>s+(sc.events||0),0);
   const totalPart = schools.reduce((s,sc)=>s+(sc.participants||0),0);
-  return `Дякую за запит. Ось зведені дані платформи за **${S.org.period}**:\n\n- Закладів під наглядом: **${schools.length}**\n- Проведено заходів: **${totalEv}**\n- Охоплено учасників: **${totalPart}**\n- Інспекторів ЗРУП: **${zrup.length}**\n- Інспекторів ГУНП: **${gunp.length}**\n\nУточніть запит — наприклад: "Покажи рейтинг інспекторів", "Аналітична довідка за місяць", "Порівняй ГУНП та ЗРУП", "Проблемні напрямки".`;
+  return `Дякую за запит. Ось зведені дані платформи за **${S.org.period}**:\n\n- Закладів під наглядом: **${schools.length}**\n- Проведено заходів: **${totalEv}**\n- Охоплено учасників: **${totalPart}**\n- Працівників ЗРУП: **${zrup.length}**\n- Працівників ГУНП: **${gunp.length}**\n\nУточніть запит — наприклад: "Покажи рейтинг працівників СОБ", "Аналітична довідка за місяць", "Порівняй ГУНП та ЗРУП", "Проблемні напрямки".`;
 }
 
 async function ask(q) {
@@ -327,7 +327,7 @@ async function ask(q) {
 const schools = S.schools.filter(s=>s.serviced);
 const totalEv = schools.reduce((s,sc)=>s+(sc.events||0),0);
 const totalPart = schools.reduce((s,sc)=>s+(sc.participants||0),0);
-addMsg('bot', `## Вітаю, ${window.SOBAuth.current().name.split(' ')[0]}!\n\nЯ — AI-аналітик Служби освітньої безпеки. Маю доступ до всіх даних платформи.\n\n**Поточний стан (${S.org.period}):**\n- Заходів проведено: **${totalEv}**\n- Осіб охоплено: **${totalPart}**\n- Закладів під наглядом: **${schools.length}**\n\nЗапитайте мене про статистику, рейтинг інспекторів, проблемні заклади або підготовку доповіді.`);
+addMsg('bot', `## Вітаю, ${window.SOBAuth.current().name.split(' ')[0]}!\n\nЯ — AI-аналітик Служби освітньої безпеки. Маю доступ до всіх даних платформи.\n\n**Поточний стан (${S.org.period}):**\n- Заходів проведено: **${totalEv}**\n- Осіб охоплено: **${totalPart}**\n- Закладів під наглядом: **${schools.length}**\n\nЗапитайте мене про статистику, рейтинг працівників СОБ, проблемні заклади або підготовку доповіді.`);
 
 sendBtn.addEventListener('click', () => { const q=input.value.trim(); if(q) ask(q); });
 input.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();const q=input.value.trim();if(q)ask(q);} });

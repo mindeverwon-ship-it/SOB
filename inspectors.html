@@ -3,10 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>СОБ · Інспектори</title>
+<title>СОБ · Працівники СОБ</title>
 <link rel="stylesheet" href="css/styles.css">
 <style>
-/* ── Категорійні таби ── */
 .cat-tabs { display:flex; gap:8px; margin-bottom:22px; }
 .cat-tab {
   padding:10px 22px; border-radius:24px; font-size:14px; font-weight:700; cursor:pointer;
@@ -19,7 +18,6 @@
 .cat-tab.all  { background:var(--surface-2); color:var(--text-2); border-color:var(--border); }
 .cat-tab.all.active { background:var(--text); color:#fff; border-color:var(--text); }
 
-/* ── Category header ── */
 .cat-section-head {
   display:flex; align-items:center; gap:12px; margin:28px 0 16px;
   padding:14px 20px; border-radius:var(--radius-lg);
@@ -35,7 +33,6 @@
 .cat-section-head .csh-stat .v { font-size:22px; font-weight:800; }
 .cat-section-head .csh-stat .l { font-size:11px; opacity:.7; }
 
-/* ── Inspector cards ── */
 .ins-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
 .ins-card {
   background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
@@ -44,78 +41,58 @@
 }
 .ins-card:hover { box-shadow:var(--shadow); transform:translateY(-2px); }
 .ins-card.inactive { opacity:.6; }
-
 .ins-top { display:flex; align-items:center; gap:14px; }
-.ins-av {
-  width:52px; height:52px; border-radius:15px; display:grid; place-items:center;
-  color:#fff; font-weight:800; font-size:17px; flex-shrink:0; letter-spacing:-.5px;
-}
+.ins-av { width:52px; height:52px; border-radius:15px; display:grid; place-items:center; color:#fff; font-weight:800; font-size:17px; flex-shrink:0; letter-spacing:-.5px; }
 .ins-name { font-weight:700; font-size:15.5px; line-height:1.2; }
 .ins-rank { font-size:12.5px; color:var(--muted); margin-top:3px; }
-.ins-cat-badge {
-  margin-left:auto; flex-shrink:0; padding:4px 10px; border-radius:12px;
-  font-size:11px; font-weight:700; letter-spacing:.5px;
-}
+.ins-cat-badge { margin-left:auto; flex-shrink:0; padding:4px 10px; border-radius:12px; font-size:11px; font-weight:700; letter-spacing:.5px; }
 .ins-cat-badge.ЗРУП { background:var(--blue-050); color:var(--blue-700); border:1px solid var(--blue-200); }
 .ins-cat-badge.ГУНП { background:var(--navy-050,#f0f4ff); color:var(--navy-800); border:1px solid var(--navy-200,#c5d2f0); }
-
 .ins-contacts { display:flex; flex-direction:column; gap:7px; padding-top:12px; border-top:1px solid var(--border); }
 .ins-contact-line { display:flex; align-items:center; gap:9px; font-size:13px; }
 .ins-contact-line svg { width:14px; height:14px; color:var(--blue-600); flex-shrink:0; }
 .ins-contact-line .empty { color:var(--muted-2); font-style:italic; }
-
 .ins-districts { display:flex; flex-wrap:wrap; gap:6px; }
 .ins-district-tag { background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:3px 9px; font-size:12px; color:var(--text-2); }
 .ins-school-tag { background:var(--blue-050); color:var(--blue-700); border:1px solid var(--blue-200); border-radius:8px; padding:3px 9px; font-size:12px; font-weight:600; }
-
 .ins-stats-row { display:flex; gap:12px; padding-top:10px; border-top:1px solid var(--border); }
 .ins-stat { flex:1; text-align:center; }
 .ins-stat .v { font-size:19px; font-weight:800; color:var(--blue-600); }
 .ins-stat .l { font-size:11px; color:var(--muted); margin-top:1px; }
-
+.ins-coverage-row { display:flex; gap:8px; padding-top:8px; border-top:1px solid var(--border); align-items:center; }
+.coverage-bar-wrap { flex:1; height:6px; background:var(--surface-3); border-radius:3px; overflow:hidden; }
+.coverage-bar { height:100%; border-radius:3px; background:var(--green-500); transition:width .4s; }
 .ins-actions { display:flex; gap:8px; padding-top:10px; border-top:1px solid var(--border); }
 .ins-actions .btn { flex:1; justify-content:center; }
 
-/* ── Summary KPIs ── */
 .kpi-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
-.kpi-c {
-  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
-  padding:18px 20px; box-shadow:var(--shadow-sm);
-  display:flex; flex-direction:column; gap:6px;
-}
+.kpi-c { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px 20px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; gap:6px; }
 .kpi-c .kv { font-size:28px; font-weight:800; letter-spacing:-.03em; }
 .kpi-c .kl { font-size:13px; color:var(--muted); }
 .kpi-c .ki { width:38px; height:38px; border-radius:11px; display:grid; place-items:center; margin-bottom:4px; }
 .kpi-c .ki svg { width:19px; height:19px; }
 
-/* ── Search/Filter bar ── */
 .filter-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
 .filter-row .search-wrap { flex:1; min-width:200px; position:relative; }
-.filter-row .search-wrap input {
-  width:100%; padding:10px 14px 10px 40px;
-  border:1px solid var(--border); border-radius:var(--radius); font-size:14px;
-  background:var(--surface-2); outline:none; transition:border-color .15s, box-shadow .15s;
-}
+.filter-row .search-wrap input { width:100%; padding:10px 14px 10px 40px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; background:var(--surface-2); outline:none; transition:border-color .15s, box-shadow .15s; }
 .filter-row .search-wrap input:focus { border-color:var(--blue-400); box-shadow:0 0 0 3px var(--blue-050); }
 .filter-row .search-wrap .si { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; }
 .filter-row .search-wrap .si svg { width:16px; height:16px; display:block; }
-
 .status-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; display:inline-block; margin-right:5px; }
 .status-dot.active { background:var(--green-500); box-shadow:0 0 0 3px rgba(30,158,106,.2); }
 .status-dot.inactive { background:var(--muted-2); }
 
 @media(max-width:900px){ .kpi-strip{grid-template-columns:repeat(2,1fr)} }
-@media(max-width:600px){ .ins-grid{grid-template-columns:1fr}; .kpi-strip{grid-template-columns:1fr 1fr} }
+@media(max-width:600px){ .ins-grid{grid-template-columns:1fr} .kpi-strip{grid-template-columns:1fr 1fr} }
 </style>
 </head>
 <body>
 <div class="app" id="shell"></div>
 
-<!-- ══ Модальне вікно інспектора ══ -->
 <div class="modal-scrim" id="insModal">
   <div class="modal" style="max-width:620px">
     <div class="modal-head">
-      <div class="section-title" id="insModalTitle">Додати інспектора</div>
+      <div class="section-title" id="insModalTitle">Додати працівника СОБ</div>
       <button class="icon-btn" onclick="closeModal('insModal')"></button>
     </div>
     <div class="modal-body col" style="gap:14px">
@@ -125,7 +102,7 @@
         <div class="field"><label>Підрозділ</label>
           <select class="input" id="i_category">
             <option value="ЗРУП">ССОБ ЗРУП</option>
-            <option value="ГУНП">ГУНП</option>
+            <option value="ГУНП">СО СОБ ГУНП</option>
           </select>
         </div>
       </div>
@@ -144,12 +121,8 @@
       <div class="field">
         <label>Статус</label>
         <div style="display:flex;gap:16px;margin-top:6px">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600">
-            <input type="radio" name="i_status" value="active" id="i_active" style="accent-color:var(--blue-600)"> Активний
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600">
-            <input type="radio" name="i_status" value="inactive" id="i_inactive" style="accent-color:var(--red-500)"> Неактивний
-          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600"><input type="radio" name="i_status" value="active" id="i_active" style="accent-color:var(--blue-600)"> Активний</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600"><input type="radio" name="i_status" value="inactive" id="i_inactive" style="accent-color:var(--red-500)"> Неактивний</label>
         </div>
       </div>
       <div class="field"><label>Примітки</label><textarea class="input" id="i_notes" rows="2" placeholder="Додаткова інформація…" style="resize:vertical"></textarea></div>
@@ -165,7 +138,7 @@
 <script src="js/store.js"></script>
 <script src="js/shell.js"></script>
 <script>
-SOBShell.render({ active: 'inspectors', crumb: ['СОБ', 'Інспектори СОБ'] });
+SOBShell.render({ active: 'workers', crumb: ['СОБ', 'Працівники СОБ'] });
 
 const S = window.SOB, I = window.ICON, esc = window.esc;
 const U = window.SOBAuth.current();
@@ -174,63 +147,55 @@ const canEdit = U.role === 'admin';
 const INS_COLORS = ['#1B4FD1','#7C3AED','#059669','#DC2626','#D97706','#0284C7','#9333EA','#0369A1','#B45309','#BE123C','#0891B2'];
 
 function insColor(key) {
-  const keys = Object.keys(S.inspectors);
+  const keys = Object.keys(S.workers);
   return INS_COLORS[keys.indexOf(key) % INS_COLORS.length];
 }
-
-function initials(name) {
-  return name.split(' ').slice(0,2).map(w => w[0]||'').join('').toUpperCase();
+function initials(name) { return name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
+function schoolsCount(key) { return S.schools.filter(s=>s.serviced&&s.inspector===key).length; }
+function eventsCount(key) { return S.schools.filter(s=>s.inspector===key).reduce((sum,s)=>sum+(s.events||0),0); }
+function participantsCount(key) { return S.schools.filter(s=>s.inspector===key).reduce((sum,s)=>sum+(s.participants||0),0); }
+function uniqueCoverage(key) {
+  return S.schools.filter(s=>s.inspector===key&&s.serviced).reduce((sum,s)=>{
+    const cov = window.calcCoverage ? window.calcCoverage(s) : { uniqueStudents: s.participants||0 };
+    return sum + cov.uniqueStudents;
+  }, 0);
 }
-
-function schoolsCount(key) {
-  return S.schools.filter(s => s.serviced && s.inspector === key).length;
-}
-
-function eventsCount(key) {
-  const sc = S.schools.filter(s => s.inspector === key);
-  return sc.reduce((sum, s) => sum + (s.events||0), 0);
-}
-
-function participantsCount(key) {
-  const sc = S.schools.filter(s => s.inspector === key);
-  return sc.reduce((sum, s) => sum + (s.participants||0), 0);
-}
+function totalStudents(key) { return S.schools.filter(s=>s.inspector===key&&s.serviced).reduce((sum,s)=>sum+(s.students||0),0); }
 
 let filterCat = 'all';
 let searchQ = '';
 let editingKey = null;
 
 function render() {
-  const allIns = Object.entries(S.inspectors);
+  const allIns = Object.entries(S.workers);
   const total = allIns.length;
-  const activeCount = allIns.filter(([,v]) => v.status !== 'inactive').length;
-  const zrupCount = allIns.filter(([,v]) => v.category === 'ЗРУП').length;
-  const gunpCount = allIns.filter(([,v]) => v.category === 'ГУНП').length;
-  const totalSchools = S.schools.filter(s => s.serviced).length;
+  const activeCount = allIns.filter(([,v])=>v.status!=='inactive').length;
+  const zrupCount = allIns.filter(([,v])=>v.category==='ЗРУП').length;
+  const gunpCount = allIns.filter(([,v])=>v.category==='ГУНП').length;
 
   let filtered = allIns;
-  if (filterCat !== 'all') filtered = filtered.filter(([,v]) => v.category === filterCat);
+  if (filterCat !== 'all') filtered = filtered.filter(([,v])=>v.category===filterCat);
   if (searchQ) {
     const q = searchQ.toLowerCase();
-    filtered = filtered.filter(([k,v]) =>
-      v.name.toLowerCase().includes(q) ||
-      (v.district||'').toLowerCase().includes(q) ||
-      (v.department||'').toLowerCase().includes(q)
+    filtered = filtered.filter(([k,v])=>
+      v.name.toLowerCase().includes(q)||(v.district||'').toLowerCase().includes(q)||(v.department||'').toLowerCase().includes(q)
     );
   }
 
-  const zrup = filtered.filter(([,v]) => v.category === 'ЗРУП');
-  const gunp = filtered.filter(([,v]) => v.category === 'ГУНП');
+  const zrup = filtered.filter(([,v])=>v.category==='ЗРУП');
+  const gunp = filtered.filter(([,v])=>v.category==='ГУНП');
 
   function renderCard([key, ins]) {
     const color = insColor(key);
     const schCount = schoolsCount(key);
     const evCount = eventsCount(key);
-    const partCount = participantsCount(key);
+    const uniqCount = uniqueCoverage(key);
+    const stuCount = totalStudents(key);
+    const covPct = stuCount > 0 ? Math.round(uniqCount/stuCount*100) : 0;
     const isActive = ins.status !== 'inactive';
-    const schoolsList = S.schools.filter(s => s.serviced && s.inspector === key);
+    const schoolsList = S.schools.filter(s=>s.serviced&&s.inspector===key);
 
-    return `<div class="ins-card ${!isActive ? 'inactive' : ''}">
+    return `<div class="ins-card ${!isActive?'inactive':''}">
       <div class="ins-top">
         <div class="ins-av" style="background:${color}">${initials(ins.name)}</div>
         <div style="flex:1;min-width:0">
@@ -246,44 +211,49 @@ function render() {
 
       <div class="ins-contacts">
         <div class="ins-contact-line">${I.phone}
-          ${ins.phone ? `<a href="tel:${ins.phone}" style="color:var(--blue-600)">${esc(ins.phone)}</a>` : `<span class="empty">Телефон не вказано</span>`}
+          ${ins.phone?`<a href="tel:${ins.phone}" style="color:var(--blue-600)">${esc(ins.phone)}</a>`:`<span class="empty">Телефон не вказано</span>`}
         </div>
         <div class="ins-contact-line">${I.mail}
-          ${ins.email ? `<a href="mailto:${ins.email}" style="color:var(--blue-600)">${esc(ins.email)}</a>` : `<span class="empty">Email не вказано</span>`}
+          ${ins.email?`<a href="mailto:${ins.email}" style="color:var(--blue-600)">${esc(ins.email)}</a>`:`<span class="empty">Email не вказано</span>`}
         </div>
         <div class="ins-contact-line">${I.pin}
-          ${ins.district ? `<span>${esc(ins.district)}</span>` : `<span class="empty">Район не вказано</span>`}
+          ${ins.district?`<span>${esc(ins.district)}</span>`:`<span class="empty">Район не вказано</span>`}
         </div>
       </div>
 
-      ${schoolsList.length ? `<div class="ins-districts">${schoolsList.slice(0,3).map(s=>`<span class="ins-school-tag">${s.name.split('"')[1]||s.name.split(' ').slice(0,2).join(' ')}</span>`).join('')}${schoolsList.length>3?`<span class="ins-district-tag">+${schoolsList.length-3}</span>`:''}</div>` : ''}
+      ${schoolsList.length?`<div class="ins-districts">${schoolsList.slice(0,3).map(s=>`<span class="ins-school-tag">${esc(s.name.split('"')[1]||s.name.split(' ').slice(0,3).join(' '))}</span>`).join('')}${schoolsList.length>3?`<span class="ins-district-tag">+${schoolsList.length-3}</span>`:''}</div>`:''}
 
       <div class="ins-stats-row">
         <div class="ins-stat"><div class="v">${schCount}</div><div class="l">Заклади</div></div>
         <div class="ins-stat"><div class="v">${evCount}</div><div class="l">Заходи</div></div>
-        <div class="ins-stat"><div class="v">${partCount}</div><div class="l">Охоплено</div></div>
+        <div class="ins-stat"><div class="v">${uniqCount}</div><div class="l">Унікально охоплено</div></div>
       </div>
 
-      ${canEdit ? `<div class="ins-actions">
-        <button class="btn btn-ghost btn-sm" data-edit="${key}">${I.edit} Редагувати</button>
-      </div>` : ''}
+      ${stuCount>0?`<div class="ins-coverage-row">
+        <div style="font-size:12px;color:var(--muted);white-space:nowrap">Охоплення ${covPct}%</div>
+        <div class="coverage-bar-wrap"><div class="coverage-bar" style="width:${covPct}%;background:${covPct>=70?'var(--green-500)':covPct>=40?'var(--gold-500)':'var(--red-400)'}"></div></div>
+        <div style="font-size:12px;font-weight:700">${uniqCount}/${stuCount}</div>
+      </div>`:''}
+
+      ${canEdit?`<div class="ins-actions"><button class="btn btn-ghost btn-sm" data-edit="${key}">${I.edit} Редагувати</button></div>`:''}
     </div>`;
   }
 
   function sectionHtml(list, cat) {
-    if (!list.length) return '';
-    const isZrup = cat === 'ЗРУП';
+    if(!list.length) return '';
     const sCount = list.reduce((s,[k])=>s+schoolsCount(k),0);
     const eCount = list.reduce((s,[k])=>s+eventsCount(k),0);
+    const isZrup = cat === 'ЗРУП';
+    const label = isZrup ? 'ССОБ Запорізького РУВП (ЗРУП)' : 'СО СОБ ГУНП у Запорізькій обл.';
     return `
       <div class="cat-section-head ${cat.toLowerCase()}">
         <div class="csh-ic">${I.users}</div>
         <div class="csh-t">
-          <b>${cat === 'ЗРУП' ? 'Сектор освітньої безпеки (ЗРУП)' : 'ГУНП у Запорізькій області'}</b>
-          <span>${list.length} інспекторів</span>
+          <b>${label}</b>
+          <span>${list.length} працівників</span>
         </div>
         <div class="csh-stats">
-          <div class="csh-stat"><div class="v">${list.length}</div><div class="l">Інспекторів</div></div>
+          <div class="csh-stat"><div class="v">${list.length}</div><div class="l">Працівників</div></div>
           <div class="csh-stat"><div class="v">${sCount}</div><div class="l">Заклади</div></div>
           <div class="csh-stat"><div class="v">${eCount}</div><div class="l">Заходи</div></div>
         </div>
@@ -297,16 +267,16 @@ function render() {
   document.getElementById('content').innerHTML = `
     <div class="page-head">
       <div>
-        <h1 class="page-title">Інспектори СОБ</h1>
-        <div class="page-sub">Реєстр інспекторів Служби освітньої безпеки Запорізького ГУНП</div>
+        <h1 class="page-title">Працівники СОБ</h1>
+        <div class="page-sub">Реєстр працівників Служби освітньої безпеки Запорізького ГУНП</div>
       </div>
-      ${canEdit ? `<button class="btn btn-primary" id="addInsBtn">${I.plus} Додати інспектора</button>` : ''}
+      ${canEdit?`<button class="btn btn-primary" id="addInsBtn">${I.plus} Додати працівника</button>`:''}
     </div>
 
     <div class="kpi-strip">
       <div class="kpi-c">
         <div class="ki" style="background:var(--blue-050);color:var(--blue-600)">${I.users}</div>
-        <div class="kv">${total}</div><div class="kl">Інспекторів всього</div>
+        <div class="kv">${total}</div><div class="kl">Працівників всього</div>
       </div>
       <div class="kpi-c">
         <div class="ki" style="background:rgba(30,158,106,.1);color:var(--green-600)">${I.check}</div>
@@ -318,14 +288,14 @@ function render() {
       </div>
       <div class="kpi-c">
         <div class="ki" style="background:var(--navy-050,#f0f4ff);color:var(--navy-800)">${I.shield}</div>
-        <div class="kv">${gunpCount}</div><div class="kl">ГУНП</div>
+        <div class="kv">${gunpCount}</div><div class="kl">СО СОБ ГУНП</div>
       </div>
     </div>
 
     <div class="filter-row">
       <div class="search-wrap">
         <span class="si">${I.search}</span>
-        <input type="text" id="insSearch" placeholder="Пошук за ПІБ, районом, підрозділом…" value="${searchQ}">
+        <input type="text" id="insSearch" placeholder="Пошук за ПІБ, районом, підрозділом…" value="${esc(searchQ)}">
       </div>
       <div class="cat-tabs" style="margin:0">
         <button class="cat-tab all ${filterCat==='all'?'active':''}" data-cat="all">Усі (${total})</button>
@@ -335,10 +305,10 @@ function render() {
     </div>
 
     ${showAll ? sectionHtml(zrup,'ЗРУП') + sectionHtml(gunp,'ГУНП') : `<div class="ins-grid">${filtered.map(renderCard).join('')}</div>`}
-    ${!filtered.length ? `<div class="card card-pad" style="text-align:center;color:var(--muted);padding:40px">Інспекторів не знайдено</div>` : ''}
+    ${!filtered.length?`<div class="card card-pad" style="text-align:center;color:var(--muted);padding:40px">Працівників не знайдено</div>`:''}
   `;
 
-  document.querySelectorAll('.cat-tab').forEach(b => b.addEventListener('click', () => { filterCat = b.dataset.cat; render(); }));
+  document.querySelectorAll('.cat-tab').forEach(b=>b.addEventListener('click',()=>{filterCat=b.dataset.cat;render();}));
   document.getElementById('insSearch')?.addEventListener('input', e => {
     const pos = e.target.selectionStart;
     searchQ = e.target.value;
@@ -346,66 +316,67 @@ function render() {
     const ni = document.getElementById('insSearch');
     ni?.focus(); ni?.setSelectionRange(pos, pos);
   });
-  if(canEdit) {
-    document.getElementById('addInsBtn')?.addEventListener('click', () => openModal(null));
-    document.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openModal(b.dataset.edit)));
+  if(canEdit){
+    document.getElementById('addInsBtn')?.addEventListener('click',()=>openModal(null));
+    document.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>openModal(b.dataset.edit)));
   }
 }
 
 function openModal(key) {
   editingKey = key;
-  document.getElementById('insModalTitle').textContent = key ? 'Редагувати інспектора' : 'Додати інспектора';
-  const ins = key ? (S.inspectors[key] || {}) : {};
-  document.getElementById('i_name').value = ins.name || '';
-  document.getElementById('i_rank').value = ins.rank || '';
-  document.getElementById('i_category').value = ins.category || 'ЗРУП';
-  document.getElementById('i_phone').value = ins.phone || '';
-  document.getElementById('i_phone2').value = ins.phone2 || '';
-  document.getElementById('i_email').value = ins.email || '';
-  document.getElementById('i_telegram').value = ins.telegram || '';
-  document.getElementById('i_district').value = ins.district || '';
-  document.getElementById('i_appointedAt').value = ins.appointedAt || '';
-  document.getElementById('i_notes').value = ins.notes || '';
-  document.getElementById(ins.status === 'inactive' ? 'i_inactive' : 'i_active').checked = true;
+  document.getElementById('insModalTitle').textContent = key ? 'Редагувати працівника СОБ' : 'Додати працівника СОБ';
+  const ins = key ? (S.workers[key]||{}) : {};
+  document.getElementById('i_name').value = ins.name||'';
+  document.getElementById('i_rank').value = ins.rank||'';
+  document.getElementById('i_category').value = ins.category||'ЗРУП';
+  document.getElementById('i_phone').value = ins.phone||'';
+  document.getElementById('i_phone2').value = ins.phone2||'';
+  document.getElementById('i_email').value = ins.email||'';
+  document.getElementById('i_telegram').value = ins.telegram||'';
+  document.getElementById('i_district').value = ins.district||'';
+  document.getElementById('i_appointedAt').value = ins.appointedAt||'';
+  document.getElementById('i_notes').value = ins.notes||'';
+  document.getElementById(ins.status==='inactive'?'i_inactive':'i_active').checked = true;
   document.getElementById('insModal').classList.add('show');
 }
 
 document.getElementById('saveIns').addEventListener('click', () => {
   const name = document.getElementById('i_name').value.trim();
-  if(!name) { toast('Введіть ПІБ інспектора', 'red'); return; }
+  if(!name){ toast('Введіть ПІБ працівника','red'); return; }
+  const cat = document.getElementById('i_category').value;
   const data = {
     name,
-    rank: document.getElementById('i_rank').value.trim(),
-    category: document.getElementById('i_category').value,
-    phone: document.getElementById('i_phone').value.trim(),
-    phone2: document.getElementById('i_phone2').value.trim(),
-    email: document.getElementById('i_email').value.trim(),
-    telegram: document.getElementById('i_telegram').value.trim(),
-    district: document.getElementById('i_district').value.trim(),
+    rank:        document.getElementById('i_rank').value.trim(),
+    category:    cat,
+    phone:       document.getElementById('i_phone').value.trim(),
+    phone2:      document.getElementById('i_phone2').value.trim(),
+    email:       document.getElementById('i_email').value.trim(),
+    telegram:    document.getElementById('i_telegram').value.trim(),
+    district:    document.getElementById('i_district').value.trim(),
     appointedAt: document.getElementById('i_appointedAt').value,
-    status: document.querySelector('input[name="i_status"]:checked')?.value || 'active',
-    notes: document.getElementById('i_notes').value.trim(),
-    department: document.getElementById('i_category').value === 'ГУНП' ? 'ГУНП' : 'ССОБ ЗРУП',
-    schools: editingKey ? (S.inspectors[editingKey]?.schools || []) : [],
+    status:      document.querySelector('input[name="i_status"]:checked')?.value||'active',
+    notes:       document.getElementById('i_notes').value.trim(),
+    department:  cat==='ГУНП' ? 'СО СОБ ГУНП' : 'ССОБ ЗРУП',
+    schools:     editingKey ? (S.workers[editingKey]?.schools||[]) : [],
   };
-  if(editingKey) {
-    S.inspectors[editingKey] = { ...S.inspectors[editingKey], ...data };
+  if(editingKey){
+    S.workers[editingKey] = { ...S.workers[editingKey], ...data };
     window.SOBStore.save();
-    toast('Інспектора оновлено');
+    toast('Працівника оновлено');
   } else {
     const newKey = name.toLowerCase().replace(/[^a-zа-яёіїєґ]/gi,'').slice(0,3) + Date.now().toString(36).slice(-3);
-    S.inspectors[newKey] = data;
+    S.workers[newKey] = data;
     window.SOBStore.save();
-    toast('Інспектора додано');
+    toast('Працівника додано');
   }
   closeModal('insModal');
   render();
 });
 
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
 window.closeModal = closeModal;
-document.querySelectorAll('.modal-scrim').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('show'); }));
-document.addEventListener('sob:synced', () => render());
+document.querySelectorAll('.modal-scrim').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
+document.addEventListener('sob:synced',()=>render());
 render();
 </script>
 </body>

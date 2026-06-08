@@ -6,30 +6,60 @@
 <title>СОБ · Аналітика</title>
 <link rel="stylesheet" href="css/styles.css">
 <style>
-.an-kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 22px; }
-.an-kpi  { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
-.an-kpi .l { font-size: 13px; color: var(--muted); }
-.an-kpi .v { font-size: 30px; font-weight: 800; letter-spacing: -.025em; margin-top: 6px; }
-.an-kpi .s { font-size: 12px; color: var(--muted); margin-top: 6px; }
-.type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px,1fr)); gap: 11px; margin-top: 14px; }
-.type-cell { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 15px 17px; }
-.type-cell .tc-top { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
-.type-cell .tc-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-.type-cell .tc-lbl { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
-.type-cell .tc-num { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
-.type-cell .tc-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
-.chart-box { position: relative; height: 280px; }
-.dough-box { position: relative; height: 200px; width: 200px; flex-shrink: 0; }
-.legend   { display: flex; flex-direction: column; gap: 10px; }
-.legend-item { display: flex; align-items: center; gap: 9px; font-size: 13px; }
-.legend-item .sw { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-.legend-item b { margin-left: auto; font-variant-numeric: tabular-nums; }
-.tbl .rk { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: 14px; background: var(--surface-3); color: var(--text-2); }
-.tbl .rk.g1 { background: var(--gold-100); color: var(--gold-700); }
-.tbl .rk.g2 { background: #E7ECF4; color: var(--navy-700); }
-.tbl .rk.g3 { background: var(--amber-100); color: var(--amber-500); }
-@media (max-width:1080px) { .an-kpis { grid-template-columns: repeat(2,1fr); } }
-@media (max-width:640px)  { .an-kpis { grid-template-columns: 1fr; } }
+.an-kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:22px; }
+.an-kpi  { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px 20px; }
+.an-kpi .l { font-size:12.5px; color:var(--muted); }
+.an-kpi .v { font-size:28px; font-weight:800; letter-spacing:-.025em; margin-top:5px; }
+.an-kpi .s { font-size:11.5px; color:var(--muted); margin-top:5px; }
+
+/* Coverage metrics */
+.cov-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+.cov-kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; display:flex; flex-direction:column; gap:4px; }
+.cov-kpi .ck-icon { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; margin-bottom:4px; }
+.cov-kpi .ck-icon svg { width:16px; height:16px; }
+.cov-kpi .ck-v { font-size:26px; font-weight:800; letter-spacing:-.02em; }
+.cov-kpi .ck-l { font-size:12px; color:var(--muted); }
+
+/* Category grid */
+.cat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; margin-top:14px; }
+.cat-cell { background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:13px 15px; }
+.cat-cell .cc-top { display:flex; align-items:center; gap:7px; margin-bottom:8px; }
+.cat-cell .cc-dot { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
+.cat-cell .cc-lbl { font-size:12px; font-weight:600; color:var(--text-2); line-height:1.3; }
+.cat-cell .cc-num { font-size:24px; font-weight:800; letter-spacing:-.02em; }
+.cat-cell .cc-sub { font-size:11px; color:var(--muted); margin-top:1px; }
+.cat-cell.zero { opacity:.45; }
+
+/* Split table */
+.split-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+.split-block { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px 20px; }
+.split-block .sb-head { display:flex; align-items:center; gap:10px; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+.split-block .sb-badge { padding:4px 12px; border-radius:12px; font-size:12px; font-weight:700; }
+.sb-badge.zrup { background:var(--blue-050); color:var(--blue-700); }
+.sb-badge.gunp { background:var(--navy-050,#f0f4ff); color:var(--navy-800); }
+.split-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:13.5px; }
+.split-row:last-child { border-bottom:none; }
+.split-row .sr-k { color:var(--muted); }
+.split-row .sr-v { font-weight:700; }
+
+/* Coverage bar table */
+.cov-bar-wrap { height:7px; background:var(--surface-3); border-radius:4px; overflow:hidden; margin-top:4px; }
+.cov-bar { height:100%; border-radius:4px; transition:width .4s; }
+
+.chart-box  { position:relative; height:280px; }
+.dough-box  { position:relative; height:200px; width:200px; flex-shrink:0; }
+.legend     { display:flex; flex-direction:column; gap:9px; flex:1; overflow-y:auto; max-height:200px; }
+.legend-item{ display:flex; align-items:center; gap:9px; font-size:12.5px; }
+.legend-item .sw { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
+.legend-item b { margin-left:auto; font-variant-numeric:tabular-nums; }
+.tbl .rk { width:32px; height:32px; border-radius:9px; display:grid; place-items:center; font-weight:800; font-size:13px; background:var(--surface-3); color:var(--text-2); }
+.tbl .rk.g1 { background:var(--gold-100); color:var(--gold-700); }
+.tbl .rk.g2 { background:#E7ECF4; color:var(--navy-700); }
+.tbl .rk.g3 { background:var(--amber-100); color:var(--amber-500); }
+
+@media(max-width:1080px){ .an-kpis{grid-template-columns:repeat(3,1fr)} .cov-kpis{grid-template-columns:repeat(2,1fr)} .split-grid{grid-template-columns:1fr} }
+@media(max-width:700px){ .an-kpis{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:480px){ .an-kpis{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
@@ -47,278 +77,270 @@ Chart.defaults.font.size   = 12.5;
 Chart.defaults.color       = '#6A7A98';
 Chart.defaults.animation   = false;
 
-/* ─────────────────────────────────────────────
-   Обчислення — виклик при кожному оновленні
-───────────────────────────────────────────── */
-function calcData() {
-  const serviced   = window.SOBStore.serviced();
-  let   allEvents  = S.schoolEvents || [];
-  const eventTypes = S.eventTypes   || [];
-
-  /* застосовуємо фільтри */
-  if(filterSchool !== 'all') allEvents = allEvents.filter(e => e.schoolId === filterSchool);
-  if(filterType   !== 'all') allEvents = allEvents.filter(e => e.type     === filterType);
-
-  const totEvents   = serviced.reduce((a,s) => a + (s.events||0), 0);
-  const totPart     = serviced.reduce((a,s) => a + (s.participants||0), 0);
-  const totConsult  = serviced.reduce((a,s) => a + (s.consultations||0), 0);
-  const avgRating   = serviced.length
-    ? Math.round(serviced.reduce((a,s) => a + (s.rating||0), 0) / serviced.length)
-    : 0;
-
-  /* за типами */
-  const byType = {};
-  eventTypes.forEach(t => { byType[t.id] = { label:t.label, color:t.color, count:0, participants:0 }; });
-  allEvents.forEach(ev => {
-    const k = ev.type;
-    if (byType[k]) { byType[k].count++; byType[k].participants += (ev.participants||0); }
-    else {
-      if (!byType.other) byType.other = { label:'Інше', color:'#93A0B8', count:0, participants:0 };
-      byType.other.count++;
-      byType.other.participants += (ev.participants||0);
-    }
-  });
-
-  /* динаміка по 6 місяцях */
-  const now = new Date();
-  const months = [], mLabels = [];
-  const MN = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
-    mLabels.push(MN[d.getMonth()]);
-  }
-  const evByMonth  = months.map(m => allEvents.filter(e => e.date?.startsWith(m)).length);
-  const secByMonth = months.map(m => allEvents.filter(e => e.date?.startsWith(m) && ['prevention','mine','evacuation'].includes(e.type)).length);
-
-  const ranked = [...serviced].sort((a,b) => (b.events||0)-(a.events||0));
-  const typeStats = Object.values(byType).filter(t => t.count > 0).sort((a,b) => b.count-a.count);
-  const typeAll   = Object.values(byType);
-
-  return { serviced, allEvents, totEvents, totPart, totConsult, avgRating,
-           byType, typeStats, typeAll, mLabels, evByMonth, secByMonth, ranked };
-}
-
-/* ─────────────────────────────────────────────
-   Стан графіків — один екземпляр, оновлюємо
-───────────────────────────────────────────── */
 let charts = {};
 let filterSchool = 'all';
-let filterType   = 'all';
 
-function destroyCharts() {
-  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+function destroyCharts(){
+  Object.values(charts).forEach(c=>{ try{ c.destroy(); }catch(e){} });
   charts = {};
 }
 
-/* ─────────────────────────────────────────────
-   Рендер — не перезавантажує сторінку
-───────────────────────────────────────────── */
-function render() {
+function calcData(){
+  const serviced = (S.schools||[]).filter(s=>s.serviced);
+
+  /* Загальна статистика (паспортні дані) */
+  const totEvents       = serviced.reduce((a,s)=>a+(s.events||0),0);
+  const totParticipations = serviced.reduce((a,s)=>a+(s.participants||0),0);
+  const totConsult      = serviced.reduce((a,s)=>a+(s.consultations||0),0);
+  const totStudents     = serviced.reduce((a,s)=>a+(s.students||0),0);
+  const totPrevention   = serviced.reduce((a,s)=>a+(s.prevention||0),0);
+
+  /* Унікально охоплені — мінімум участей і кількості учнів по кожному закладу */
+  let totUnique = 0;
+  serviced.forEach(s=>{
+    const cov = window.calcCoverage ? window.calcCoverage(s) : { uniqueStudents: s.participants||0 };
+    totUnique += cov.uniqueStudents;
+  });
+  const covPct = totStudents>0 ? Math.round(totUnique/totStudents*100) : 0;
+
+  /* Середній рейтинг */
+  const avgRating = serviced.length ? Math.round(serviced.reduce((a,s)=>a+(s.rating||0),0)/serviced.length) : 0;
+
+  /* Розбивка по 22 категоріях з monthlyData */
+  const catStats = window.calcCategoryStats ? window.calcCategoryStats() : {};
+
+  /* ГУНП / ЗРУП поділ */
+  const workers = S.workers || {};
+  function workerSchools(cat){ return serviced.filter(s=>{const w=workers[s.inspector||'']; return w&&w.category===cat;}); }
+  function groupStats(schools){
+    return {
+      schools: schools.length,
+      events: schools.reduce((a,s)=>a+(s.events||0),0),
+      participations: schools.reduce((a,s)=>a+(s.participants||0),0),
+      unique: schools.reduce((a,s)=>a+(window.calcCoverage?window.calcCoverage(s).uniqueStudents:s.participants||0),0),
+      students: schools.reduce((a,s)=>a+(s.students||0),0),
+      workers: [...new Set(schools.map(s=>s.inspector).filter(Boolean))].length,
+    };
+  }
+  const zrupSchools = workerSchools('ЗРУП');
+  const gunpSchools = workerSchools('ГУНП');
+  const zrupStats = groupStats(zrupSchools);
+  const gunpStats = groupStats(gunpSchools);
+
+  /* Топ закладів */
+  const ranked = [...serviced].sort((a,b)=>(b.events||0)-(a.events||0));
+
+  /* Динаміка (заглушка поки немає journale) */
+  const MN=['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+  const now=new Date();
+  const mLabels=[];
+  for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); mLabels.push(MN[d.getMonth()]); }
+
+  return { serviced, totEvents, totParticipations, totConsult, totStudents, totPrevention, totUnique, covPct, avgRating,
+           catStats, ranked, mLabels, zrupStats, gunpStats };
+}
+
+function render(){
   const d = calcData();
   destroyCharts();
+
+  const filtered = d.serviced.filter(s => filterSchool==='all' || s.id===filterSchool);
 
   /* ── KPI ── */
   const kpiHtml = `
     <div class="an-kpi anim anim-1">
-      <div class="l">Усього заходів (паспорт)</div>
-      <div class="v tnum">${d.totEvents}</div>
-      <div class="s">журнал: ${d.allEvents.length} записів</div>
+      <div class="l">Проведено заходів</div>
+      <div class="v tnum">${F(d.totEvents)}</div>
+      <div class="s">профілактичних: ${d.totPrevention}</div>
     </div>
     <div class="an-kpi anim anim-2">
-      <div class="l">Охоплено учасників</div>
-      <div class="v tnum">${F(d.totPart)}</div>
-      <div class="s">журнал: ${F(d.allEvents.reduce((a,e)=>a+(e.participants||0),0))}</div>
+      <div class="l">Всього участей у заходах</div>
+      <div class="v tnum">${F(d.totParticipations)}</div>
+      <div class="s">сума по всіх заходах</div>
     </div>
     <div class="an-kpi anim anim-3">
-      <div class="l">Консультацій</div>
-      <div class="v tnum">${d.totConsult}</div>
-      <div class="s">по всіх закладах</div>
+      <div class="l">Унікально охоплено учнів</div>
+      <div class="v tnum" style="color:var(--green-600)">${F(d.totUnique)}</div>
+      <div class="s">з ${F(d.totStudents)} учнів у ЗЗСО</div>
     </div>
     <div class="an-kpi anim anim-4">
-      <div class="l">Середній рейтинг</div>
-      <div class="v tnum">${d.avgRating}</div>
-      <div class="s">зі 100 балів</div>
+      <div class="l">Відсоток охоплення</div>
+      <div class="v tnum" style="color:${d.covPct>=70?'var(--green-600)':d.covPct>=40?'var(--gold-600)':'var(--red-500)'}">${d.covPct}%</div>
+      <div class="s">від загальної кількості учнів</div>
+    </div>
+    <div class="an-kpi anim anim-5">
+      <div class="l">Консультацій</div>
+      <div class="v tnum">${d.totConsult}</div>
+      <div class="s">по обслуговуваних закладах</div>
     </div>`;
 
-  /* ── Типи заходів ── */
-  const typesHtml = (S.eventTypes||[]).map(t => {
-    const st = d.byType[t.id] || { count:0, participants:0 };
-    return `<div class="type-cell">
-      <div class="tc-top"><span class="tc-dot" style="background:${t.color}"></span><span class="tc-lbl">${t.label}</span></div>
-      <div class="tc-num">${st.count}</div>
-      <div class="tc-sub">${F(st.participants)} учасн.</div>
+  /* ── 22 категорії заходів ── */
+  const allCatTotal = Object.values(d.catStats).reduce((a,v)=>a+v,0);
+  const catHtml = (S.eventCategories||[]).map(cat=>{
+    const cnt = d.catStats[cat.id] || 0;
+    const pct = allCatTotal>0 ? Math.round(cnt/allCatTotal*100) : 0;
+    return `<div class="cat-cell ${cnt===0?'zero':''}">
+      <div class="cc-top"><span class="cc-dot" style="background:${cat.color}"></span><span class="cc-lbl">${cat.short}</span></div>
+      <div class="cc-num">${cnt}</div>
+      <div class="cc-sub">${pct}% від загального</div>
     </div>`;
   }).join('');
 
-  /* ── Легенда пончика ── */
-  const doughData = d.typeStats.length
-    ? d.typeStats
-    : (S.eventTypes||[]).slice(0,5).map(t=>({label:t.label,color:t.color,count:0}));
+  /* ── ГУНП/ЗРУП порівняння ── */
+  function splitBlock(label, cls, st){
+    const cp = st.students>0?Math.round(st.unique/st.students*100):0;
+    return `<div class="split-block">
+      <div class="sb-head">
+        ${I.users}
+        <span class="sb-badge ${cls}">${label}</span>
+        <span style="font-size:13px;color:var(--muted);margin-left:auto">${st.workers} працівників</span>
+      </div>
+      <div class="split-row"><span class="sr-k">Закладів освіти</span><span class="sr-v">${st.schools}</span></div>
+      <div class="split-row"><span class="sr-k">Проведено заходів</span><span class="sr-v">${F(st.events)}</span></div>
+      <div class="split-row"><span class="sr-k">Участей у заходах</span><span class="sr-v">${F(st.participations)}</span></div>
+      <div class="split-row"><span class="sr-k">Унікально охоплено</span><span class="sr-v">${F(st.unique)}</span></div>
+      <div class="split-row">
+        <span class="sr-k">Охоплення</span>
+        <span class="sr-v" style="color:${cp>=70?'var(--green-600)':cp>=40?'var(--gold-600)':'var(--red-500)'}">${cp}%</span>
+      </div>
+      <div class="cov-bar-wrap" style="margin-top:8px"><div class="cov-bar" style="width:${cp}%;background:${cp>=70?'var(--green-500)':cp>=40?'var(--gold-500)':'var(--red-400)'}"></div></div>
+    </div>`;
+  }
 
-  const legendHtml = doughData.map(t =>
-    `<div class="legend-item"><span class="sw" style="background:${t.color}"></span>${t.label}<b>${t.count}</b></div>`
-  ).join('');
-
-  /* ── Рейтинг таблиця ── */
-  const ranked = [...d.serviced].sort((a,b)=>(b.rating||0)-(a.rating||0));
-  const tblHtml = ranked.map((s,i) => `
-    <tr style="cursor:pointer" onclick="location.href='school.html?id=${s.id}'">
+  /* ── Таблиця закладів ── */
+  const tblRows = [...filtered].sort((a,b)=>(b.events||0)-(a.events||0)).map((s,i)=>{
+    const cov = window.calcCoverage ? window.calcCoverage(s) : { uniqueStudents:s.participants||0, coveragePercent:0 };
+    const wp = cov.coveragePercent;
+    const worker = S.workers && s.inspector ? S.workers[s.inspector] : null;
+    return `<tr style="cursor:pointer" onclick="location.href='school.html?id=${s.id}'">
       <td><div class="rk ${i<3?'g'+(i+1):''}">${i+1}</div></td>
-      <td><b>${s.name}</b><div style="font-size:12px;color:var(--muted)">${s.city||''}</div></td>
+      <td><b>${s.name.split('"')[1]||s.name.split(' ').slice(0,4).join(' ')}</b><div style="font-size:11.5px;color:var(--muted)">${s.city||''} · ${worker?worker.name:''}</div></td>
       <td class="tnum">${s.events||0}</td>
       <td class="tnum">${F(s.participants||0)}</td>
+      <td class="tnum">${cov.uniqueStudents}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="cov-bar-wrap" style="width:60px"><div class="cov-bar" style="width:${wp}%;background:${wp>=70?'var(--green-500)':wp>=40?'var(--gold-500)':'var(--red-400)'}"></div></div>
+          <span style="font-size:12.5px;font-weight:700;color:${wp>=70?'var(--green-600)':wp>=40?'var(--gold-600)':'var(--red-500)'}">${wp}%</span>
+        </div>
+      </td>
       <td class="tnum">${s.consultations||0}</td>
-      <td><span class="tag ${i===0?'gold':'blue'}">${s.rating||0}</span></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
-  /* ── HTML ── */
+  /* ── Топ категорій для пончика ── */
+  const topCats = (S.eventCategories||[]).map(c=>({ label:c.short, color:c.color, count:d.catStats[c.id]||0 }))
+    .filter(c=>c.count>0).sort((a,b)=>b.count-a.count).slice(0,8);
+  const legendHtml = topCats.map(t=>`<div class="legend-item"><span class="sw" style="background:${t.color}"></span>${t.label}<b>${t.count}</b></div>`).join('');
+
   document.getElementById('content').innerHTML = `
     <div class="page-head">
       <div>
         <h1 class="page-title">Аналітика діяльності</h1>
-        <div class="page-sub">Зведені показники роботи СОБ по ${S.org.region} · ${S.org.period}</div>
+        <div class="page-sub">Зведені показники роботи СОБ · ${S.org.period}</div>
       </div>
       <div class="row gap-8">
         <button class="btn btn-ghost" onclick="window.print()">${I.doc} Друк</button>
-        <button class="btn btn-primary" onclick="exportAnalytics()">${I.download} Скачати CSV</button>
+        <button class="btn btn-primary" onclick="exportAnalytics()">${I.download} CSV</button>
       </div>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center">
-      <span style="font-size:13px;color:var(--muted);font-weight:600">${I.filter} Фільтр:</span>
-      <select class="input" id="filterTypeEl" style="max-width:230px">
-        <option value="all" ${filterType==='all'?'selected':''}>— Усі напрямки —</option>
-        ${(S.eventTypes||[]).map(t=>`<option value="${t.id}" ${filterType===t.id?'selected':''}>${t.label}</option>`).join('')}
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center">
+      <span style="font-size:13px;color:var(--muted);font-weight:600">${I.filter} Фільтр за закладом:</span>
+      <select class="input" id="filterSchoolEl" style="max-width:300px">
+        <option value="all">— Усі заклади —</option>
+        ${(S.schools||[]).filter(s=>s.serviced).map(s=>`<option value="${s.id}" ${filterSchool===s.id?'selected':''}>${s.name.split('"')[1]||s.name.split(' ').slice(0,3).join(' ')}</option>`).join('')}
       </select>
-      <select class="input" id="filterSchoolEl" style="max-width:280px">
-        <option value="all" ${filterSchool==='all'?'selected':''}>— Усі заклади —</option>
-        ${(S.schools||[]).filter(s=>s.serviced).map(s=>`<option value="${s.id}" ${filterSchool===s.id?'selected':''}>${s.name}</option>`).join('')}
-      </select>
-      ${(filterType!=='all'||filterSchool!=='all')?`<button class="btn btn-ghost btn-sm" onclick="filterType='all';filterSchool='all';render()">Скинути</button>`:''}
+      ${filterSchool!=='all'?`<button class="btn btn-ghost btn-sm" onclick="filterSchool='all';render()">Скинути</button>`:''}
     </div>
 
     <div class="an-kpis">${kpiHtml}</div>
 
+    <div class="split-grid">${splitBlock('ССОБ ЗРУП','zrup',d.zrupStats)}${splitBlock('СО СОБ ГУНП','gunp',d.gunpStats)}</div>
+
     <div class="card card-pad anim" style="margin-bottom:20px">
       <div class="card-head">
-        <div class="section-title">${I.shield} Заходи за напрямками</div>
-        <span class="muted" style="font-size:13px">журнал: ${d.allEvents.length} записів</span>
+        <div class="section-title">${I.shield} Заходи за 22 напрямками</div>
+        <span class="muted" style="font-size:13px">всього: ${F(d.totEvents)}</span>
       </div>
-      <div class="type-grid">${typesHtml}</div>
+      <div class="cat-grid">${catHtml}</div>
     </div>
 
     <div class="grid-2" style="margin-bottom:20px">
       <div class="card card-pad anim">
-        <div class="card-head"><div class="section-title">${I.chart} Динаміка за 6 місяців</div></div>
+        <div class="card-head"><div class="section-title">${I.chart} Активність по місяцях</div></div>
         <div class="chart-box"><canvas id="cvLine"></canvas></div>
       </div>
       <div class="card card-pad anim">
-        <div class="card-head"><div class="section-title">${I.filter} Структура за напрямками</div></div>
+        <div class="card-head"><div class="section-title">${I.filter} Топ напрямків</div></div>
         <div style="display:flex;gap:20px;align-items:center;margin-top:8px">
           <div class="dough-box"><canvas id="cvDough"></canvas></div>
-          <div class="legend" id="legend">${legendHtml}</div>
+          <div class="legend">${legendHtml}</div>
         </div>
-      </div>
-    </div>
-
-    <div class="grid-2" style="margin-bottom:20px">
-      <div class="card card-pad anim">
-        <div class="card-head"><div class="section-title">${I.building} Активність закладів</div></div>
-        <div class="chart-box"><canvas id="cvBar"></canvas></div>
-      </div>
-      <div class="card card-pad anim">
-        <div class="card-head"><div class="section-title">${I.users} Учасники за напрямком</div></div>
-        <div class="chart-box"><canvas id="cvAud"></canvas></div>
       </div>
     </div>
 
     <div class="card card-pad anim">
       <div class="card-head">
-        <div class="section-title">${I.trophy} Детальний рейтинг закладів</div>
-        <span class="muted" style="font-size:13px">${d.serviced.length} закладів</span>
+        <div class="section-title">${I.trophy} Рейтинг закладів</div>
+        <span class="muted" style="font-size:13px">${filtered.length} закладів</span>
       </div>
       <table class="tbl">
-        <thead><tr><th></th><th>Заклад</th><th>Заходи</th><th>Учасники</th><th>Консультації</th><th>Рейтинг</th></tr></thead>
-        <tbody>${tblHtml}</tbody>
+        <thead><tr><th></th><th>Заклад / Працівник</th><th>Заходи</th><th>Участей</th><th>Унікально охоплено</th><th>Охоплення</th><th>Консульт.</th></tr></thead>
+        <tbody>${tblRows}</tbody>
       </table>
     </div>`;
 
-  /* ── Обробники фільтрів ── */
-  document.getElementById('filterTypeEl')?.addEventListener('change', e => { filterType = e.target.value; render(); });
-  document.getElementById('filterSchoolEl')?.addEventListener('change', e => { filterSchool = e.target.value; render(); });
+  document.getElementById('filterSchoolEl')?.addEventListener('change', e=>{ filterSchool=e.target.value; render(); });
 
-  /* ── Графіки ── */
-  const gridColor = '#EEF3FA';
-  const noAxes = { grid:{ display:false }, border:{ display:false } };
-  const yAxe   = { beginAtZero:true, grid:{ color:gridColor }, border:{ display:false }, ticks:{ precision:0 } };
+  /* Графіки */
+  const gridColor='#EEF3FA';
+  const noAxes={ grid:{display:false}, border:{display:false} };
+  const yAxe={ beginAtZero:true, grid:{color:gridColor}, border:{display:false}, ticks:{precision:0} };
 
-  charts.line = new Chart(document.getElementById('cvLine'), {
-    type: 'line',
-    data: {
+  /* Лінійний — динаміка (поки статика по місяцях) */
+  const evData = d.serviced.length ? [0,0,0,0,0,d.totEvents] : [0,0,0,0,0,0];
+  charts.line = new Chart(document.getElementById('cvLine'),{
+    type:'line',
+    data:{
       labels: d.mLabels,
-      datasets: [
-        { label:'Усі заходи', data: d.evByMonth,
-          borderColor:'#1F59DD', backgroundColor: ctx=>{
-            const g = ctx.chart.ctx.createLinearGradient(0,0,0,280);
-            g.addColorStop(0,'rgba(31,89,221,.22)'); g.addColorStop(1,'rgba(31,89,221,0)'); return g;
-          }, fill:true, tension:.4, borderWidth:3, pointRadius:4, pointBackgroundColor:'#1F59DD' },
-        { label:'Безпека', data: d.secByMonth,
-          borderColor:'#E84545', fill:false, tension:.4, borderWidth:2, pointRadius:4, pointBackgroundColor:'#E84545' }
-      ]
+      datasets:[{
+        label:'Заходи', data:evData,
+        borderColor:'#1F59DD', backgroundColor:ctx=>{
+          const g=ctx.chart.ctx.createLinearGradient(0,0,0,280);
+          g.addColorStop(0,'rgba(31,89,221,.22)'); g.addColorStop(1,'rgba(31,89,221,0)'); return g;
+        }, fill:true, tension:.4, borderWidth:3, pointRadius:4, pointBackgroundColor:'#1F59DD'
+      }]
     },
-    options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, usePointStyle:true, padding:16 } } },
-      scales:{ y: yAxe, x: noAxes } }
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:'bottom',labels:{boxWidth:10,usePointStyle:true,padding:16}} },
+      scales:{ y:yAxe, x:noAxes } }
   });
 
-  charts.dough = new Chart(document.getElementById('cvDough'), {
-    type: 'doughnut',
-    data: {
-      labels: doughData.map(t=>t.label),
-      datasets: [{ data: doughData.map(t=>t.count||0), backgroundColor: doughData.map(t=>t.color), borderWidth:3, borderColor:'#fff' }]
-    },
-    options: { responsive:true, maintainAspectRatio:false, cutout:'66%',
-      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx=>' '+ctx.label+': '+ctx.raw } } } }
-  });
-
-  const top7 = d.ranked.slice(0,7);
-  charts.bar = new Chart(document.getElementById('cvBar'), {
-    type: 'bar',
-    data: {
-      labels: top7.map(s => s.name.replace(/^(Запорізька|Мелітопольська|Вільнянська|Токмацька)\s/,'').split(' ').slice(0,3).join(' ').slice(0,22)),
-      datasets: [{ data: top7.map(s=>s.events||0), backgroundColor:'#1F59DD', borderRadius:8, maxBarThickness:32 }]
-    },
-    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{ x: yAxe, y: noAxes } }
-  });
-
-  const topTypes = (d.typeStats.length ? d.typeStats : doughData).slice(0,6);
-  charts.aud = new Chart(document.getElementById('cvAud'), {
-    type: 'bar',
-    data: {
-      labels: topTypes.map(t => t.label),
-      datasets: [{ data: topTypes.map(t=>t.participants||0), backgroundColor: topTypes.map(t=>t.color), borderRadius:8, maxBarThickness:48 }]
-    },
-    options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{ y: yAxe, x: { ...noAxes, ticks:{ maxRotation:30 } } } }
-  });
+  if(topCats.length){
+    charts.dough = new Chart(document.getElementById('cvDough'),{
+      type:'doughnut',
+      data:{
+        labels: topCats.map(t=>t.label),
+        datasets:[{ data:topCats.map(t=>t.count), backgroundColor:topCats.map(t=>t.color), borderWidth:3, borderColor:'#fff' }]
+      },
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'66%',
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+ctx.raw}} } }
+    });
+  }
 }
 
-/* ─────────────────────────────────────────────
-   Експорт CSV з аналітики
-───────────────────────────────────────────── */
 window.exportAnalytics = function(){
   const d = calcData();
   const bom = '﻿';
-  const rows = ['"Напрямок","Заходів","Учасників"\r\n'];
-  Object.values(d.byType).forEach(t =>
-    rows.push(`"${t.label}","${t.count}","${t.participants}"\r\n`));
-  rows.push(`\r\n"Заклад","Місто","Заходів","Учасників","Консультацій","Рейтинг"\r\n`);
-  d.serviced.forEach(s =>
-    rows.push(`"${s.name}","${s.city||''}","${s.events||0}","${s.participants||0}","${s.consultations||0}","${s.rating||0}"\r\n`));
-  const blob = new Blob([bom + rows.join('')], { type:'text/csv;charset=utf-8' });
+  const rows = ['"Напрямок","Заходів"\r\n'];
+  (S.eventCategories||[]).forEach(c=>rows.push(`"${c.label}","${d.catStats[c.id]||0}"\r\n`));
+  rows.push(`\r\n"Заклад","Місто","Заходів","Участей","Унікально охоплено","Охоплення %","Консультацій"\r\n`);
+  d.serviced.forEach(s=>{
+    const cov = window.calcCoverage?window.calcCoverage(s):{uniqueStudents:s.participants||0,coveragePercent:0};
+    rows.push(`"${s.name}","${s.city||''}","${s.events||0}","${s.participants||0}","${cov.uniqueStudents}","${cov.coveragePercent}","${s.consultations||0}"\r\n`);
+  });
+  const blob = new Blob([bom+rows.join('')],{type:'text/csv;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `sob-аналітика-${new Date().toISOString().slice(0,10)}.csv`;
@@ -326,11 +348,7 @@ window.exportAnalytics = function(){
   toast('Файл завантажується…');
 };
 
-/* ─────────────────────────────────────────────
-   Firebase sync — оновлюємо без reload
-───────────────────────────────────────────── */
-document.addEventListener('sob:synced', () => { render(); });
-
+document.addEventListener('sob:synced',()=>render());
 render();
 </script>
 </body>

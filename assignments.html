@@ -84,7 +84,7 @@ if(!window.SOB.assignments) window.SOB.assignments = [];
 document.getElementById('closeAsgn').innerHTML = I.close;
 
 // Populate selects
-const inspOpts = Object.entries(S.inspectors).map(([k,ins]) => `<option value="${k}">${ins.name}</option>`).join('');
+const inspOpts = Object.entries(S.workers).map(([k,ins]) => `<option value="${k}">${ins.name}</option>`).join('');
 document.getElementById('asgn_assignee').innerHTML = '<option value="">— Оберіть виконавця —</option>' + inspOpts;
 
 const schOpts = S.schools.filter(s => s.serviced).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
@@ -135,7 +135,7 @@ function render() {
   if(searchQ) {
     const q = searchQ.toLowerCase();
     items = items.filter(x => {
-      const ins = S.inspectors[x.assignee];
+      const ins = S.workers[x.assignee];
       const sc  = S.schools.find(s => s.id === x.school);
       return (x.title||'').toLowerCase().includes(q)
           || (x.desc||'').toLowerCase().includes(q)
@@ -159,7 +159,7 @@ function render() {
 
   document.getElementById('content').innerHTML = `
     <div class="page-head">
-      <div><h1 class="page-title">Доручення</h1><div class="page-sub">Контроль виконання завдань та доручень інспекторам СОБ</div></div>
+      <div><h1 class="page-title">Доручення</h1><div class="page-sub">Контроль виконання завдань та доручень працівникам СОБ</div></div>
       ${canEdit ? `<button class="btn btn-primary" id="addAsgnBtn">${I.plus} Нове доручення</button>` : ''}
     </div>
 
@@ -189,14 +189,14 @@ function render() {
       </select>
       ${U.role !== 'inspector' ? `<select class="input" id="assigneeFilter" style="max-width:240px">
         <option value="all" ${filterAssignee==='all'?'selected':''}>— Усі виконавці —</option>
-        ${Object.entries(S.inspectors).map(([k,ins])=>`<option value="${k}" ${filterAssignee===k?'selected':''}>${ins.name.split(' ').slice(0,2).join(' ')}</option>`).join('')}
+        ${Object.entries(S.workers).map(([k,ins])=>`<option value="${k}" ${filterAssignee===k?'selected':''}>${ins.name.split(' ').slice(0,2).join(' ')}</option>`).join('')}
       </select>` : ''}
       ${(filterPriority!=='all'||filterAssignee!=='all') ? `<button class="btn btn-ghost btn-sm" id="clearAsgnFilters">Скинути</button>` : ''}
     </div>
 
     <div class="col" style="gap:12px" id="asgnList">
       ${items.length ? items.map(a => {
-        const ins = S.inspectors[a.assignee];
+        const ins = S.workers[a.assignee];
         const sc  = S.schools.find(x => x.id === a.school);
         const overdue = isOverdue(a);
         const statusCls = a.status === 'done' ? 'status-done' : (a.status === 'wip' ? 'status-wip' : 'status-new');

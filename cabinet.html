@@ -74,11 +74,11 @@ const U = window.SOBAuth.current();
 SOBShell.render({ active: 'cabinet', crumb: ['СОБ', 'Кабінет інспектора'] });
 
 if(U.role !== 'inspector' && U.role !== 'admin'){
-  document.getElementById('content').innerHTML = `<div class="gate"><div class="ic">${I.lock}</div><h1 class="page-title">Потрібен вхід</h1><p class="page-sub" style="margin-bottom:24px">Кабінет доступний інспекторам СОБ та адміністратору. Будь ласка, увійдіть у систему.</p><a class="btn btn-primary btn-lg" href="login.html">${I.logout} Увійти до системи</a></div>`;
+  document.getElementById('content').innerHTML = `<div class="gate"><div class="ic">${I.lock}</div><h1 class="page-title">Потрібен вхід</h1><p class="page-sub" style="margin-bottom:24px">Кабінет доступний працівникам СОБ та адміністратору. Будь ласка, увійдіть у систему.</p><a class="btn btn-primary btn-lg" href="login.html">${I.logout} Увійти до системи</a></div>`;
 } else {
   document.getElementById('closeEvent').innerHTML = I.close;
   const myKey = U.inspector;
-  const myName = (S.inspectors[myKey]?.name) || U.name;
+  const myName = (S.workers[myKey]?.name) || U.name;
   // schools this inspector manages (admin sees all serviced)
   const myParams = U.role==='admin' ? window.SOBStore.serviced() : S.schools.filter(s=>s.serviced && s.inspector===myKey);
   const ids = myParams.map(s=>s.id);

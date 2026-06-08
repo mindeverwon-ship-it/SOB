@@ -61,8 +61,8 @@ window.SOB = {
     },
   },
 
-  /* --- Інспектори СОБ --- */
-  inspectors: {
+  /* --- Працівники СОБ --- */
+  workers: {
     /* СО СОБ ГУНП */
     "sol": { name: "Солод Наталія",     rank: "Начальник СО СОБ",         category: "ГУНП", phone: "", phone2: "", email: "", telegram: "", department: "СО СОБ ГУНП", district: "м. Запоріжжя",          schools: [],                    status: "active", appointedAt: "2022-01-01", notes: "" },
     "nes": { name: "Нестеренко Аліна",  rank: "Старший інспектор СО СОБ", category: "ГУНП", phone: "", phone2: "", email: "", telegram: "", department: "СО СОБ ГУНП", district: "м. Запоріжжя",          schools: [],                    status: "active", appointedAt: "2022-01-01", notes: "" },
@@ -319,14 +319,16 @@ window.SOB = {
 
   /* --- AI-помічник --- */
   aiTopics: [
-    { icon: "chart",    label: "Покажи найактивніших інспекторів за місяць" },
+    { icon: "chart",    label: "Покажи найактивніших працівників СОБ за місяць" },
     { icon: "building", label: "Які заклади не подавали фотозвіти більше 30 днів?" },
-    { icon: "doc",      label: "Сформуй аналітичну довідку за травень" },
+    { icon: "doc",      label: "Сформуй аналітичну довідку за поточний місяць" },
     { icon: "alert",    label: "Покажи проблемні напрямки роботи СОБ" },
     { icon: "trophy",   label: "Порівняй показники ГУНП та ЗРУП" },
     { icon: "users",    label: "Підготуй доповідь для керівництва" },
     { icon: "shield",   label: "Аналіз заходів мінної безпеки" },
     { icon: "calendar", label: "Динаміка активності по місяцях" },
+    { icon: "school",   label: "Які заклади мають найменшу активність?" },
+    { icon: "users",    label: "Відсоток охоплення учнів по закладах" },
   ],
 
   /* --- Ролі --- */
@@ -382,11 +384,53 @@ window.SOB = {
   files: [],
 };
 
+/* Backward compat alias */
+Object.defineProperty(window.SOB, 'inspectors', { get(){ return this.workers; }, set(v){ this.workers = v; }, enumerable: false });
+
 /* Форматування чисел */
 window.fmt = (n) => (typeof n === 'number' ? n.toLocaleString('uk-UA').replace(/,/g, ' ') : n);
 
 /* XSS-екранування — використовувати при вставці даних з бази через innerHTML */
 window.esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+/* Розрахунок охоплення учнів для закладу
+   Повертає: { events, participations, uniqueStudents, coveragePercent, totalStudents }
+   uniqueStudents = min(participations, totalStudents) — не може перевищувати кількість учнів */
+window.calcCoverage = (school) => {
+  const totalStudents = school.students || 0;
+  const events        = school.events || 0;
+  const participations= school.participants || 0;
+  const uniqueStudents= totalStudents > 0 ? Math.min(participations, totalStudents) : participations;
+  const coveragePercent = totalStudents > 0 ? Math.round((uniqueStudents / totalStudents) * 100) : 0;
+  return { events, participations, uniqueStudents, coveragePercent, totalStudents };
+};
+
+/* Агрегована статистика по всіх обслуговуваних закладах */
+window.calcTotalStats = () => {
+  const serviced = (window.SOB.schools || []).filter(s => s.serviced);
+  return serviced.reduce((acc, s) => {
+    acc.totalStudents  += s.students     || 0;
+    acc.events         += s.events       || 0;
+    acc.participations += s.participants || 0;
+    acc.prevention     += s.prevention   || 0;
+    acc.consultations  += s.consultations|| 0;
+    // підрахунок унікально охоплених: min по кожному закладу, потім сумуємо
+    const sch = window.calcCoverage(s);
+    acc.uniqueStudents += sch.uniqueStudents;
+    return acc;
+  }, { totalStudents: 0, events: 0, participations: 0, prevention: 0, consultations: 0, uniqueStudents: 0 });
+};
+
+/* Агрегована статистика заходів по тематиках */
+window.calcCategoryStats = () => {
+  const serviced = (window.SOB.schools || []).filter(s => s.serviced && s.monthlyData);
+  const totals = {};
+  (window.SOB.eventCategories || []).forEach(c => { totals[c.id] = 0; });
+  serviced.forEach(s => {
+    Object.entries(s.monthlyData || {}).forEach(([k, v]) => { totals[k] = (totals[k] || 0) + (v || 0); });
+  });
+  return totals;
+};
 
 /* ---- Авторизація ---- */
 window.SOBAuth = {

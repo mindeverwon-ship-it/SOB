@@ -65,20 +65,20 @@ function buildResults(q) {
 
   (S.incidents||[]).forEach(x => {
     const sc  = S.schools.find(s=>s.id===x.school);
-    const ins = S.inspectors[x.inspector];
+    const ins = S.workers[x.inspector];
     const ti  = S.incidentTypes.find(t=>t.id===x.type);
     if((x.title||'').toLowerCase().includes(lq)||(x.desc||'').toLowerCase().includes(lq)||(sc?.name||'').toLowerCase().includes(lq)||(ins?.name||'').toLowerCase().includes(lq)||(ti?.label||'').toLowerCase().includes(lq))
       res.incidents.push({...x, schoolName: sc?.name||'', inspName: ins?.name||''});
   });
 
   (S.assignments||[]).forEach(x => {
-    const ins = S.inspectors[x.assignee];
+    const ins = S.workers[x.assignee];
     const sc  = S.schools.find(s=>s.id===x.school);
     if((x.title||'').toLowerCase().includes(lq)||(x.desc||'').toLowerCase().includes(lq)||(ins?.name||'').toLowerCase().includes(lq)||(sc?.name||'').toLowerCase().includes(lq))
       res.assignments.push({...x, inspName: ins?.name||''});
   });
 
-  Object.entries(S.inspectors||{}).forEach(([k,ins]) => {
+  Object.entries(S.workers||{}).forEach(([k,ins]) => {
     if((ins.name||'').toLowerCase().includes(lq)||(ins.position||'').toLowerCase().includes(lq))
       res.inspectors.push({id:k,...ins});
   });
@@ -118,7 +118,7 @@ function render() {
         <div class="sr-ic" style="background:var(--blue-100);color:var(--blue-600)">${I.school}</div>
         <div class="sr-body">
           <div class="sr-title">${hl(s.name,q)}</div>
-          <div class="sr-sub">${s.city||''} ${s.district?' · '+s.district:''} ${s.inspector?'· '+((S.inspectors[s.inspector])?.name||''):''}</div>
+          <div class="sr-sub">${s.city||''} ${s.district?' · '+s.district:''} ${s.inspector?'· '+((S.workers[s.inspector])?.name||''):''}</div>
         </div>
         <span class="tag ${s.serviced?'blue':'gray'}">${s.serviced?'СОБ':'Не обслуговується'}</span>
       </a>`).join('')}

@@ -78,7 +78,7 @@
 <!-- ══ Inspector modal ══ -->
 <div class="modal-scrim" id="insModal">
   <div class="modal" style="max-width:580px">
-    <div class="modal-head"><div class="section-title" id="insModalTitle">Додати інспектора</div><button class="icon-btn" onclick="closeModal('insModal')" id="closeIns"></button></div>
+    <div class="modal-head"><div class="section-title" id="insModalTitle">Додати працівника СОБ</div><button class="icon-btn" onclick="closeModal('insModal')" id="closeIns"></button></div>
     <div class="modal-body col" style="gap:14px">
       <div class="field"><label>ПІБ <span style="color:var(--red-500)">*</span></label><input class="input" id="i_name" placeholder="Прізвище Ім'я По-батькові"></div>
       <div class="grid-2" style="gap:13px">
@@ -195,7 +195,7 @@ if(U.role!=='admin'){
   /* ── Inspector modal ── */
   function openIns(key){
     editingInsKey=key;
-    document.getElementById('insModalTitle').textContent=key?'Редагувати інспектора':'Додати інспектора';
+    document.getElementById('insModalTitle').textContent=key?'Редагувати працівника СОБ':'Додати працівника СОБ';
     const ins=key?(S.inspectors[key]||{}):{};
     document.getElementById('i_name').value=ins.name||'';
     document.getElementById('i_rank_title').value=ins.rank||ins.rankTitle||'';
@@ -213,7 +213,7 @@ if(U.role!=='admin'){
   }
   document.getElementById('saveIns').addEventListener('click',()=>{
     const name=document.getElementById('i_name').value.trim();
-    if(!name){toast('Введіть ПІБ інспектора','red');return;}
+    if(!name){toast('Введіть ПІБ працівника СОБ','red');return;}
     const category=document.getElementById('i_category').value;
     const data={
       name,
@@ -238,7 +238,7 @@ if(U.role!=='admin'){
     }
     window.SOBStore.save();
     buildInspectorSelect();
-    toast(editingInsKey?'Інспектора оновлено':'Інспектора додано');
+    toast(editingInsKey?'Працівника оновлено':'Працівника додано');
     closeModal('insModal');
     shell();
   });
@@ -256,7 +256,7 @@ if(U.role!=='admin'){
       <div class="stat-cards">
         <div class="sc"><div class="ic" style="background:var(--blue-100);color:var(--blue-600)">${I.school}</div><div class="v">${S.schools.length}</div><div class="l">Закладів у системі</div></div>
         <div class="sc"><div class="ic" style="background:var(--green-100);color:var(--green-500)">${I.shield}</div><div class="v">${serviced}</div><div class="l">Обслуговує СОБ</div></div>
-        <div class="sc"><div class="ic" style="background:var(--gold-100);color:var(--gold-700)">${I.users}</div><div class="v">${Object.keys(S.inspectors).length}</div><div class="l">Інспекторів</div></div>
+        <div class="sc"><div class="ic" style="background:var(--gold-100);color:var(--gold-700)">${I.users}</div><div class="v">${Object.keys(S.inspectors).length}</div><div class="l">Працівників СОБ</div></div>
         <div class="sc"><div class="ic" style="background:var(--purple-100);color:var(--purple-500)">${I.calendar}</div><div class="v">${S.schoolEvents.length}</div><div class="l">Заходів у журналі</div></div>
       </div>
       <div class="adm-tabs">
@@ -417,9 +417,9 @@ if(U.role!=='admin'){
         </div>
         <div class="search-bar">
           <span class="si">${I.search||'🔍'}</span>
-          <input id="schSearchInput" placeholder="Пошук за назвою, містом, інспектором…" value="${schSearch}">
+          <input id="schSearchInput" placeholder="Пошук за назвою, містом, працівником…" value="${schSearch}">
         </div>
-        ${rows.length?`<table class="tbl"><thead><tr><th>Заклад</th><th>Тип</th><th>Місто</th><th>Статус</th><th>Інспектор</th><th>Заходи</th><th></th></tr></thead>
+        ${rows.length?`<table class="tbl"><thead><tr><th>Заклад</th><th>Тип</th><th>Місто</th><th>Статус</th><th>Працівник СОБ</th><th>Заходи</th><th></th></tr></thead>
         <tbody>${rows.map(s=>{const ins=S.inspectors[s.inspector];return `<tr>
           <td><b>${s.name}</b></td><td>${s.type||'—'}</td><td>${s.city||'—'}</td>
           <td>${s.serviced?`<span class="tag green">${I.check} Наш</span>`:`<span class="tag gray">Інший</span>`}</td>
@@ -456,8 +456,8 @@ if(U.role!=='admin'){
     document.getElementById('admBody').innerHTML=`
       <div class="card card-pad">
         <div class="card-head" style="margin-bottom:12px">
-          <div class="section-title">${I.shield} Інспектори СОБ (${Object.keys(S.inspectors).length})</div>
-          <button class="btn btn-primary btn-sm" id="addIns">${I.plus} Додати інспектора</button>
+          <div class="section-title">${I.shield} Працівники СОБ (${Object.keys(S.inspectors).length})</div>
+          <button class="btn btn-primary btn-sm" id="addIns">${I.plus} Додати працівника СОБ</button>
         </div>
         <div class="search-bar">
           <span class="si">${I.search||'🔍'}</span>
@@ -517,8 +517,8 @@ if(U.role!=='admin'){
     document.querySelectorAll('[data-eins]').forEach(b=>b.addEventListener('click',()=>openIns(b.dataset.eins)));
     document.querySelectorAll('[data-dins]').forEach(b=>b.addEventListener('click',()=>{
       const k=b.dataset.dins, ins=S.inspectors[k];
-      if(confirm(`Видалити інспектора «${ins.name}»? Заклади залишаться, але втратять прив'язку.`)){
-        delete S.inspectors[k]; window.SOBStore.save(); toast('Інспектора видалено','navy'); shell();
+      if(confirm(`Видалити працівника «${ins.name}»? Заклади залишаться, але втратять прив'язку.`)){
+        delete S.inspectors[k]; window.SOBStore.save(); toast('Працівника видалено','navy'); shell();
       }
     }));
   }
@@ -530,7 +530,7 @@ if(U.role!=='admin'){
         <div class="section-title" style="margin-bottom:16px">${I.users} Облікові записи (${S.accounts.length})</div>
         ${S.accounts.map(a=>{const r=S.roles[a.role];return `<div class="usr-row file-row" style="border-top:1px solid var(--border)">
           <div class="av" style="background:${r.color}">${a.initials}</div>
-          <div class="file-meta flex:1"><b>${a.name}</b><span>Логін: <b>${a.login}</b> · <span style="color:${r.color};font-weight:600">${r.label}</span>${a.inspector?` · інспектор: ${S.inspectors[a.inspector]?.name||a.inspector}`:''}</span></div>
+          <div class="file-meta flex:1"><b>${a.name}</b><span>Логін: <b>${a.login}</b> · <span style="color:${r.color};font-weight:600">${r.label}</span>${a.inspector?` · працівник: ${S.inspectors[a.inspector]?.name||a.inspector}`:''}</span></div>
         </div>`;}).join('')}
         <div class="muted" style="font-size:12.5px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
           Паролі та облікові записи зберігаються у файлі <b>js/data.js</b> → масив <b>accounts</b>. Для зміни пароля — редагуйте файл та перезавантажте сайт.
@@ -561,7 +561,7 @@ if(U.role!=='admin'){
         </div>
         <div class="rpt-row">
           <div class="rpt-ic" style="background:var(--purple-100);color:var(--purple-500)">${I.users}</div>
-          <div style="flex:1"><b>Список інспекторів</b><div class="muted" style="font-size:12.5px">ПІБ, звання, посада, контакти, кількість підшефних закладів</div></div>
+          <div style="flex:1"><b>Список працівників СОБ</b><div class="muted" style="font-size:12.5px">ПІБ, звання, посада, контакти, кількість підшефних закладів</div></div>
           <button class="btn btn-primary btn-sm" onclick="exportCSV('inspectors')">CSV ↓</button>
         </div>
         <div class="rpt-row">
@@ -600,7 +600,7 @@ if(U.role!=='admin'){
           <div class="row between"><span class="muted">Заходів у журналі</span><b>${S.schoolEvents.length}</b></div><div class="divider"></div>
           <div class="row between"><span class="muted">Файлів</span><b>${S.files.length}</b></div><div class="divider"></div>
           <div class="row between"><span class="muted">Фото в галереї</span><b>${(S.gallery||[]).length}</b></div><div class="divider"></div>
-          <div class="row between"><span class="muted">Інспекторів</span><b>${Object.keys(S.inspectors).length}</b></div>
+          <div class="row between"><span class="muted">Працівників СОБ</span><b>${Object.keys(S.inspectors).length}</b></div>
         </div>
       </div>
       <div class="card card-pad" style="margin-top:16px">

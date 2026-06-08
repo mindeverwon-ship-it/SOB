@@ -172,7 +172,7 @@ function render() {
         ${types.map(t => `<option value="${t.id}" ${filterType===t.id?'selected':''}>${t.label}</option>`).join('')}
       </select>
       <select class="input" id="inspectorFilter" style="max-width:220px">
-        <option value="all" ${filterInspector==='all'?'selected':''}>— Усі інспектори —</option>
+        <option value="all" ${filterInspector==='all'?'selected':''}>— Усі працівники СОБ —</option>
         ${Object.entries(S.inspectors).map(([k,ins]) => `<option value="${k}" ${filterInspector===k?'selected':''}>${ins.name.split(' ').slice(0,2).join(' ')}</option>`).join('')}
       </select>
       <input type="date" class="input" id="dateFrom" value="${filterDateFrom}" title="Дата від" style="max-width:160px">

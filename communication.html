@@ -157,7 +157,7 @@ const CAT_LABEL = { school:'Заклад освіти', dept:'Відомство
    РЕНДЕР
 ══════════════════════════════════════════════════ */
 function render() {
-  const inspList = Object.entries(S.inspectors);
+  const inspList = Object.entries(S.workers);
   const contacts = S.org.contacts || [];
   const anns     = S.org.announcements || [];
 
@@ -194,7 +194,7 @@ function render() {
         ${ins.email ? `<a class="btn btn-ghost btn-sm" href="mailto:${ins.email}">${I.mail}</a>` : ''}
       </div>`}
     </div>`;
-  }).join('') : `<div class="empty-state" style="grid-column:1/-1">Інспекторів немає. Адміністратор може додати їх в Адмін-панелі → Інспектори СОБ.</div>`;
+  }).join('') : `<div class="empty-state" style="grid-column:1/-1">Працівників СОБ немає. Адміністратор може додати їх в Адмін-панелі → Працівники СОБ.</div>`;
 
   /* ── Зовнішні контакти ── */
   const ecHtml = contacts.length ? contacts.map(c => {
@@ -250,7 +250,7 @@ function render() {
         <div class="card card-pad" style="margin-bottom:20px">
           <div class="card-head">
             <div class="section-title">${I.shield} Команда СОБ · Запорізький район</div>
-            <span class="muted" style="font-size:13px">${inspList.length} інспекторів</span>
+            <span class="muted" style="font-size:13px">${inspList.length} працівників СОБ</span>
           </div>
           <div class="team-grid">${teamHtml}</div>
         </div>
@@ -288,7 +288,7 @@ function render() {
               </div>
             </div>`;
           }).join('')}
-          ${inspList.filter(([,ins])=>ins.phone||ins.email).length===0 ? `<div class="empty-state">Додайте контакти інспекторів в Адмін-панелі</div>` : ''}
+          ${inspList.filter(([,ins])=>ins.phone||ins.email).length===0 ? `<div class="empty-state">Додайте контакти працівників СОБ в Адмін-панелі</div>` : ''}
         </div>
 
         <div class="card card-pad" style="background:linear-gradient(135deg,var(--navy-800),var(--navy-950));color:#fff;border:none">
@@ -331,7 +331,7 @@ window.editInspector = function(key){
 /* Якщо повернулись із admin з anchor — відкриваємо інспектора */
 if(location.hash.startsWith('#ins-')){
   const k=location.hash.slice(5);
-  if(S.inspectors[k]) toast('Редагуйте інспектора в Адмін-панелі → Інспектори СОБ','navy');
+  if(S.workers[k]) toast('Редагуйте працівника СОБ в Адмін-панелі → Працівники СОБ','navy');
 }
 
 /* ── Зовнішні контакти modal ── */
