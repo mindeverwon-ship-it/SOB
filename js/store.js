@@ -19,7 +19,9 @@ const SCHOOL_SYNC_FIELDS = ['inspector','director','phone','phone2','email','tel
 window.SOBStore = {
   KEY: 'sob_data_v4',
   FB: FIREBASE_URL,
-  collections: ['schools', 'schoolEvents', 'gallery', 'files', 'inspectors', 'kpis', 'secondary', 'org', 'incidents', 'assignments', 'auditLog'],
+  /* Синхронізуємо тільки колекції з даними, введеними користувачами.
+     'secondary', 'kpis', 'org' — статичні дані з data.js, не перезаписуємо. */
+  collections: ['schools', 'schoolEvents', 'gallery', 'files', 'inspectors', 'incidents', 'assignments', 'auditLog'],
 
   // Merge saved schools: оновлюємо тільки поля, введені користувачами;
   // monthlyData/events/participants залишаються з data.js
