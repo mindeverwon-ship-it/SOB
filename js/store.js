@@ -25,18 +25,32 @@ window.SOBStore = {
 
   // Merge saved schools: оновлюємо тільки поля, введені користувачами;
   // monthlyData/events/participants залишаються з data.js
+  /* Зберегти мітку часу локального редагування школи (захист від race condition з Firebase) */
+  _markLocalEdit(schoolId) {
+    try {
+      const e = JSON.parse(localStorage.getItem('sob_local_edits') || '{}');
+      e[schoolId] = Date.now();
+      localStorage.setItem('sob_local_edits', JSON.stringify(e));
+    } catch(_) {}
+  },
+  _getLocalEdits() {
+    try { return JSON.parse(localStorage.getItem('sob_local_edits') || '{}'); } catch(_) { return {}; }
+  },
+
   _mergeSchools(savedSchools) {
     if (!Array.isArray(savedSchools)) return;
+    const edits = this._getLocalEdits();
+    const now = Date.now();
     savedSchools.forEach(fb => {
       if (!fb) return;
       const local = (window.SOB.schools || []).find(s => s.id === fb.id);
       if (!local) return;
+      // Якщо школу редагували локально < 30 сек тому — Firebase може мати старі дані, пропускаємо
+      if (edits[fb.id] && (now - edits[fb.id]) < 30000) return;
       SCHOOL_SYNC_FIELDS.forEach(k => {
         if (fb[k] !== undefined) {
           local[k] = fb[k];
         } else if (Object.prototype.hasOwnProperty.call(fb, 'id')) {
-          // школа є в Firebase, але поле відсутнє = було явно знято (null→Firebase видалив)
-          // скидаємо в порожній стан тільки "очищувані" поля
           if (k === 'inspector' || k === 'photoMain' || k === 'inspectorHistory') local[k] = k === 'inspectorHistory' ? [] : null;
         }
       });
@@ -127,11 +141,11 @@ window.SOBStore = {
 
   /* ---- Заклади ---- */
   addSchool(s) { s.id = s.id || this.uid('sch'); if (s.serviced === undefined) s.serviced = true; window.SOB.schools.push(s); this.save(); return s; },
-  updateSchool(id, patch) { const s = window.SOB.schools.find(x => x.id === id); if (s) { Object.assign(s, patch); this.save(); } return s; },
+  updateSchool(id, patch) { const s = window.SOB.schools.find(x => x.id === id); if (s) { Object.assign(s, patch); this._markLocalEdit(id); this.save(); } return s; },
   /* Встановити головне фото закладу */
   setSchoolPhoto(schoolId, url, publicId) {
     const s = window.SOB.schools.find(x => x.id === schoolId);
-    if (s) { s.photoMain = { url, publicId, date: new Date().toISOString().slice(0,10) }; this.save(); this.logAudit('update','school',schoolId,'Головне фото оновлено'); }
+    if (s) { s.photoMain = { url, publicId, date: new Date().toISOString().slice(0,10) }; this._markLocalEdit(schoolId); this.save(); this.logAudit('update','school',schoolId,'Головне фото оновлено'); }
     return s;
   },
   /* Призначити/змінити відповідального інспектора */
@@ -143,6 +157,7 @@ window.SOBStore = {
     if (!s.inspectorHistory) s.inspectorHistory = [];
     if (prev) s.inspectorHistory.push({ key: prev, assignedUntil: new Date().toISOString().slice(0,10) });
     s.inspector = inspectorKey || '';   // '' замість null — Firebase не видаляє порожній рядок
+    this._markLocalEdit(schoolId);
     this.save();
     this.logAudit('update','school',schoolId,`Відповідальний змінено: ${prev||'—'} → ${inspectorKey||'—'}`);
     document.dispatchEvent(new CustomEvent('sob:synced'));
