@@ -8,8 +8,8 @@
    Project Settings → General → Your apps → Web API Key
    ============================================================ */
 
-const FIREBASE_API_KEY    = 'AIzaSyDxEY3y-PLACEHOLDER-REPLACE-ME'; // ← замінити!
-const FIREBASE_STORAGE_BUCKET = 'sob-c90ba.appspot.com';
+const FIREBASE_API_KEY    = 'AIzaSyCURW01X-T0GEeqOLPJ0CCFyZRtCQsiJ6o';
+const FIREBASE_STORAGE_BUCKET = 'sob-c90ba.firebasestorage.app';
 const STORAGE_BASE = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_STORAGE_BUCKET}/o`;
 
 window.SOBStorage = {
