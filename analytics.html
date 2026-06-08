@@ -79,6 +79,7 @@ Chart.defaults.animation   = false;
 
 let charts = {};
 let filterSchool = 'all';
+let filterPeriod = 'all'; /* preset id: all / month / prevmonth / quarter / year / today / week */
 
 function destroyCharts(){
   Object.values(charts).forEach(c=>{ try{ c.destroy(); }catch(e){} });
@@ -86,9 +87,15 @@ function destroyCharts(){
 }
 
 function calcData(){
+  const SD = window.SOBDate;
   const serviced = (S.schools||[]).filter(s=>s.serviced);
 
-  /* Загальна статистика (паспортні дані) */
+  /* Фільтр журнальних заходів за обраним периодом */
+  const allJournal = (window.SOB.schoolEvents||[]).filter(e=>e.status!=='cancelled');
+  const filteredJournal = SD ? SD.filterEvents(allJournal, filterPeriod) : allJournal;
+  const periodLabel = SD ? SD.presetLabel(filterPeriod) : (S.org.period);
+
+  /* Загальна статистика */
   const totEvents       = serviced.reduce((a,s)=>a+(s.events||0),0);
   const totParticipations = serviced.reduce((a,s)=>a+(s.participants||0),0);
   const totConsult      = serviced.reduce((a,s)=>a+(s.consultations||0),0);
@@ -137,7 +144,7 @@ function calcData(){
   const mParts    = mc.participants || []; /* охоплені учні */
 
   return { serviced, totEvents, totParticipations, totConsult, totStudents, totPrevention, totUnique, covPct, avgRating,
-           catStats, ranked, mLabels, mEvents, mParts, zrupStats, gunpStats };
+           catStats, ranked, mLabels, mEvents, mParts, zrupStats, gunpStats, periodLabel, filteredJournal };
 }
 
 function render(){
@@ -237,7 +244,7 @@ function render(){
     <div class="page-head">
       <div>
         <h1 class="page-title">Аналітика діяльності</h1>
-        <div class="page-sub">Зведені показники роботи СОБ · ${S.org.period}</div>
+        <div class="page-sub">Зведені показники роботи СОБ · ${d.periodLabel}</div>
       </div>
       <div class="row gap-8">
         <button class="btn btn-ghost" onclick="window.print()">${I.doc} Друк</button>
@@ -246,12 +253,16 @@ function render(){
     </div>
 
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center">
-      <span style="font-size:13px;color:var(--muted);font-weight:600">${I.filter} Фільтр за закладом:</span>
-      <select class="input" id="filterSchoolEl" style="max-width:300px">
+      <span style="font-size:13px;color:var(--muted);font-weight:600">${I.filter} Період:</span>
+      <select class="input" id="filterPeriodEl" style="max-width:200px">
+        ${(window.SOBDate?.presets||[]).map(p=>`<option value="${p.id}" ${filterPeriod===p.id?'selected':''}>${p.id==='month'?window.SOBDate.currentLabel:p.id==='prevmonth'?window.SOBDate.prevLabel:p.label}</option>`).join('')}
+      </select>
+      <span style="font-size:13px;color:var(--muted);font-weight:600">${I.filter} Заклад:</span>
+      <select class="input" id="filterSchoolEl" style="max-width:280px">
         <option value="all">— Усі заклади —</option>
         ${(S.schools||[]).filter(s=>s.serviced).map(s=>`<option value="${s.id}" ${filterSchool===s.id?'selected':''}>${s.name}</option>`).join('')}
       </select>
-      ${filterSchool!=='all'?`<button class="btn btn-ghost btn-sm" onclick="filterSchool='all';render()">Скинути</button>`:''}
+      ${filterSchool!=='all'||filterPeriod!=='all'?`<button class="btn btn-ghost btn-sm" onclick="filterSchool='all';filterPeriod='all';render()">Скинути</button>`:''}
     </div>
 
     <div class="an-kpis">${kpiHtml}</div>
@@ -292,6 +303,7 @@ function render(){
     </div>`;
 
   document.getElementById('filterSchoolEl')?.addEventListener('change', e=>{ filterSchool=e.target.value; render(); });
+  document.getElementById('filterPeriodEl')?.addEventListener('change', e=>{ filterPeriod=e.target.value; render(); });
 
   /* Графіки */
   const gridColor='#EEF3FA';

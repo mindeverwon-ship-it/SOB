@@ -13,7 +13,7 @@ window.SOB = {
     abbr: "СОБ",
     district: "Запорізький район",
     region: "Запорізька область",
-    period: "Травень 2026",
+    period: (function(){ const mn=['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень']; const d=new Date(); return mn[d.getMonth()]+' '+d.getFullYear(); })(),
     periodOptions: (function(){ const mn=['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'],r=[];for(let y=2024;y<=2050;y++)for(let m=0;m<12;m++)r.push(mn[m]+' '+y);return r; })(),
     center: { lat: 47.8500, lng: 35.4000 },
     zoom: 9,
@@ -506,3 +506,77 @@ window.SOBAuth = {
   },
   canEdit(){ const r = this.current().role; return r==='admin' || r==='inspector'; }
 };
+
+/* ============================================================
+   SOBDate — єдине джерело дат для всієї платформи
+   ============================================================ */
+window.SOBDate = (function(){
+  const MN_FULL  = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+  const MN_SHORT = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+
+  function now(){ return new Date(); }
+  function ym(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+  function ymStr(d){ return MN_FULL[d.getMonth()]+' '+d.getFullYear(); }
+
+  const today = now();
+  const curYM  = ym(today);
+  const curY   = today.getFullYear();
+  const curM   = today.getMonth(); /* 0-based */
+
+  /* Quarter boundaries */
+  const qStart = new Date(curY, Math.floor(curM/3)*3, 1);
+
+  /* First day of current month */
+  const monthStart = curY+'-'+String(curM+1).padStart(2,'0')+'-01';
+  /* Today ISO */
+  const todayISO   = today.toISOString().slice(0,10);
+
+  /* prev month */
+  const prevDate = new Date(curY, curM-1, 1);
+  const prevYM   = ym(prevDate);
+  const prevStr  = ymStr(prevDate);
+
+  return {
+    MN_FULL, MN_SHORT,
+    now, ym, ymStr,
+    today: todayISO,
+    currentYM:   curYM,           /* "2026-06" */
+    currentLabel: ymStr(today),   /* "Червень 2026" */
+    prevYM,
+    prevLabel:   prevStr,
+
+    /* period labels for selectors */
+    presets: [
+      { id:'today',     label:'Сьогодні',        from: todayISO,  to: todayISO },
+      { id:'week',      label:'Поточний тиждень', from: (()=>{ const d=new Date(today); d.setDate(d.getDate()-d.getDay()+1); return d.toISOString().slice(0,10); })(), to: todayISO },
+      { id:'month',     label:'Поточний місяць',  ym:  curYM },
+      { id:'prevmonth', label:'Попередній місяць',ym:  prevYM },
+      { id:'quarter',   label:'Поточний квартал', from: qStart.toISOString().slice(0,10), to: todayISO },
+      { id:'year',      label:'Поточний рік',     from: curY+'-01-01', to: todayISO },
+      { id:'all',       label:'Весь час',         all: true },
+    ],
+
+    /* filter an events array by preset id */
+    filterEvents(evs, presetId, customFrom, customTo){
+      if(presetId === 'all' || !presetId) return evs;
+      const p = this.presets.find(x=>x.id===presetId);
+      if(!p) return evs;
+      const from = customFrom || p.from || (p.ym ? p.ym+'-01' : null);
+      const to   = customTo   || p.to   || (p.ym ? p.ym+'-31' : null);
+      return evs.filter(e=>{
+        if(!e.date) return false;
+        if(from && e.date < from) return false;
+        if(to   && e.date > to)   return false;
+        return true;
+      });
+    },
+
+    /* human-readable label for a preset */
+    presetLabel(presetId){
+      if(presetId==='month') return this.currentLabel;
+      if(presetId==='prevmonth') return this.prevLabel;
+      const p = this.presets.find(x=>x.id===presetId);
+      return p ? p.label : presetId;
+    }
+  };
+})();

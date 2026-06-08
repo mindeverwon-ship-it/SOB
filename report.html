@@ -83,23 +83,18 @@ const typeLabel = id => {
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const fmtDate = iso => { try{ const d=new Date(iso); return d.getDate()+' '+MN_SHORT[d.getMonth()]+' '+d.getFullYear(); }catch(e){ return iso||''; } };
 
-/* ── period options ── */
+const SD = window.SOBDate;
+
+/* ── period selector HTML ── */
 function buildPeriodOpts() {
-  const opts = ['<option value="">Весь час</option>'];
-  for (let y = 2025; y <= 2027; y++)
-    for (let m = 0; m < 12; m++)
-      opts.push(`<option value="${y}-${String(m+1).padStart(2,'0')}">${MN_FULL[m]} ${y}</option>`);
-  return opts.join('');
-}
-/* detect default period from org.period */
-function defaultPeriod() {
-  const p = (S.org.period||'').split(' ');
-  const mi = MN_FULL.indexOf(p[0]); const y = parseInt(p[1]);
-  if (mi>=0 && y) return y+'-'+String(mi+1).padStart(2,'0');
-  return '';
+  const presets = SD?.presets || [];
+  return presets.map(p => {
+    const lbl = p.id==='month' ? SD.currentLabel : p.id==='prevmonth' ? SD.prevLabel : p.label;
+    return `<option value="${p.id}">${lbl}</option>`;
+  }).join('');
 }
 
-let filterPeriod = defaultPeriod();
+let filterPeriod = 'month'; /* default = поточний місяць */
 let filterSchool = 'all';
 
 /* ── main data builder ── */
@@ -109,9 +104,7 @@ function buildData() {
   const allGal   = (S.gallery||[]);
 
   /* apply period filter to journal events */
-  const journalEvs = filterPeriod
-    ? allEvs.filter(e => e.date && e.date.startsWith(filterPeriod))
-    : allEvs;
+  const journalEvs = SD ? SD.filterEvents(allEvs, filterPeriod) : allEvs;
 
   /* apply school filter */
   const schools = filterSchool === 'all' ? serviced : serviced.filter(s => s.id === filterSchool);
@@ -164,7 +157,7 @@ function buildData() {
 
   /* ── auto conclusion ── */
   const periodLabel = filterPeriod
-    ? (()=>{ const [y,m] = filterPeriod.split('-'); return MN_FULL[+m-1]+' '+y; })()
+    ? (SD ? SD.presetLabel(filterPeriod) : filterPeriod)
     : 'загальний період';
   const conclusion = makeConclusion({ rows, totE, totJEvs, totP, active, inactive, topThemes, topWorkers, totPh, periodLabel });
 
