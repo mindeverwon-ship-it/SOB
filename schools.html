@@ -37,7 +37,7 @@
 <div class="app" id="shell"></div>
 
 <script src="js/data.js?v=5"></script>
-<script src="js/store.js?v=9"></script>
+<script src="js/store.js?v=10"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="assets/image-slot.js"></script>
 <script>
@@ -132,6 +132,9 @@ document.getElementById('mineToggle')?.addEventListener('click', () => {
   document.getElementById('mineToggle').classList.toggle('on', onlyMine);
   render();
 });
+
+// Перемальовуємо після Firebase-синхронізації (щоб override точно застосувався)
+document.addEventListener('sob:synced', render);
 
 render();
 </script>

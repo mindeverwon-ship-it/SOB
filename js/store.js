@@ -48,6 +48,10 @@ window.SOBStore = {
   _getLocalEdits() { return {}; },
 
   _mergeSchools(savedSchools, fromCloud) {
+    // Firebase повертає масиви як об'єкти {"0":{...},"1":{...}} — нормалізуємо
+    if (savedSchools && !Array.isArray(savedSchools) && typeof savedSchools === 'object') {
+      savedSchools = Object.values(savedSchools);
+    }
     if (!Array.isArray(savedSchools)) return;
     savedSchools.forEach(fb => {
       if (!fb) return;
