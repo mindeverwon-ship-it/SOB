@@ -247,7 +247,7 @@ function render() {
     const sCount = list.reduce((s,[k])=>s+schoolsCount(k),0);
     const eCount = list.reduce((s,[k])=>s+eventsCount(k),0);
     const isZrup = cat === 'ЗРУП';
-    const label = isZrup ? 'ССОБ Запорізького РУВП (ЗРУП)' : 'СО СОБ ГУНП у Запорізькій обл.';
+    const label = isZrup ? 'ССОБ Запорізького РУП (ЗРУП)' : 'СО СОБ ГУНП у Запорізькій обл.';
     return `
       <div class="cat-section-head ${cat.toLowerCase()}">
         <div class="csh-ic">${I.users}</div>
