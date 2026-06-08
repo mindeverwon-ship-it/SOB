@@ -7,7 +7,7 @@
 
 const CLOUDINARY_CLOUD  = 'dvfmyfoce';
 const CLOUDINARY_PRESET = 'tfjb1hdt';
-const CLOUDINARY_URL    = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/upload`;
+const CLOUDINARY_URL    = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`;
 
 window.SOBStorage = {
 
