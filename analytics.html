@@ -130,14 +130,14 @@ function calcData(){
   /* Топ закладів */
   const ranked = [...serviced].sort((a,b)=>(b.events||0)-(a.events||0));
 
-  /* Динаміка (заглушка поки немає journale) */
-  const MN=['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
-  const now=new Date();
-  const mLabels=[];
-  for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); mLabels.push(MN[d.getMonth()]); }
+  /* Динаміка по місяцях — з реальних даних data.js */
+  const eb = S.charts?.eventsByMonth || {};
+  const mLabels   = eb.labels       || [];
+  const mEvents   = eb.events       || [];
+  const mParts    = eb.participants || []; /* охоплені учні (col AE) */
 
   return { serviced, totEvents, totParticipations, totConsult, totStudents, totPrevention, totUnique, covPct, avgRating,
-           catStats, ranked, mLabels, zrupStats, gunpStats };
+           catStats, ranked, mLabels, mEvents, mParts, zrupStats, gunpStats };
 }
 
 function render(){
@@ -154,19 +154,19 @@ function render(){
       <div class="s">профілактичних: ${d.totPrevention}</div>
     </div>
     <div class="an-kpi anim anim-2">
-      <div class="l">Всього участей у заходах</div>
-      <div class="v tnum">${F(d.totParticipations)}</div>
-      <div class="s">сума по всіх заходах</div>
+      <div class="l">Охоплено учнів (офіційний показник)</div>
+      <div class="v tnum" style="color:var(--green-600)">${F(d.totParticipations)}</div>
+      <div class="s">сума по колонці «охоплені учні» (∑ AE)</div>
     </div>
     <div class="an-kpi anim anim-3">
-      <div class="l">Унікально охоплено учнів</div>
-      <div class="v tnum" style="color:var(--green-600)">${F(d.totUnique)}</div>
-      <div class="s">з ${F(d.totStudents)} учнів у ЗЗСО</div>
+      <div class="l">Унікально охоплено (розрах.)</div>
+      <div class="v tnum">${F(d.totUnique)}</div>
+      <div class="s">з ${F(d.totStudents)} учнів у ЗЗСО · ${d.covPct}%</div>
     </div>
     <div class="an-kpi anim anim-4">
       <div class="l">Відсоток охоплення</div>
       <div class="v tnum" style="color:${d.covPct>=70?'var(--green-600)':d.covPct>=40?'var(--gold-600)':'var(--red-500)'}">${d.covPct}%</div>
-      <div class="s">від загальної кількості учнів</div>
+      <div class="s">від загальної кількості учнів у ЗЗСО</div>
     </div>
     <div class="an-kpi anim anim-5">
       <div class="l">Консультацій</div>
@@ -260,7 +260,7 @@ function render(){
 
     <div class="card card-pad anim" style="margin-bottom:20px">
       <div class="card-head">
-        <div class="section-title">${I.shield} Заходи за 22 напрямками</div>
+        <div class="section-title">${I.shield} Заходи за 16 тематичними напрямками</div>
         <span class="muted" style="font-size:13px">всього: ${F(d.totEvents)}</span>
       </div>
       <div class="cat-grid">${catHtml}</div>
@@ -298,23 +298,35 @@ function render(){
   const noAxes={ grid:{display:false}, border:{display:false} };
   const yAxe={ beginAtZero:true, grid:{color:gridColor}, border:{display:false}, ticks:{precision:0} };
 
-  /* Лінійний — динаміка (поки статика по місяцях) */
-  const evData = d.serviced.length ? [0,0,0,0,0,d.totEvents] : [0,0,0,0,0,0];
+  /* Лінійний — реальна динаміка по місяцях з data.js */
   charts.line = new Chart(document.getElementById('cvLine'),{
     type:'line',
     data:{
       labels: d.mLabels,
-      datasets:[{
-        label:'Заходи', data:evData,
-        borderColor:'#1F59DD', backgroundColor:ctx=>{
-          const g=ctx.chart.ctx.createLinearGradient(0,0,0,280);
-          g.addColorStop(0,'rgba(31,89,221,.22)'); g.addColorStop(1,'rgba(31,89,221,0)'); return g;
-        }, fill:true, tension:.4, borderWidth:3, pointRadius:4, pointBackgroundColor:'#1F59DD'
-      }]
+      datasets:[
+        {
+          label:'Заходи (всього)', data: d.mEvents,
+          borderColor:'#1F59DD', backgroundColor:ctx=>{
+            const g=ctx.chart.ctx.createLinearGradient(0,0,0,280);
+            g.addColorStop(0,'rgba(31,89,221,.22)'); g.addColorStop(1,'rgba(31,89,221,0)'); return g;
+          }, fill:true, tension:.4, borderWidth:3, pointRadius:4, pointBackgroundColor:'#1F59DD', yAxisID:'y'
+        },
+        {
+          label:'Охоплено учнів', data: d.mParts,
+          borderColor:'#1AA56C', backgroundColor:'transparent',
+          tension:.4, borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#1AA56C',
+          borderDash:[5,3], yAxisID:'y1'
+        }
+      ]
     },
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{position:'bottom',labels:{boxWidth:10,usePointStyle:true,padding:16}} },
-      scales:{ y:yAxe, x:noAxes } }
+      scales:{
+        y:  { ...yAxe, position:'left',  title:{display:true,text:'Заходи',font:{size:11}} },
+        y1: { ...yAxe, position:'right', title:{display:true,text:'Охоплених учнів',font:{size:11}}, grid:{display:false} },
+        x:  noAxes
+      }
+    }
   });
 
   if(topCats.length){

@@ -276,7 +276,7 @@ document.getElementById('content').innerHTML = `
   <div style="margin-top:20px" class="grid-2">
     <div class="card card-pad anim anim-5">
       <div class="card-head">
-        <div class="section-title">${I.users} Охоплення аудиторії</div>
+        <div class="section-title">${I.users} Охоплені учні по місяцях</div>
         <span class="tag green">${F(eventsThisMonth.reduce((s,e)=>s+(e.participants||0),0))} цього місяця</span>
       </div>
       <div class="chart-wrap" style="height:220px"><canvas id="barChart"></canvas></div>
@@ -330,41 +330,61 @@ const _charts = [];
 /* ── Авторозрахунок даних графіків ── */
 (function(){
   const evs = S.schoolEvents || [];
-  const mn = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
-  const d = new Date();
-  // останні 5 місяців
-  const months5 = [];
-  for(let i=4; i>=0; i--){
-    const dt = new Date(d.getFullYear(), d.getMonth()-i, 1);
-    months5.push({ key: `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`, label: mn[dt.getMonth()] });
+  /* Динаміка — пріоритет: агреговані дані з Excel (charts.eventsByMonth),
+     якщо є платформні заходи — рахуємо з журналу, інакше — статичні дані */
+  const eb = S.charts?.eventsByMonth || {};
+  let lineLabels, lineEvents, lineParts;
+  if (evs.length > 0) {
+    const mn = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+    const d = new Date();
+    const months5 = [];
+    for(let i=4; i>=0; i--){
+      const dt = new Date(d.getFullYear(), d.getMonth()-i, 1);
+      months5.push({ key: `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`, label: mn[dt.getMonth()] });
+    }
+    lineLabels = months5.map(m=>m.label);
+    lineEvents  = months5.map(m => evs.filter(e=>e.date&&e.date.startsWith(m.key)).length);
+    lineParts   = months5.map(m => evs.filter(e=>e.date&&e.date.startsWith(m.key)).reduce((s,e)=>s+(e.participants||0),0));
+  } else {
+    lineLabels = eb.labels       || [];
+    lineEvents  = eb.events       || [];
+    lineParts   = eb.participants || [];
   }
-  const prevTypes = ['prevention','mine','evacuation','cyber','buling','legal'];
-  const lineEvents     = months5.map(m => evs.filter(e=>e.date&&e.date.startsWith(m.key)).length);
-  const linePrevention = months5.map(m => evs.filter(e=>e.date&&e.date.startsWith(m.key)&&prevTypes.includes(e.type)).length);
 
   _charts.push(new Chart(document.getElementById('lineChart'), {
     type: 'line',
-    data: { labels: months5.map(m=>m.label), datasets: [
-      { label: 'Заходи', data: lineEvents, borderColor: '#1F59DD', backgroundColor: (ctx)=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,270);g.addColorStop(0,'rgba(31,89,221,.20)');g.addColorStop(1,'rgba(31,89,221,0)');return g;}, fill: true, tension: .4, borderWidth: 3, pointBackgroundColor: '#1F59DD', pointRadius: 4, pointHoverRadius: 6 },
-      { label: 'Профілактика', data: linePrevention, borderColor: '#FFC42E', backgroundColor: 'transparent', fill: false, tension: .4, borderWidth: 3, pointBackgroundColor: '#FFC42E', pointRadius: 4, pointHoverRadius: 6 },
+    data: { labels: lineLabels, datasets: [
+      { label: 'Заходи', data: lineEvents, borderColor: '#1F59DD', backgroundColor: (ctx)=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,270);g.addColorStop(0,'rgba(31,89,221,.20)');g.addColorStop(1,'rgba(31,89,221,0)');return g;}, fill: true, tension: .4, borderWidth: 3, pointBackgroundColor: '#1F59DD', pointRadius: 4, pointHoverRadius: 6, yAxisID:'y' },
+      { label: 'Охоплено учнів', data: lineParts, borderColor: '#1AA56C', backgroundColor: 'transparent', fill: false, tension: .4, borderWidth: 2.5, pointBackgroundColor: '#1AA56C', pointRadius: 4, pointHoverRadius: 6, borderDash:[5,3], yAxisID:'y1' },
     ]},
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, padding: 18 } } }, scales: { y: { beginAtZero: true, grid: { color: '#EEF3FA' }, border: { display: false } }, x: { grid: { display: false }, border: { display: false } } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, padding: 18 } } }, scales: { y: { beginAtZero: true, grid: { color: '#EEF3FA' }, border: { display: false }, position:'left' }, y1: { beginAtZero: true, grid: { display: false }, border: { display: false }, position:'right' }, x: { grid: { display: false }, border: { display: false } } } }
   }));
 
-  // Donut — розбивка за типами
-  const byType = {};
-  evs.forEach(e=>{ const k=e.type||'other'; byType[k]=(byType[k]||0)+1; });
-  const typeColors = { prevention:'#1B4FD1', cyber:'#2C66E6', buling:'#FFC824', legal:'#1E9E6A', mine:'#E84545', evacuation:'#FF7A00', other:'#93A0B8' };
-  const typeLabels = S.eventTypes ? Object.fromEntries((S.eventTypes||[]).map(t=>[t.id,t.label])) : {};
-  const dtLabels = Object.keys(byType).map(k=>typeLabels[k]||k);
-  const dtValues = Object.keys(byType).map(k=>byType[k]);
-  const dtColors = Object.keys(byType).map(k=>typeColors[k]||'#93A0B8');
+  // Donut — розбивка за напрямками
+  let dtLabels, dtValues, dtColors;
+  if (evs.length > 0) {
+    const byType = {};
+    evs.forEach(e=>{ const k=e.type||'other'; byType[k]=(byType[k]||0)+1; });
+    const typeColors = { prevention:'#1B4FD1', cyber:'#2C66E6', buling:'#FFC824', legal:'#1E9E6A', mine:'#E84545', evacuation:'#FF7A00', other:'#93A0B8' };
+    const typeLabels = S.eventTypes ? Object.fromEntries((S.eventTypes||[]).map(t=>[t.id,t.label])) : {};
+    dtLabels = Object.keys(byType).map(k=>typeLabels[k]||k);
+    dtValues = Object.keys(byType).map(k=>byType[k]);
+    dtColors = Object.keys(byType).map(k=>typeColors[k]||'#93A0B8');
+  } else {
+    /* використовуємо агреговані дані з 16 тематичних напрямків */
+    const catStats = window.calcCategoryStats ? window.calcCategoryStats() : {};
+    const topCats = (S.eventCategories||[]).map(c=>({label:c.short,color:c.color,count:catStats[c.id]||0}))
+      .filter(c=>c.count>0).sort((a,b)=>b.count-a.count).slice(0,8);
+    dtLabels = topCats.map(t=>t.label);
+    dtValues = topCats.map(t=>t.count);
+    dtColors = topCats.map(t=>t.color);
+  }
   const legendEl = document.getElementById('chartLegend');
   if(legendEl){
     if(dtLabels.length){
       legendEl.innerHTML = dtLabels.map((l,i)=>`<div class="legend-item"><span class="sw" style="background:${dtColors[i]}"></span>${l}<b>${dtValues[i]}</b></div>`).join('');
     } else {
-      legendEl.innerHTML = `<div style="color:var(--muted);font-size:13px">Дані з'являться після додавання заходів</div>`;
+      legendEl.innerHTML = `<div style="color:var(--muted);font-size:13px">Немає даних</div>`;
     }
   }
   _charts.push(new Chart(document.getElementById('doughnutChart'), {
@@ -373,12 +393,12 @@ const _charts = [];
     options: { responsive: true, maintainAspectRatio: false, cutout: '66%', plugins: { legend: { display: false } } }
   }));
 
-  // Bar — охоплення аудиторії (учні/педагоги/батьки за audience полем)
-  const audMap = { students:0, teachers:0, parents:0 };
-  evs.forEach(e=>{ const a=(e.audience||'').toLowerCase(); if(a.includes('учн')||a.includes('клас')) audMap.students+=(e.participants||0); else if(a.includes('педаг')||a.includes('вчит')) audMap.teachers+=(e.participants||0); else if(a.includes('батьк')) audMap.parents+=(e.participants||0); else audMap.students+=(e.participants||0); });
+  // Bar — охоплені учні по місяцях
+  const barData = (eb.participants && eb.labels) ? eb.participants : lineParts;
+  const barLabels = (eb.labels) ? eb.labels : lineLabels;
   _charts.push(new Chart(document.getElementById('barChart'), {
     type: 'bar',
-    data: { labels: ['Учні','Педагоги','Батьки'], datasets: [{ data: [audMap.students,audMap.teachers,audMap.parents], backgroundColor: ['#1F59DD','#2E6BF0','#FFC42E'], borderRadius: 9, maxBarThickness: 76 }] },
+    data: { labels: barLabels, datasets: [{ label:'Охоплено учнів', data: barData, backgroundColor: barLabels.map((_,i)=> i===barLabels.length-1 ? '#1AA56C' : '#1F59DD'), borderRadius: 9, maxBarThickness: 76 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#EEF3FA' }, border: { display: false } }, x: { grid: { display: false }, border: { display: false } } } }
   }));
 })();

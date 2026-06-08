@@ -37,16 +37,17 @@ window.SOB = {
     { label: "Участь у педрадах",          value: 12 },
     { label: "Консультації",               value: 37 },
     { label: "Учнів у ЗЗСО (всього)",      value: 2869 },
-    { label: "Евакуацій (повітр. тривога)", value: 94 },
+    { label: "Евакуацій (повітр. тривога)", value: 362 },
     { label: "Заходи з ювен. превенцією",  value: 8 },
   ],
 
   /* --- Графіки --- */
   charts: {
     eventsByMonth: {
-      labels: ["Січ", "Лют", "Бер", "Кві", "Тра"],
-      events:     [174, 148, 168, 200, 244],
-      prevention: [32,  5,   18,  6,   44],
+      labels:       ["Січ", "Лют", "Бер", "Кві", "Тра"],
+      events:       [174, 148, 168, 200, 244],
+      participants: [2113, 2368, 3461, 4745, 4690], /* охоплені учні (col AE) — головний показник */
+      evacuation:   [40, 37, 73, 104, 108],
     },
     byType: [
       { label: "Профілактичні бесіди", value: 0, color: "#1B4FD1" },
@@ -79,7 +80,7 @@ window.SOB = {
     "erm": { name: "Єрмак Марина",      rank: "Інспектор ССОБ",           category: "ЗРУП", phone: "", phone2: "", email: "", telegram: "", department: "ССОБ ЗРУП",    district: "Матвіївська ТГ",         schools: ["sch-128"],           status: "active", appointedAt: "2021-09-01", notes: "" },
   },
 
-  /* --- Категорії заходів (структура звітної таблиці) --- */
+  /* --- Категорії заходів (16 тематичних напрямків з таблиці, колонки E–T) --- */
   eventCategories: [
     { id: "pdd",       label: "Правила дорожнього руху",                          short: "ПДД",         color: "#1B4FD1", icon: "car" },
     { id: "bulying",   label: "Протидія булінгу",                                  short: "Булінг",      color: "#7C3AED", icon: "shield" },
@@ -97,12 +98,15 @@ window.SOB = {
     { id: "porn",      label: "Попередження втягнення дітей у розповсюдження протиправного контенту", short: "Контент", color: "#9F1239", icon: "warning" },
     { id: "suicide",   label: "Запобігання суїцидальної поведінки серед дітей",   short: "Суїцид",      color: "#7C3AED", icon: "heart" },
     { id: "tolerance", label: "Підвищення рівня обізнаності щодо толерантності та недискримінації", short: "Толерантність", color: "#0891B2", icon: "users" },
-    { id: "evacuation",label: "Здійснено евакуацій під час надзвичайних ситуацій (повітряна тривога)", short: "Евакуації", color: "#DC2626", icon: "alert" },
-    { id: "training",  label: "Проведено тренувань та навчань з евакуації",        short: "Тренування",  color: "#EA580C", icon: "shield" },
-    { id: "dpp",       label: "Заходи спільно з ДПП (патрульна поліція)",          short: "Спільно ДПП", color: "#1D4ED8", icon: "shield" },
-    { id: "juvenile",  label: "Заходи спільно з ювенальною превенцією",            short: "Ювенальна",   color: "#0F766E", icon: "users" },
-    { id: "parents",   label: "Участь у батьківських зборах",                      short: "Батьківські збори", color: "#15803D", icon: "users" },
-    { id: "teachers",  label: "Участь у нарадах з педагогічним колективом",        short: "Педради",     color: "#1D4ED8", icon: "building" },
+  ],
+
+  /* --- Показники співпраці (колонки AA–AD, X–Y) — НЕ тематичні напрямки заходів --- */
+  collaborationMetrics: [
+    { id: "evacuation", label: "Здійснено евакуацій під час надзвичайних ситуацій (повітряна тривога)", short: "Евакуації",     color: "#DC2626" },
+    { id: "dpp",        label: "Заходи спільно з ДПП (патрульна поліція)",          short: "Спільно ДПП",  color: "#1D4ED8" },
+    { id: "juvenile",   label: "Заходи спільно з ювенальною превенцією",            short: "Ювенальна",    color: "#0F766E" },
+    { id: "parents",    label: "Участь у батьківських зборах",                      short: "Батьк. збори", color: "#15803D" },
+    { id: "teachers",   label: "Участь у нарадах з педагогічним колективом",        short: "Педради",      color: "#1D4ED8" },
   ],
 
   /* --- Статистика заходів по місяцях (структура для звітів) --- */
@@ -115,11 +119,11 @@ window.SOB = {
     { id: "sch-3", serviced: false, name: "Мар\'ївська гімназія \"Оберіг\" Біленьківської сільської ради Запорізького району Запорізької області", type: "Гімназія", city: "с. Мар\'ївка", address: "с. Мар\'ївка, вул. Шкільна, 14", lat: 47.690686, lng: 34.980938 },
     { id: "sch-4", serviced: false, name: "Вільнянська гімназія №1 Вільнянської міської ради Запорізької області", type: "Гімназія", city: "м. Вільнянськ", address: "м. Вільнянськ, вул. Космодем\'янської, 3-А", lat: 47.943488, lng: 35.427093 },
     { id: "sch-5", serviced: true,  name: "Вільнянський ліцей \"Світоч\" Вільнянської міської ради Запорізької області", type: "Ліцей", city: "м. Вільнянськ", address: "м. Вільнянськ, вул. Бочарова, 14", lat: 47.949582, lng: 35.444027, inspector: "pol", tg: "Вільнянська ТГ", director: "", phone: "", students: 460, events: 90, prevention: 20, participants: 796, consultations: 4, rating: 60,
-      monthlyData: { pdd:10, bulying:2, narcotic:1, traffic:0, strangers:7, public:0, patriot:15, internet:6, law:1, crime:4, domviol:1, mine:11, other:30, porn:2, suicide:0, tolerance:0, evacuation:0, training:0, dpp:35, juvenile:1, parents:20, teachers:1 } },
+      monthlyData: { pdd:10, bulying:2, narcotic:1, traffic:0, strangers:7, public:0, patriot:15, internet:6, law:1, crime:4, domviol:1, mine:11, other:30, porn:2, suicide:0, tolerance:0, evacuation:35 } },
     { id: "sch-6", serviced: true,  name: "Ліцей \"Потенціал\" Вільнянської міської ради Запорізької області", type: "Ліцей", city: "м. Вільнянськ", address: "м. Вільнянськ, пров. Новий, 7", lat: 47.94103, lng: 35.43488, inspector: "oli", tg: "Вільнянська ТГ", director: "", phone: "", students: 352, events: 163, prevention: 32, participants: 3743, consultations: 8, rating: 85,
-      monthlyData: { pdd:14, bulying:5, narcotic:3, traffic:0, strangers:11, public:8, patriot:23, internet:25, law:7, crime:12, domviol:0, mine:9, other:43, porn:1, suicide:0, tolerance:2, evacuation:22, training:0, dpp:111, juvenile:1, parents:32, teachers:1 } },
+      monthlyData: { pdd:14, bulying:5, narcotic:3, traffic:0, strangers:11, public:8, patriot:23, internet:25, law:7, crime:12, domviol:0, mine:9, other:43, porn:1, suicide:0, tolerance:2, evacuation:111 } },
     { id: "sch-7", serviced: true,  name: "Ліцей \"Успіх\" Вільнянської міської ради Запорізької області", type: "Ліцей", city: "м. Вільнянськ", address: "м. Вільнянськ, вул. Бочарова, 11", lat: 47.934743, lng: 35.428429, inspector: "dan", tg: "Вільнянська ТГ", director: "", phone: "", students: 459, events: 159, prevention: 21, participants: 1826, consultations: 5, rating: 75,
-      monthlyData: { pdd:14, bulying:5, narcotic:3, traffic:0, strangers:17, public:11, patriot:20, internet:12, law:10, crime:13, domviol:2, mine:19, other:30, porn:1, suicide:0, tolerance:2, evacuation:12, training:0, dpp:62, juvenile:0, parents:21, teachers:2 } },
+      monthlyData: { pdd:14, bulying:5, narcotic:3, traffic:0, strangers:17, public:11, patriot:20, internet:12, law:10, crime:13, domviol:2, mine:19, other:30, porn:1, suicide:0, tolerance:2, evacuation:62 } },
     { id: "sch-8", serviced: false, name: "Новогупалівська гімназія Вільнянської міської ради Запорізької області", type: "Гімназія", city: "с. Новогупалівка", address: "с. Новогупалівка, вул. Шкільна, 25", lat: 48.024775, lng: 35.426808 },
     { id: "sch-9", serviced: false, name: "Комунальний заклад загальної середньої освіти \"Новозапорізька гімназія \"СМАРТ\" Долинської сільської ради Запорізького району Запорізької області", type: "Гімназія", city: "с. Нове", address: "с. Нове Запоріжжя, вул. Першотравнева, 50", lat: 47.828987, lng: 34.93395 },
     { id: "sch-10", serviced: false, name: "Комунальний заклад загальної середньої освіти \"Розумівська гімназія \"Темп\" Долинської сільської ради Запорізького району Запорізької області", type: "Гімназія", city: "с. Розумівка", address: "с. Розумівка, вул. Кузнечна, 3а", lat: 47.754147, lng: 35.138182 },
@@ -238,11 +242,11 @@ window.SOB = {
     { id: "sch-123", serviced: false, name: "Новотавричеська гімназія Комишуваської селищної ради", type: "Гімназія", city: "Новотавричеська", address: "Новотавричеська, вул. Шкільна, 97", lat: 47.814689, lng: 35.456596 },
     { id: "sch-124", serviced: false, name: "Яснополянська гімназія Комишуваської селищної ради", type: "Гімназія", city: "Яснополянська", address: "Яснополянська, вул. Ювілейна, 10", lat: 47.810037, lng: 35.752036 },
     { id: "sch-125", serviced: true,  name: "Комунальний заклад загальної середньої освіти \"Балабинський ліцей \"Престиж\" Кушугумської селищної ради Запорізького району Запорізької області", type: "Ліцей", city: "Балабине", address: "Балабине, вул. Престижна, 2-А", lat: 47.74701, lng: 35.21474, inspector: "lad", tg: "Кушугумська ТГ", director: "", phone: "", students: 617, events: 212, prevention: 101, participants: 7717, consultations: 12, rating: 92,
-      monthlyData: { pdd:11, bulying:11, narcotic:2, traffic:0, strangers:9, public:1, patriot:37, internet:20, law:0, crime:15, domviol:7, mine:14, other:84, porn:1, suicide:0, tolerance:0, evacuation:0, training:0, dpp:101, juvenile:0, parents:22, teachers:4 } },
+      monthlyData: { pdd:11, bulying:11, narcotic:2, traffic:0, strangers:9, public:1, patriot:37, internet:20, law:0, crime:15, domviol:7, mine:14, other:84, porn:1, suicide:0, tolerance:0, evacuation:101 } },
     { id: "sch-126", serviced: false, name: "Комунальний заклад загальної середньої освіти \"Кушугумська гімназія \"Інтелект\" Кушугумської селищної ради Запорізького району Запорізької області", type: "Гімназія", city: "Кушугум", address: "Кушугум, вул. Шевченка, 71", lat: 47.71384, lng: 35.20793 },
     { id: "sch-127", serviced: false, name: "Комунальний заклад загальної середньої освіти \"Малокатеринівська гімназія \"Мрія\" Кушугумської селищної ради Запорізького району Запорізької області", type: "Гімназія", city: "Малокатеринівка", address: "Малокатеринівка, вулиця Юності, 33", lat: 47.655978, lng: 35.256694 },
     { id: "sch-128", serviced: true,  name: "Опорний заклад освіти \"Матвіївський загальноосвітній навчально-виховний комплекс \"Всесвіт\" Матвіївської сільської ради", type: "НВК", city: "Матвіївка", address: "Матвіївка, вул. Центральна, 73а", lat: 47.900052, lng: 35.290742, inspector: "erm", tg: "Матвіївська ТГ", director: "", phone: "", students: 449, events: 36, prevention: 21, participants: 2089, consultations: 3, rating: 65,
-      monthlyData: { pdd:1, bulying:0, narcotic:1, traffic:0, strangers:0, public:0, patriot:5, internet:4, law:2, crime:8, domviol:0, mine:6, other:9, porn:0, suicide:0, tolerance:0, evacuation:0, training:0, dpp:21, juvenile:2, parents:12, teachers:1 } },
+      monthlyData: { pdd:1, bulying:0, narcotic:1, traffic:0, strangers:0, public:0, patriot:5, internet:4, law:2, crime:8, domviol:0, mine:6, other:9, porn:0, suicide:0, tolerance:0, evacuation:21 } },
     { id: "sch-129", serviced: false, name: "Вільноандріївська початкова школа Михайлівської сільської ради Запорізького району Запорізької області", type: "Школа", city: "Михайлівка", address: "Михайлівка, вул. Дніпровська, 84Б", lat: 47.961522, lng: 35.144457 },
     { id: "sch-130", serviced: false, name: "Люцернянський ліцей Михайлівської сільської ради Запорізького району Запорізької області", type: "Ліцей", city: "с. Люцерна", address: "с. Люцерна, вул. Шкільна, 1Е", lat: 47.924993, lng: 35.249742 },
     { id: "sch-131", serviced: false, name: "Опорний заклад Михайлівський ліцей імені О.Т.Слободчикова Михайлівської сільської ради Запорізького району Запорізької області", type: "Ліцей", city: "Михайлівка", address: "Михайлівка, вул. Слободчикова, 40", lat: 47.952931, lng: 35.256274 },
@@ -250,7 +254,7 @@ window.SOB = {
     { id: "sch-133", serviced: false, name: "Антонівська гімназія Михайло-Лукашівської сільської ради Запорізької області", type: "Гімназія", city: "с. Антонівка", address: "с. Антонівка, вул. Центральна, 27", lat: 47.968745, lng: 35.680333 },
     { id: "sch-134", serviced: false, name: "Максимівський ліцей Михайло-Лукашівської сільської ради Запорізької області", type: "Ліцей", city: "с. Максимівка", address: "с. Максимівка, вул. Шкільна, 5", lat: 48.049411, lng: 35.662076 },
     { id: "sch-135", serviced: true,  name: "Михайло-Лукашівський ліцей Михайло-Лукашівської сільської ради Запорізької області", type: "Ліцей", city: "Михайло-Лукашеве", address: "Михайло-Лукашеве, вул. Космічна, 55", lat: 47.956941, lng: 35.582456, inspector: "bak", tg: "Михайло-Лукашівська ТГ", director: "", phone: "", students: 162, events: 81, prevention: 11, participants: 243, consultations: 2, rating: 55,
-      monthlyData: { pdd:6, bulying:3, narcotic:0, traffic:0, strangers:6, public:2, patriot:17, internet:10, law:0, crime:6, domviol:0, mine:6, other:23, porn:0, suicide:0, tolerance:2, evacuation:15, training:0, dpp:11, juvenile:0, parents:2, teachers:1 } },
+      monthlyData: { pdd:6, bulying:3, narcotic:0, traffic:0, strangers:6, public:2, patriot:17, internet:10, law:0, crime:6, domviol:0, mine:6, other:23, porn:0, suicide:0, tolerance:2, evacuation:11 } },
     { id: "sch-136", serviced: false, name: "Московська гімназія Михайло-Лукашівської сільської ради Запорізького району Запорізької області", type: "Гімназія", city: "с. Московка", address: "с. Московка, вул. Миру, 22", lat: 47.887112, lng: 35.575163 },
     { id: "sch-137", serviced: false, name: "Привільненська гімназія Михайло - Лукашівської сільської ради Запорізького району Запорізької області", type: "Гімназія", city: "с. Привільне", address: "с. Привільне, вул. Шкільна, 22", lat: 47.755242, lng: 35.360303 },
     { id: "sch-138", serviced: false, name: "Комунальний заклад \"Запорізький обласний спортивний ліцей\" Запорізької обласної ради", type: "Ліцей", city: "м. Запоріжжя", address: "м. Запоріжжя, вул. Патріотична, 7", lat: 47.850493, lng: 35.110428 },
@@ -264,7 +268,7 @@ window.SOB = {
     { id: "sch-145", serviced: false, name: "Веселянська гімназія Новоолександрівської сільської ради Запорізького району Запорізької області", type: "Гімназія", city: "с. Веселянка", address: "с. Веселянка, вул. Центральна, 81А", lat: 47.684059, lng: 35.373645 },
     { id: "sch-146", serviced: false, name: "Григорівська гімназія Новоолександрівської сільської ради Запорізького району Запорізької області", type: "Гімназія", city: "с. Григорівка", address: "с. Григорівка, вул. Радісна, 50", lat: 47.692864, lng: 35.343318 },
     { id: "sch-147", serviced: true,  name: "Новоолександрівська гімназія Новоолександрівської сільської ради Запорізького району Запорізької області", type: "Гімназія", city: "с. Новоолександрівка", address: "с. Новоолександрівка, вул. Шкільна, 14", lat: 47.755636, lng: 35.36069, inspector: "poh", tg: "Новоолександрівська ТГ", director: "", phone: "", students: 164, events: 79, prevention: 1, participants: 432, consultations: 2, rating: 52,
-      monthlyData: { pdd:6, bulying:3, narcotic:3, traffic:0, strangers:2, public:0, patriot:12, internet:10, law:0, crime:11, domviol:0, mine:4, other:26, porn:0, suicide:0, tolerance:2, evacuation:11, training:0, dpp:1, juvenile:0, parents:0, teachers:1 } },
+      monthlyData: { pdd:6, bulying:3, narcotic:3, traffic:0, strangers:2, public:0, patriot:12, internet:10, law:0, crime:11, domviol:0, mine:4, other:26, porn:0, suicide:0, tolerance:2, evacuation:1 } },
     { id: "sch-148", serviced: false, name: "Нововасилівська гімназія \"Перспектива\" Павлівської сільської ради Запорізького району Запорізької області", type: "Гімназія", city: "с. Нововасилівка", address: "с. Нововасилівка, вул. Польова, 18-А", lat: 47.67033, lng: 35.66676 },
     { id: "sch-149", serviced: false, name: "Семененківський ліцей Павлівської сільської ради Запорізького району Запорізької області", type: "Ліцей", city: "с. Семенівка", address: "с. Семенівка, вул. Шкільна, 5а", lat: 48.059602, lng: 35.499287 },
     { id: "sch-150", serviced: false, name: "Солоненський ліцей \"Лідер\" Павлівської сільської ради Запорізького району Запорізької області", type: "Ліцей", city: "с. Солоне", address: "с. Солоне, вул. Лесі Українки, 1В", lat: 48.059602, lng: 35.499287 },
@@ -278,7 +282,7 @@ window.SOB = {
     { id: "sch-158", serviced: false, name: "Комунальний заклад \"Запорізька спеціальна загальноосвітня школа-інтернат № 1\" Запорізької обласної ради", type: "Інтернат", city: "м. Запоріжжя", address: "м. Запоріжжя, вул. Котельникова, 16", lat: 47.920846, lng: 35.091728 },
     { id: "sch-159", serviced: false, name: "Комунальний заклад \"Запорізька спеціальна загальноосвітня школа-інтернат № 2\" Запорізької обласної ради", type: "Інтернат", city: "м. Запоріжжя", address: "м. Запоріжжя, вул. Сікорського, 267", lat: 47.850818, lng: 35.216249 },
     { id: "sch-160", serviced: true,  name: "Комунальний заклад \"Новомиколаївський навчально-реабілітаційний центр \"Паросток\" імені В.А.Польського\" Запорізької обласної ради", type: "Заклад", city: "смт Новомиколаївка", address: "смт Новомиколаївка, вул. Соборності, 194", lat: 47.981101, lng: 35.920292, inspector: "sav", tg: "Новомиколаївська ТГ", director: "", phone: "", students: 206, events: 99, prevention: 20, participants: 522, consultations: 3, rating: 60,
-      monthlyData: { pdd:7, bulying:4, narcotic:1, traffic:0, strangers:4, public:3, patriot:7, internet:11, law:8, crime:10, domviol:1, mine:10, other:30, porn:0, suicide:0, tolerance:3, evacuation:34, training:0, dpp:20, juvenile:4, parents:0, teachers:1 } },
+      monthlyData: { pdd:7, bulying:4, narcotic:1, traffic:0, strangers:4, public:3, patriot:7, internet:11, law:8, crime:10, domviol:1, mine:10, other:30, porn:0, suicide:0, tolerance:3, evacuation:20 } },
     { id: "sch-161", serviced: false, name: "Комунальний заклад «Запорізька спеціальна загальноосвітня школа-інтернат «Світанок» Запорізької обласної ради", type: "Інтернат", city: "м. Запоріжжя", address: "м. Запоріжжя, вул. Перспективна, 8", lat: 47.896217, lng: 35.159843 },
     { id: "sch-162", serviced: false, name: "Наталівська гімназія Степненської сільської ради Запорізького району Запорізької області", type: "Гімназія", city: "с. Наталівка", address: "с. Наталівка, вул. Ювілейна, 10", lat: 47.924387, lng: 35.092048 },
     { id: "sch-163", serviced: false, name: "Степненська гімназія Степненської сільської ради Запорізького району Запорізької області", type: "Гімназія", city: "с. Степне", address: "с. Степне, вул. Першотравнева, 52", lat: 47.798199, lng: 35.310916 },
@@ -422,13 +426,15 @@ window.calcTotalStats = () => {
   }, { totalStudents: 0, events: 0, participations: 0, prevention: 0, consultations: 0, uniqueStudents: 0 });
 };
 
-/* Агрегована статистика заходів по тематиках */
+/* Агрегована статистика заходів по тематиках (тільки 16 напрямків з eventCategories) */
 window.calcCategoryStats = () => {
   const serviced = (window.SOB.schools || []).filter(s => s.serviced && s.monthlyData);
   const totals = {};
   (window.SOB.eventCategories || []).forEach(c => { totals[c.id] = 0; });
   serviced.forEach(s => {
-    Object.entries(s.monthlyData || {}).forEach(([k, v]) => { totals[k] = (totals[k] || 0) + (v || 0); });
+    Object.entries(s.monthlyData || {}).forEach(([k, v]) => {
+      if (k in totals) totals[k] = (totals[k] || 0) + (v || 0); // тільки тематичні напрямки
+    });
   });
   return totals;
 };
