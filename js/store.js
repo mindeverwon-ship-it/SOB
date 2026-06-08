@@ -103,15 +103,22 @@ window.SOBStore = {
     this.save();
   },
 
-  /* ---- Перерахунок статистики закладу ---- */
+  /* ---- Перерахунок статистики закладу ----
+     Якщо у журналі schoolEvents немає жодного запису для цього закладу —
+     статичні дані (імпортовані з Excel) не чіпаємо, щоб не обнуляти
+     накопичену статистику при ініціалізації сторінки.               */
   recalcSchool(schoolId) {
     const s = window.SOB.schools.find(x => x.id === schoolId);
     if (!s) return;
     const evs = window.SOB.schoolEvents.filter(x => x.schoolId === schoolId && x.status !== 'cancelled');
-    s.events       = evs.length;
-    s.participants = evs.reduce((sum, e) => sum + (e.participants || 0), 0);
-    s.prevention   = evs.filter(e => ['prevention','mine','evacuation','cyber','buling','legal'].includes(e.type)).length;
-    s.rating       = s.events + Math.round(s.participants / 10);
+    // Є платформні заходи — рахуємо з журналу
+    if (evs.length > 0) {
+      s.events       = evs.length;
+      s.participants = evs.reduce((sum, e) => sum + (e.participants || 0), 0);
+      s.prevention   = evs.filter(e => ['prevention','mine','evacuation','cyber','buling','legal'].includes(e.type)).length;
+      s.rating       = s.events + Math.round(s.participants / 10);
+    }
+    // Немає платформних заходів — залишаємо статичні дані (Excel / data.js)
   },
 
   /* ---- Заходи ---- */
