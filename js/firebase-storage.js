@@ -37,10 +37,13 @@ window.SOBStorage = {
   /* ---- Завантажити фото закладу ----
      Зберігає в SOB.gallery + Firebase RTDB                    */
   async uploadPhoto(schoolId, file, inspectorKey) {
+    console.log('[SOBStorage] uploadPhoto start', file.name, file.size, file.type);
     if (typeof toast === 'function') toast('Завантаження фото…', 'blue');
     try {
       const folder = `sob/photos/${schoolId}`;
+      console.log('[SOBStorage] uploading to', CLOUDINARY_URL, 'folder:', folder);
       const result = await this.upload(file, folder);
+      console.log('[SOBStorage] upload success', result);
       const g = {
         schoolId,
         inspector: inspectorKey,
@@ -54,7 +57,7 @@ window.SOBStorage = {
       if (typeof toast === 'function') toast('Фото збережено ✓', 'green');
       return g;
     } catch(e) {
-      console.error('Cloudinary upload failed:', e);
+      console.error('[SOBStorage] Cloudinary upload FAILED:', e.message, e);
       if (typeof toast === 'function') toast('Помилка: ' + e.message, 'red');
       throw e;
     }
