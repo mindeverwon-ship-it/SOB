@@ -93,7 +93,7 @@
   <div class="modal" style="max-width:620px">
     <div class="modal-head">
       <div class="section-title" id="insModalTitle">Додати працівника СОБ</div>
-      <button class="icon-btn" onclick="closeModal('insModal')"></button>
+      <button class="icon-btn" id="closeInsModal" onclick="closeModal('insModal')"></button>
     </div>
     <div class="modal-body col" style="gap:14px">
       <div class="field"><label>ПІБ <span style="color:var(--red-500)">*</span></label><input class="input" id="i_name" placeholder="Прізвище Ім'я По-батькові"></div>
@@ -141,6 +141,7 @@
 SOBShell.render({ active: 'workers', crumb: ['СОБ', 'Працівники СОБ'] });
 
 const S = window.SOB, I = window.ICON, esc = window.esc;
+document.getElementById('closeInsModal').innerHTML = I.close;
 const U = window.SOBAuth.current();
 const canEdit = U.role === 'admin';
 
@@ -198,7 +199,7 @@ function render() {
     const stuCount = isChief ? divSchools.reduce((s,x)=>s+(x.students||0),0) : totalStudents(key);
     const covPct = stuCount > 0 ? Math.round(uniqCount/stuCount*100) : 0;
 
-    return `<div class="ins-card ${!isActive?'inactive':''}">
+    return `<div class="ins-card ${!isActive?'inactive':''}" id="ins-${key}">
       <div class="ins-top">
         <div class="ins-av" style="background:${color}">${initials(ins.name)}</div>
         <div style="flex:1;min-width:0">
@@ -381,6 +382,16 @@ window.closeModal = closeModal;
 document.querySelectorAll('.modal-scrim').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
 document.addEventListener('sob:synced',()=>render());
 render();
+
+/* Якщо перейшли з картки закладу з ?key=..., прокрутити до картки інспектора */
+(function(){
+  const key = new URLSearchParams(location.search).get('key');
+  if (!key) return;
+  setTimeout(()=>{
+    const el = document.getElementById('ins-'+key);
+    if (el) { el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.outline='3px solid var(--blue-400)'; setTimeout(()=>el.style.outline='',2000); }
+  }, 300);
+})();
 </script>
 </body>
 </html>

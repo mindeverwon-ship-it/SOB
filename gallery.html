@@ -69,9 +69,10 @@ function card(g){
   } else if(g.date) {
     try { dtStr = new Date(g.date).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'}); } catch(e){}
   }
-  const imgHtml = g.dataUrl
-    ? `<div style="width:100%;height:170px;overflow:hidden"><img src="${g.dataUrl}" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div>`
-    : `<image-slot id="galp-${g.id}" shape="rect" placeholder="Фото заходу"></image-slot>`;
+  const imgSrc = g.dataUrl || g.url || '';
+  const imgHtml = imgSrc
+    ? `<div style="width:100%;height:170px;overflow:hidden"><img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div>`
+    : `<div style="width:100%;height:170px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:var(--muted-2);font-size:28px">${I.image}</div>`;
   const topicTag = g.topic ? `<span class="tag blue">${g.topic}</span>` : '';
   const authorStr = g.author ? `${I.users} ${g.author}` : '';
   return `<div class="gal-card">

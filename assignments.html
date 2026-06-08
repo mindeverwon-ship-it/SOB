@@ -39,7 +39,7 @@
 <!-- Add/Edit assignment modal -->
 <div class="modal-scrim" id="asgnModal">
   <div class="modal" style="max-width:580px">
-    <div class="modal-head"><div class="section-title" id="asgnModalTitle">Нове доручення</div><button class="icon-btn" id="closeAsgn"></button></div>
+    <div class="modal-head"><div class="section-title" id="asgnModalTitle">Нове доручення</div><button class="icon-btn" id="closeAsgn" onclick="closeModal('asgnModal')"></button></div>
     <div class="modal-body col" style="gap:14px">
       <div class="field"><label>Назва доручення <span style="color:var(--red-500)">*</span></label><input class="input" id="asgn_title" placeholder="Напр. Перевірити стан укриттів у школі…"></div>
       <div class="field"><label>Опис / деталі</label><textarea class="input" id="asgn_desc" rows="3" placeholder="Детальніший опис завдання…" style="resize:vertical"></textarea></div>

@@ -290,9 +290,15 @@ if(U.role!=='admin'){
   /* ── Gallery tab ── */
   function renderGallery(){
     const gallery = S.gallery || [];
-    const totalSize = gallery.reduce((s,g) => s + (g.dataUrl ? Math.round(g.dataUrl.length * 0.75 / 1024) : 0), 0);
-    const sizeStr = totalSize > 1024 ? (totalSize/1024).toFixed(1)+' МБ' : totalSize+' КБ';
-    const pct = Math.min(100, Math.round(totalSize / (1024*1024) * 100));
+    /* Cloudinary — безкоштовний план 25 ГБ. Розрахунок: base64 (старі записи) + ~500 КБ/фото для Cloudinary */
+    const totalSizeKb = gallery.reduce((s,g) => {
+      if (g.dataUrl) return s + Math.round(g.dataUrl.length * 0.75 / 1024);
+      if (g.source === 'cloudinary' || g.url) return s + 500; /* ~500 КБ/фото */
+      return s;
+    }, 0);
+    const cloudinaryLimitKb = 25 * 1024 * 1024; /* 25 ГБ */
+    const sizeStr = totalSizeKb > 1024*1024 ? (totalSizeKb/1024/1024).toFixed(1)+' ГБ' : totalSizeKb > 1024 ? (totalSizeKb/1024).toFixed(0)+' МБ' : totalSizeKb+' КБ';
+    const pct = Math.min(100, Math.round(totalSizeKb / cloudinaryLimitKb * 100));
     const pctColor = pct > 80 ? 'var(--red-500)' : pct > 50 ? 'var(--gold-600)' : 'var(--green-600)';
 
     // group by school
@@ -305,7 +311,7 @@ if(U.role!=='admin'){
       const cards = photos.map(g => {
         const dt = g.date ? new Date(g.date).toLocaleDateString('uk-UA',{day:'numeric',month:'short',year:'numeric'}) : (g.month||'');
         return `<div class="adm-photo-card">
-          ${g.dataUrl ? `<img src="${g.dataUrl}" loading="lazy">` : `<div class="adm-photo-empty">${I.image}</div>`}
+          ${(g.dataUrl||g.url) ? `<img src="${g.dataUrl||g.url}" loading="lazy" style="width:100%;height:120px;object-fit:cover;border-radius:8px">` : `<div class="adm-photo-empty">${I.image}</div>`}
           <div class="adm-photo-info">
             <div class="adm-photo-title">${g.title||'Без назви'}</div>
             <div class="adm-photo-meta">${dt}${g.author?' · '+g.author:''}</div>
@@ -335,7 +341,7 @@ if(U.role!=='admin'){
           <div style="flex:1;min-width:200px">
             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
               <span class="muted">Зайнято сховища</span>
-              <b style="color:${pctColor}">${sizeStr} з ~1 ГБ</b>
+              <b style="color:${pctColor}">${sizeStr} з ~25 ГБ (Cloudinary)</b>
             </div>
             <div style="height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden">
               <div style="height:100%;width:${pct}%;background:${pctColor};border-radius:4px;transition:width .3s"></div>

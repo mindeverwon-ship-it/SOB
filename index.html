@@ -163,7 +163,7 @@ const kpiThisMonth = eventsThisMonth.length;
 const kpiHtml = S.kpis.map((k, i) => {
   const val = kpiValues[k.id] ?? k.value;
   const sub = k.id==='events'&&kpiThisMonth>0 ? `+${kpiThisMonth} цього місяця` : 'накопичено';
-  return `<div class="kpi anim anim-${i+1}"><div class="ic ${k.color}">${I[k.icon] || I.grid}</div><span class="delta flat">${sub}</span><div class="val tnum">${F(val)}</div><div class="lbl">${k.label}</div></div>`;
+  return `<div class="kpi anim anim-${i+1}"><div class="ic ${k.color}">${I[k.icon] || I.grid}</div><span class="delta flat">${sub}</span><div class="val tnum" data-kpi="${k.id}">${F(val)}</div><div class="lbl">${k.label}</div></div>`;
 }).join('');
 
 const ranked = [...S.schools].filter(s=>s.serviced!==false).sort((a,b) => b.rating - a.rating).slice(0, 6);
@@ -610,6 +610,20 @@ function exportReport(kind){
   }
 }
 window.exportReport = exportReport;
+
+/* Реактивне оновлення KPI та графіків при синхронізації з Firebase */
+document.addEventListener('sob:synced', () => {
+  /* Перезавантажити сторінку плавно: оновити KPI та графіки без reload */
+  try {
+    const liveStats = window.calcTotalStats ? window.calcTotalStats() : {};
+    document.querySelectorAll('[data-kpi]').forEach(el => {
+      const key = el.dataset.kpi;
+      if (key === 'events'       && liveStats.events       != null) el.textContent = window.fmt(liveStats.events);
+      if (key === 'participants' && liveStats.participations!= null) el.textContent = window.fmt(liveStats.participations);
+      if (key === 'prevention'   && liveStats.prevention   != null) el.textContent = window.fmt(liveStats.prevention);
+    });
+  } catch(e) {}
+});
 </script>
 </body>
 </html>

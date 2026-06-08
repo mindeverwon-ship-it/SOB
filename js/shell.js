@@ -126,7 +126,7 @@ window.SOBShell = {
           <div class="sb-section">
             <div class="sb-label">Звітність</div>
             <nav class="sb-nav">
-              <a class="sb-item" href="index.html#report">${ICON.doc}<span>Щомісячний звіт</span></a>
+              <a class="sb-item ${active==='report'?'active':''}" href="report.html">${ICON.doc}<span>Детальний звіт</span></a>
             </nav>
           </div>` : ''}
         </div>

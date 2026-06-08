@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Звіт СОБ</title>
+<link rel="stylesheet" href="css/main.css">
+<style>
+/* ── Report page styles ── */
+.rp-filter-bar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+.rp-filter-bar select, .rp-filter-bar input { height:38px; padding:0 12px; border:1.5px solid var(--border); border-radius:10px; font-size:13.5px; background:var(--surface-1); color:var(--text); }
+.rp-actions { display:flex; gap:8px; flex-wrap:wrap; margin-left:auto; }
+.rp-actions .btn { gap:5px; }
+
+/* Summary cards */
+.rp-kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:22px; }
+.rp-kpi { background:var(--surface-1); border:1.5px solid var(--border); border-radius:14px; padding:16px 18px; }
+.rp-kpi .v { font-size:26px; font-weight:800; color:var(--blue-700); font-variant-numeric:tabular-nums; }
+.rp-kpi .l { font-size:12px; color:var(--muted); margin-top:2px; }
+
+/* School sections */
+.rp-school-card { background:var(--surface-1); border:1.5px solid var(--border); border-radius:16px; margin-bottom:18px; overflow:hidden; }
+.rp-school-head { display:flex; align-items:center; gap:12px; padding:16px 20px; background:var(--surface-2); border-bottom:1.5px solid var(--border); cursor:pointer; user-select:none; }
+.rp-school-head:hover { background:var(--surface-3); }
+.rp-school-head .chevron { margin-left:auto; transition:transform .2s; font-size:12px; color:var(--muted); }
+.rp-school-head.open .chevron { transform:rotate(90deg); }
+.rp-school-body { padding:16px 20px; }
+.rp-school-stats { display:flex; gap:20px; flex-wrap:wrap; margin-bottom:14px; }
+.rp-school-stat { text-align:center; }
+.rp-school-stat .v { font-size:20px; font-weight:700; color:var(--navy-800); }
+.rp-school-stat .l { font-size:11px; color:var(--muted); }
+.rp-event-table { width:100%; border-collapse:collapse; font-size:13px; }
+.rp-event-table th { background:var(--surface-2); font-weight:600; padding:8px 10px; text-align:left; font-size:12px; color:var(--muted); border-bottom:1.5px solid var(--border); }
+.rp-event-table td { padding:7px 10px; border-bottom:1px solid var(--border-light); vertical-align:top; }
+.rp-event-table tr:last-child td { border-bottom:none; }
+.rp-event-table tr:hover td { background:var(--surface-2); }
+.evt-type-tag { display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; background:var(--blue-100); color:var(--blue-700); }
+
+/* Analytics section */
+.rp-analysis { background:var(--surface-1); border:1.5px solid var(--border); border-radius:16px; padding:20px 22px; margin-bottom:18px; }
+.rp-analysis h3 { font-size:14px; font-weight:700; color:var(--navy-800); margin:0 0 14px; }
+.rp-bar-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:13px; }
+.rp-bar-label { min-width:220px; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rp-bar-wrap { flex:1; background:var(--surface-3); border-radius:4px; height:8px; overflow:hidden; }
+.rp-bar-fill { height:100%; border-radius:4px; background:var(--blue-500); }
+.rp-bar-val { min-width:28px; text-align:right; font-weight:700; color:var(--blue-700); font-size:12px; }
+
+/* Conclusion text */
+.rp-conclusion { background:linear-gradient(135deg,var(--navy-900),var(--blue-800)); color:#fff; border-radius:16px; padding:22px 24px; margin-bottom:18px; }
+.rp-conclusion h2 { font-size:15px; margin:0 0 12px; opacity:.7; font-weight:500; }
+.rp-conclusion p { font-size:14px; line-height:1.75; margin:0 0 8px; }
+.rp-conclusion p:last-child { margin:0; }
+
+/* Problem schools */
+.rp-problem-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:10px; }
+.rp-problem-item { background:var(--red-50,#fff5f5); border:1.5px solid var(--red-200,#fecaca); border-radius:12px; padding:12px 14px; }
+.rp-problem-item .n { font-size:13px; font-weight:600; margin-bottom:4px; }
+.rp-problem-item .r { font-size:12px; color:var(--muted); }
+
+/* No data */
+.rp-no-events { text-align:center; color:var(--muted-2); padding:20px 0; font-size:13px; }
+
+/* Print */
+@media print {
+  .rp-filter-bar, .rp-actions, .sidebar, .topbar, #shell-sidebar { display:none!important; }
+  .rp-school-head { cursor:default; }
+  .rp-school-body { display:block!important; }
+  body { font-size:12pt; }
+  .rp-conclusion { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}
+</style>
+</head>
+<body>
+<div id="shell-root"></div>
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/shell.js"></script>
+<script>
+const S = window.SOB, I = window.ICON, F = window.fmt, esc = window.esc;
+SOBShell.render({ active: 'report', crumb: ['СОБ', 'Звітність', 'Детальний звіт'] });
+
+/* ── helpers ── */
+const typeLabels = {};
+(S.eventTypes || []).forEach(t => { typeLabels[t.id] = t.label || t.id; });
+
+function periodOptions() {
+  const mn = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+  const res = [];
+  for (let y = 2025; y <= 2026; y++) for (let m = 0; m < 12; m++) res.push({ label: mn[m]+' '+y, value: y+'-'+String(m+1).padStart(2,'0') });
+  return res;
+}
+/* current period default — detect from org.period */
+function detectPeriodValue(str) {
+  const mn=['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+  if (!str) return '';
+  const p = str.split(' ');
+  const mi = mn.indexOf(p[0]); const y = parseInt(p[1]);
+  if (mi < 0 || !y) return '';
+  return y+'-'+String(mi+1).padStart(2,'0');
+}
+
+let filterPeriod = detectPeriodValue(S.org.period); /* "РРРР-ММ" or '' = all */
+let filterSchool = 'all';
+
+/* ── data builder ── */
+function buildReport() {
+  const serviced = (S.schools || []).filter(s => s.serviced !== false);
+  const allEvents = (S.schoolEvents || []).filter(e => e.status !== 'cancelled');
+
+  /* period filter */
+  const evs = filterPeriod
+    ? allEvents.filter(e => e.date && e.date.startsWith(filterPeriod))
+    : allEvents;
+
+  /* school filter */
+  const schools = filterSchool === 'all' ? serviced : serviced.filter(s => s.id === filterSchool);
+
+  /* per-school summary */
+  const schoolRows = schools.map(sc => {
+    const ins = S.workers?.[sc.inspector] || {};
+    const schoolEvs = evs.filter(e => e.schoolId === sc.id);
+    const baseE  = filterPeriod ? 0 : (sc.baseEvents       ?? sc.events       ?? 0);
+    const baseP  = filterPeriod ? 0 : (sc.baseParticipants ?? sc.participants  ?? 0);
+    const journalE = schoolEvs.length;
+    const journalP = schoolEvs.reduce((s,e) => s + (e.participants||0), 0);
+    const totalE = baseE + journalE;
+    const totalP = baseP + journalP;
+    const photos = (S.gallery||[]).filter(g => g.schoolId === sc.id).length;
+    /* per-type breakdown */
+    const byType = {};
+    schoolEvs.forEach(e => { byType[e.type] = (byType[e.type]||0) + 1; });
+    return { sc, ins, schoolEvs, baseE, baseP, journalE, journalP, totalE, totalP, photos, byType };
+  }).sort((a,b) => b.totalE - a.totalE);
+
+  /* totals */
+  const totE  = schoolRows.reduce((s,r) => s + r.totalE, 0);
+  const totP  = schoolRows.reduce((s,r) => s + r.totalP, 0);
+  const totPh = schoolRows.reduce((s,r) => s + r.photos, 0);
+  const totEvs = evs.filter(e => schools.some(s => s.id === e.schoolId)).length;
+  const active = schoolRows.filter(r => r.totalE > 0).length;
+  const inactive = schoolRows.filter(r => r.totalE === 0).length;
+
+  /* top themes */
+  const themeCounts = {};
+  evs.filter(e => schools.some(s => s.id === e.schoolId)).forEach(e => {
+    themeCounts[e.type] = (themeCounts[e.type]||0) + 1;
+  });
+  const topThemes = Object.entries(themeCounts).sort((a,b) => b[1]-a[1]).slice(0,8);
+
+  /* top workers (by journal events) */
+  const workerEvCount = {};
+  evs.filter(e => schools.some(s => s.id === e.schoolId)).forEach(e => {
+    const sc2 = schools.find(s => s.id === e.schoolId);
+    if (sc2?.inspector) workerEvCount[sc2.inspector] = (workerEvCount[sc2.inspector]||0) + 1;
+  });
+
+  /* problem schools (0 journal events in period) */
+  const problems = filterPeriod
+    ? schoolRows.filter(r => r.journalE === 0)
+    : schoolRows.filter(r => r.totalE < 3);
+
+  /* auto-conclusion */
+  const topSchool = schoolRows[0];
+  const topThemeLabel = topThemes[0] ? (typeLabels[topThemes[0][0]] || topThemes[0][0]) : '';
+  const periodLabel = filterPeriod ? (S.org.periodOptions||[]).find(p => {
+    const [y,m] = filterPeriod.split('-');
+    const mn=['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+    return p === mn[parseInt(m)-1]+' '+y;
+  }) || filterPeriod : 'загальний період';
+
+  const conclusion = buildConclusion({ schoolRows, totE, totP, totEvs, active, inactive, topSchool, topThemeLabel, periodLabel, topThemes, workerEvCount, totPh });
+
+  return { schoolRows, totE, totP, totPh, totEvs, active, inactive, topThemes, workerEvCount, problems, conclusion, periodLabel };
+}
+
+function buildConclusion({ schoolRows, totE, totP, totEvs, active, inactive, topSchool, topThemeLabel, periodLabel, topThemes, workerEvCount, totPh }) {
+  const lines = [];
+  if (totEvs > 0) {
+    lines.push(`Протягом ${periodLabel} працівниками СОБ проведено ${totE} заходів у ${active} закладах освіти з охопленням ${F(totP)} учасників.`);
+  } else {
+    lines.push(`За ${periodLabel} журнальні записи про заходи відсутні.`);
+  }
+  if (topSchool && topSchool.totalE > 0) {
+    lines.push(`Найбільшу активність продемонстрував заклад: ${topSchool.sc.name} (${topSchool.totalE} заходів, ${topSchool.sc.inspector ? (S.workers?.[topSchool.sc.inspector]?.name || '') : ''}).`);
+  }
+  if (topThemeLabel) {
+    const top3 = topThemes.slice(0,3).map(t => typeLabels[t[0]]||t[0]).join(', ');
+    lines.push(`Найбільш поширені тематики: ${top3}.`);
+  }
+  if (inactive > 0) {
+    lines.push(`Заклади без активності за звітний період: ${inactive}. Рекомендується провести додаткові заходи.`);
+  }
+  if (totPh > 0) {
+    lines.push(`Загальна кількість фотозвітів у системі: ${totPh}.`);
+  }
+  const workerTop = Object.entries(workerEvCount).sort((a,b)=>b[1]-a[1])[0];
+  if (workerTop) {
+    lines.push(`Найактивніший працівник СОБ за журналом: ${S.workers?.[workerTop[0]]?.name || workerTop[0]} — ${workerTop[1]} заходів.`);
+  }
+  return lines;
+}
+
+/* ── render ── */
+function render() {
+  const d = buildReport();
+  const root = document.getElementById('rp-root');
+
+  /* period select */
+  const periodsHtml = periodOptions().map(o =>
+    `<option value="${o.value}" ${o.value===filterPeriod?'selected':''}>${o.label}</option>`
+  ).join('');
+  const schoolsHtml = (S.schools||[]).filter(s=>s.serviced!==false).map(s =>
+    `<option value="${s.id}" ${filterSchool===s.id?'selected':''}>${s.name}</option>`
+  ).join('');
+
+  /* KPI */
+  const kpiHtml = [
+    { v: d.totE,       l: 'Заходів (всього)' },
+    { v: d.totEvs,     l: 'Заходів (журнал)' },
+    { v: F(d.totP),    l: 'Учасників' },
+    { v: d.totPh,      l: 'Фотозвітів' },
+    { v: d.active,     l: 'Активних закладів' },
+    { v: d.inactive,   l: 'Без активності' },
+  ].map(k => `<div class="rp-kpi"><div class="v tnum">${k.v}</div><div class="l">${k.l}</div></div>`).join('');
+
+  /* school cards */
+  const schoolCardsHtml = d.schoolRows.map(r => {
+    const { sc, ins, schoolEvs, baseE, baseP, totalE, totalP, photos } = r;
+    const evRows = schoolEvs.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(e => {
+      const dt = e.date ? new Date(e.date).toLocaleDateString('uk-UA',{day:'numeric',month:'short'}) : '—';
+      const tl = typeLabels[e.type] || e.type || '—';
+      return `<tr>
+        <td>${dt}</td>
+        <td>${e.title||'Без назви'}</td>
+        <td><span class="evt-type-tag">${tl}</span></td>
+        <td class="tnum">${e.participants||0}</td>
+      </tr>`;
+    }).join('');
+    const noData = !evRows ? `<div class="rp-no-events">Журнальних записів за вибраний період немає</div>` : '';
+    return `<div class="rp-school-card">
+      <div class="rp-school-head" onclick="toggleCard(this)">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px">${esc(sc.name)}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(ins.name||'—')} · ${sc.city||''}</div>
+        </div>
+        <div style="display:flex;gap:16px;flex-shrink:0;align-items:center">
+          <span style="font-size:13px;font-weight:700;color:var(--blue-700)">${totalE} заходів</span>
+          <span style="font-size:12px;color:var(--muted)">${F(totalP)} учасн.</span>
+          ${photos?`<span style="font-size:12px;color:var(--muted)">${I.image} ${photos}</span>`:''}
+          <span class="chevron">▶</span>
+        </div>
+      </div>
+      <div class="rp-school-body" style="display:none">
+        <div class="rp-school-stats">
+          ${baseE?`<div class="rp-school-stat"><div class="v">${baseE}</div><div class="l">Заходи (Excel-база)</div></div>`:''}
+          <div class="rp-school-stat"><div class="v">${schoolEvs.length}</div><div class="l">Заходи (журнал)</div></div>
+          <div class="rp-school-stat"><div class="v">${totalE}</div><div class="l">Всього заходів</div></div>
+          <div class="rp-school-stat"><div class="v">${F(totalP)}</div><div class="l">Учасників</div></div>
+          <div class="rp-school-stat"><div class="v">${photos}</div><div class="l">Фотозвіти</div></div>
+          <div class="rp-school-stat"><div class="v">${sc.students||0}</div><div class="l">Учнів</div></div>
+        </div>
+        ${evRows ? `<table class="rp-event-table">
+          <thead><tr><th>Дата</th><th>Захід</th><th>Тематика</th><th>Учасн.</th></tr></thead>
+          <tbody>${evRows}</tbody>
+        </table>` : noData}
+      </div>
+    </div>`;
+  }).join('');
+
+  /* top themes bar chart */
+  const maxT = d.topThemes[0]?.[1] || 1;
+  const themeBarsHtml = d.topThemes.map(([type, cnt]) =>
+    `<div class="rp-bar-row">
+      <div class="rp-bar-label" title="${esc(typeLabels[type]||type)}">${esc(typeLabels[type]||type)}</div>
+      <div class="rp-bar-wrap"><div class="rp-bar-fill" style="width:${Math.round(cnt/maxT*100)}%"></div></div>
+      <div class="rp-bar-val">${cnt}</div>
+    </div>`
+  ).join('') || '<div class="rp-no-events">Журнальних заходів немає</div>';
+
+  /* top workers */
+  const maxW = Object.values(d.workerEvCount)[0]||1;
+  const workerBarsHtml = Object.entries(d.workerEvCount).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,cnt]) => {
+    const nm = S.workers?.[k]?.name || k;
+    return `<div class="rp-bar-row">
+      <div class="rp-bar-label" title="${esc(nm)}">${esc(nm)}</div>
+      <div class="rp-bar-wrap"><div class="rp-bar-fill" style="width:${Math.round(cnt/maxW*100)};background:var(--green-500)%"></div></div>
+      <div class="rp-bar-val">${cnt}</div>
+    </div>`;
+  }).join('') || '<div class="rp-no-events">Даних немає</div>';
+
+  /* problem schools */
+  const probHtml = d.problems.length
+    ? `<div class="rp-problem-list">${d.problems.map(r => `<div class="rp-problem-item">
+        <div class="n">${esc(r.sc.name)}</div>
+        <div class="r">${r.sc.city||''} · ${r.ins.name||'—'} · ${r.totalE} заходів</div>
+      </div>`).join('')}</div>`
+    : `<div style="color:var(--green-600);font-weight:600;padding:10px 0">✓ Всі заклади мають активність за обраний період</div>`;
+
+  /* auto-conclusion */
+  const conclusionHtml = `<div class="rp-conclusion">
+    <h2>${I.doc} Автоматичний підсумок · ${esc(d.periodLabel)}</h2>
+    ${d.conclusion.map(l => `<p>${esc(l)}</p>`).join('')}
+  </div>`;
+
+  root.innerHTML = `
+    <div class="rp-filter-bar">
+      <select id="rp-period" title="Період">${'<option value="">Весь час</option>'}${periodsHtml}</select>
+      <select id="rp-school" title="Заклад"><option value="all">Всі заклади</option>${schoolsHtml}</select>
+      <div class="rp-actions">
+        <button class="btn btn-ghost btn-sm" onclick="window.print()">${I.doc||'📄'} Друк</button>
+        <button class="btn btn-primary btn-sm" onclick="expandAll()">Розгорнути всі ▼</button>
+      </div>
+    </div>
+
+    ${conclusionHtml}
+
+    <div class="rp-kpi-row">${kpiHtml}</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px" class="grid-report-2">
+      <div class="rp-analysis">
+        <h3>${I.chart||'📊'} Топ тематик заходів</h3>
+        ${themeBarsHtml}
+      </div>
+      <div class="rp-analysis">
+        <h3>${I.shield||'🛡'} Проблемні заклади ${filterPeriod?'(немає записів у журналі)':'(менше 3 заходів)'}</h3>
+        ${probHtml}
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px" class="row between">
+      <div class="section-title">${I.building||'🏫'} Деталізація по закладах</div>
+      <span class="muted" style="font-size:12px">${d.schoolRows.length} закладів</span>
+    </div>
+    ${schoolCardsHtml || '<div class="card card-pad" style="text-align:center;color:var(--muted);padding:32px">Заклади не знайдено</div>'}
+  `;
+
+  /* events */
+  document.getElementById('rp-period').addEventListener('change', e => { filterPeriod = e.target.value; render(); });
+  document.getElementById('rp-school').addEventListener('change', e => { filterSchool = e.target.value; render(); });
+}
+
+function toggleCard(head) {
+  const body = head.nextElementSibling;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  head.classList.toggle('open', !open);
+}
+window.toggleCard = toggleCard;
+
+function expandAll() {
+  document.querySelectorAll('.rp-school-body').forEach(b => { b.style.display = 'block'; });
+  document.querySelectorAll('.rp-school-head').forEach(h => h.classList.add('open'));
+}
+window.expandAll = expandAll;
+
+document.addEventListener('sob:synced', render);
+render();
+</script>
+</body>
+</html>

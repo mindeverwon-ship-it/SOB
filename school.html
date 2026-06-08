@@ -284,7 +284,9 @@ function render(){
         <div class="col" style="gap:18px">
           <div class="card card-pad">
             <div class="section-title" style="margin-bottom:16px">${I.shield} Відповідальний працівник СОБ</div>
-            <div class="person"><div class="avatar-init av">${insInit}</div><div><div class="n">${ins.name||'—'}</div><div class="r">${ins.rank||'Працівник СОБ'}</div></div></div>
+            <a href="inspectors.html?key=${s.inspector||''}" style="text-decoration:none;color:inherit;display:block;border-radius:10px;padding:6px 8px;margin:-6px -8px 8px;transition:background .15s" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">
+              <div class="person"><div class="avatar-init av">${insInit}</div><div><div class="n">${ins.name||'—'}</div><div class="r">${ins.rank||'Працівник СОБ'}</div><div style="font-size:11px;color:var(--blue-600);margin-top:2px">Переглянути профіль →</div></div></div>
+            </a>
             <div class="contact-row">
               <a class="cbtn" href="tel:${(ins.phone||'').replace(/[^+\\d]/g,'')}">${I.phone} Подзвонити</a>
               <a class="cbtn" href="mailto:${ins.email||''}">${I.mail} Написати</a>
