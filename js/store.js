@@ -25,38 +25,36 @@ window.SOBStore = {
 
   // Merge saved schools: оновлюємо тільки поля, введені користувачами;
   // monthlyData/events/participants залишаються з data.js
-  /* Зберегти мітку часу локального редагування школи (захист від race condition з Firebase) */
-  _markLocalEdit(schoolId) {
+  /* ── Inspector overrides — окремий ключ, Firebase ніколи не перезаписує ── */
+  INS_OV_KEY: 'sob_inspector_overrides',
+  _saveInspectorOverride(schoolId, value) {
     try {
-      const e = JSON.parse(localStorage.getItem('sob_local_edits') || '{}');
-      e[schoolId] = Date.now();
-      localStorage.setItem('sob_local_edits', JSON.stringify(e));
+      const ov = JSON.parse(localStorage.getItem(this.INS_OV_KEY) || '{}');
+      ov[schoolId] = value; // '' = знято, 'key' = призначено
+      localStorage.setItem(this.INS_OV_KEY, JSON.stringify(ov));
     } catch(_) {}
   },
-  _getLocalEdits() {
-    try { return JSON.parse(localStorage.getItem('sob_local_edits') || '{}'); } catch(_) { return {}; }
+  _applyInspectorOverrides() {
+    try {
+      const ov = JSON.parse(localStorage.getItem(this.INS_OV_KEY) || '{}');
+      (window.SOB.schools || []).forEach(s => {
+        if (Object.prototype.hasOwnProperty.call(ov, s.id)) {
+          s.inspector = ov[s.id];
+        }
+      });
+    } catch(_) {}
   },
+  _markLocalEdit(schoolId) {}, // залишаємо для сумісності
+  _getLocalEdits() { return {}; },
 
-  // fromCloud=true — дані з Firebase (можуть бути застарілі через race condition)
-  // fromCloud=false — дані з localStorage (завжди актуальні, застосовуємо беззаперечно)
   _mergeSchools(savedSchools, fromCloud) {
     if (!Array.isArray(savedSchools)) return;
-    const edits = fromCloud ? this._getLocalEdits() : {};
-    const now = Date.now();
     savedSchools.forEach(fb => {
       if (!fb) return;
       const local = (window.SOB.schools || []).find(s => s.id === fb.id);
       if (!local) return;
-      // Тільки для Firebase: якщо школу редагували < 60 сек тому — ігноруємо хмарні дані
-      if (fromCloud && edits[fb.id] && (now - edits[fb.id]) < 60000) return;
       SCHOOL_SYNC_FIELDS.forEach(k => {
-        if (fb[k] !== undefined) {
-          local[k] = fb[k];
-        } else if (fromCloud && Object.prototype.hasOwnProperty.call(fb, 'id')) {
-          if (k === 'inspector' || k === 'photoMain' || k === 'inspectorHistory') {
-            local[k] = k === 'inspectorHistory' ? [] : null;
-          }
-        }
+        if (fb[k] !== undefined) local[k] = fb[k];
       });
     });
   },
@@ -71,6 +69,7 @@ window.SOBStore = {
       const nonSchool = this.collections.filter(k => k !== 'schools');
       nonSchool.forEach(k => { if (saved[k] !== undefined) window.SOB[k] = saved[k]; });
       this._mergeSchools(saved.schools);
+      this._applyInspectorOverrides(); // перекриває будь-які дані з localStorage/Firebase
       (window.SOB.schools || []).forEach(s => this.recalcSchool(s.id));
     }
     if (this.FB && this.FB !== 'YOUR_FIREBASE_URL') {
@@ -91,15 +90,11 @@ window.SOBStore = {
       // schools — merge тільки користувацькі поля
       const nonSchool = this.collections.filter(k => k !== 'schools');
       nonSchool.forEach(k => { if (data[k] !== undefined) window.SOB[k] = data[k]; });
-      this._mergeSchools(data.schools, true); // fromCloud=true
+      this._mergeSchools(data.schools, true);
+      this._applyInspectorOverrides(); // перекриває Firebase — завжди останнє слово за override
       // перерахувати кешовані лічильники після завантаження з хмари
       (window.SOB.schools || []).forEach(s => this.recalcSchool(s.id));
-      // зберегти в localStorage як кеш (тільки якщо немає свіжих локальних змін)
-      const editsNow = this._getLocalEdits();
-      const hasRecentEdits = Object.values(editsNow).some(t => (Date.now() - t) < 60000);
-      if (!hasRecentEdits) {
-        try { localStorage.setItem(this.KEY, JSON.stringify(this._snapshot())); } catch(e){}
-      }
+      try { localStorage.setItem(this.KEY, JSON.stringify(this._snapshot())); } catch(e){}
       // сповістити сторінку що дані оновились
       document.dispatchEvent(new CustomEvent('sob:synced'));
     } catch(e) { console.warn('Firebase недоступний, працюємо локально', e); }
@@ -164,8 +159,8 @@ window.SOBStore = {
     if (prev === inspectorKey) return s;
     if (!s.inspectorHistory) s.inspectorHistory = [];
     if (prev) s.inspectorHistory.push({ key: prev, assignedUntil: new Date().toISOString().slice(0,10) });
-    s.inspector = inspectorKey || '';   // '' замість null — Firebase не видаляє порожній рядок
-    this._markLocalEdit(schoolId);
+    s.inspector = inspectorKey || '';
+    this._saveInspectorOverride(schoolId, s.inspector); // зберігаємо окремо — Firebase не зітре
     this.save();
     this.logAudit('update','school',schoolId,`Відповідальний змінено: ${prev||'—'} → ${inspectorKey||'—'}`);
     document.dispatchEvent(new CustomEvent('sob:synced'));
