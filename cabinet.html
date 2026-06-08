@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>СОБ · Кабінет інспектора</title>
+<title>СОБ · Кабінет працівника СОБ</title>
 <link rel="stylesheet" href="css/styles.css">
 <style>
 .cab-hero { background: linear-gradient(135deg,var(--navy-800),var(--navy-950)); color:#fff; border-radius: var(--radius-xl); padding: 30px 34px; position: relative; overflow: hidden; box-shadow: var(--shadow-navy); }
@@ -71,7 +71,7 @@
 <script>
 const S = window.SOB, F = window.fmt, I = window.ICON;
 const U = window.SOBAuth.current();
-SOBShell.render({ active: 'cabinet', crumb: ['СОБ', 'Кабінет інспектора'] });
+SOBShell.render({ active: 'cabinet', crumb: ['СОБ', 'Кабінет працівника СОБ'] });
 
 if(U.role !== 'inspector' && U.role !== 'admin'){
   document.getElementById('content').innerHTML = `<div class="gate"><div class="ic">${I.lock}</div><h1 class="page-title">Потрібен вхід</h1><p class="page-sub" style="margin-bottom:24px">Кабінет доступний працівникам СОБ та адміністратору. Будь ласка, увійдіть у систему.</p><a class="btn btn-primary btn-lg" href="login.html">${I.logout} Увійти до системи</a></div>`;

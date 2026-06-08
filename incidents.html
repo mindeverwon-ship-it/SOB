@@ -93,7 +93,7 @@ document.getElementById('inc_school').innerHTML = '<option value="">— Обер
 
 // Populate inspector select
 const inspOpts = Object.entries(S.inspectors).map(([k,ins]) => `<option value="${k}">${ins.name}</option>`).join('');
-document.getElementById('inc_inspector').innerHTML = '<option value="">— Оберіть інспектора —</option>' + inspOpts;
+document.getElementById('inc_inspector').innerHTML = '<option value="">— Оберіть працівника СОБ —</option>' + inspOpts;
 
 let editingId = null;
 let filterStatus   = 'all';
@@ -162,7 +162,7 @@ function render() {
     </div>
 
     <div class="inc-filters">
-      <div class="inc-search"><span class="si">${I.search}</span><input type="text" id="incSearch" placeholder="Пошук за назвою, описом, школою, інспектором…" value="${searchQ}"></div>
+      <div class="inc-search"><span class="si">${I.search}</span><input type="text" id="incSearch" placeholder="Пошук за назвою, описом, школою, працівником СОБ…" value="${searchQ}"></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         ${statuses.map(s => `<button class="fchip ${filterStatus===s.val?'on':''}" data-status="${s.val}">${s.label}${s.cnt?' ('+s.cnt+')':''}</button>`).join('')}
       </div>
