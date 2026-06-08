@@ -145,7 +145,7 @@
       </div>
       <div style="font-size:12px;color:var(--muted);margin-top:-6px">Google Maps: правий клік → «Що тут?»</div>
       <div class="grid-2" style="gap:13px">
-        <div class="field"><label>Відповідальний інспектор</label><select class="input" id="m_inspector"></select></div>
+        <div class="field"><label>Відповідальний працівник СОБ</label><select class="input" id="m_inspector"></select></div>
         <div class="field"><label>Обслуговується СОБ</label><select class="input" id="m_serviced"><option value="true">Так — наш заклад</option><option value="false">Ні — інший заклад</option></select></div>
       </div>
       <div class="field"><label>Загальна кількість дітей у закладі</label><input class="input" id="m_students" type="number" min="0" placeholder="Напр. 420 — загальний контингент учнів"></div>
@@ -252,7 +252,7 @@ if(U.role!=='admin'){
   function shell(){
     const serviced=S.schools.filter(s=>s.serviced).length;
     document.getElementById('content').innerHTML=`
-      <div class="page-head"><div><h1 class="page-title">Адмін-панель</h1><div class="page-sub">Керування закладами, інспекторами, звітами та даними системи</div></div></div>
+      <div class="page-head"><div><h1 class="page-title">Адмін-панель</h1><div class="page-sub">Керування закладами, працівниками СОБ, звітами та даними системи</div></div></div>
       <div class="stat-cards">
         <div class="sc"><div class="ic" style="background:var(--blue-100);color:var(--blue-600)">${I.school}</div><div class="v">${S.schools.length}</div><div class="l">Закладів у системі</div></div>
         <div class="sc"><div class="ic" style="background:var(--green-100);color:var(--green-500)">${I.shield}</div><div class="v">${serviced}</div><div class="l">Обслуговує СОБ</div></div>
@@ -261,7 +261,7 @@ if(U.role!=='admin'){
       </div>
       <div class="adm-tabs">
         <div class="adm-tab ${tab==='schools'?'active':''}" data-t="schools">Заклади освіти</div>
-        <div class="adm-tab ${tab==='inspectors'?'active':''}" data-t="inspectors">Інспектори СОБ</div>
+        <div class="adm-tab ${tab==='inspectors'?'active':''}" data-t="inspectors">Працівники СОБ</div>
         <div class="adm-tab ${tab==='users'?'active':''}" data-t="users">Користувачі</div>
         <div class="adm-tab ${tab==='reports'?'active':''}" data-t="reports">Звіти та скачування</div>
         <div class="adm-tab ${tab==='gallery'?'active':''}" data-t="gallery">Фотогалерея</div>
@@ -381,7 +381,7 @@ if(U.role!=='admin'){
   function renderAuditLog(){
     const log = (S.auditLog||[]).slice(0,200);
     const actionLabel = { create:'Створено', update:'Змінено', delete:'Видалено', cancel:'Скасовано', restore:'Відновлено' };
-    const entityLabel = { event:'Захід', school:'Заклад', inspector:'Інспектор', incident:'Інцидент', assignment:'Доручення' };
+    const entityLabel = { event:'Захід', school:'Заклад', inspector:'Працівник СОБ', incident:'Інцидент', assignment:'Доручення' };
     const actionColor = { create:'var(--green-500)', update:'var(--blue-600)', delete:'var(--red-500)', cancel:'var(--gold-600)', restore:'var(--green-600)' };
     document.getElementById('admBody').innerHTML=`
       <div class="card card-pad">
@@ -696,7 +696,7 @@ if(U.role!=='admin'){
       });
       downloadCSV(`sob-заходи-${date}.csv`,rows);
     } else if(type==='schools'){
-      const rows=[csvRow(['Назва','Тип','Місто','Адреса','Директор','Телефон','Email','Інспектор','Заходів','Учасників','Консультацій','Рейтинг','Обслуговується'])];
+      const rows=[csvRow(['Назва','Тип','Місто','Адреса','Директор','Телефон','Email','Працівник СОБ','Заходів','Учасників','Консультацій','Рейтинг','Обслуговується'])];
       S.schools.filter(s=>s.serviced).forEach(s=>{
         rows.push(csvRow([s.name,s.type||'',s.city||'',s.address||'',s.director||'',s.phone||'',s.email||'',S.inspectors[s.inspector]?.name||'',s.events||0,s.participants||0,s.consultations||0,s.rating||0,'Так']));
       });
@@ -714,7 +714,7 @@ if(U.role!=='admin'){
         const cnt=S.schools.filter(s=>s.serviced&&s.inspector===k).length;
         rows.push(csvRow([ins.name,ins.rankTitle||'',ins.position||ins.rank||'',ins.department||'',ins.phone||'',ins.phone2||'',ins.email||'',ins.telegram||'',cnt,ins.note||'']));
       });
-      downloadCSV(`sob-інспектори-${date}.csv`,rows);
+      downloadCSV(`sob-працівники-${date}.csv`,rows);
     }
     toast('Файл завантажується…');
   };
