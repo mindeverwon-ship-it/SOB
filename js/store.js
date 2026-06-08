@@ -37,21 +37,25 @@ window.SOBStore = {
     try { return JSON.parse(localStorage.getItem('sob_local_edits') || '{}'); } catch(_) { return {}; }
   },
 
-  _mergeSchools(savedSchools) {
+  // fromCloud=true — дані з Firebase (можуть бути застарілі через race condition)
+  // fromCloud=false — дані з localStorage (завжди актуальні, застосовуємо беззаперечно)
+  _mergeSchools(savedSchools, fromCloud) {
     if (!Array.isArray(savedSchools)) return;
-    const edits = this._getLocalEdits();
+    const edits = fromCloud ? this._getLocalEdits() : {};
     const now = Date.now();
     savedSchools.forEach(fb => {
       if (!fb) return;
       const local = (window.SOB.schools || []).find(s => s.id === fb.id);
       if (!local) return;
-      // Якщо школу редагували локально < 30 сек тому — Firebase може мати старі дані, пропускаємо
-      if (edits[fb.id] && (now - edits[fb.id]) < 30000) return;
+      // Тільки для Firebase: якщо школу редагували < 60 сек тому — ігноруємо хмарні дані
+      if (fromCloud && edits[fb.id] && (now - edits[fb.id]) < 60000) return;
       SCHOOL_SYNC_FIELDS.forEach(k => {
         if (fb[k] !== undefined) {
           local[k] = fb[k];
-        } else if (Object.prototype.hasOwnProperty.call(fb, 'id')) {
-          if (k === 'inspector' || k === 'photoMain' || k === 'inspectorHistory') local[k] = k === 'inspectorHistory' ? [] : null;
+        } else if (fromCloud && Object.prototype.hasOwnProperty.call(fb, 'id')) {
+          if (k === 'inspector' || k === 'photoMain' || k === 'inspectorHistory') {
+            local[k] = k === 'inspectorHistory' ? [] : null;
+          }
         }
       });
     });
@@ -87,11 +91,15 @@ window.SOBStore = {
       // schools — merge тільки користувацькі поля
       const nonSchool = this.collections.filter(k => k !== 'schools');
       nonSchool.forEach(k => { if (data[k] !== undefined) window.SOB[k] = data[k]; });
-      this._mergeSchools(data.schools);
+      this._mergeSchools(data.schools, true); // fromCloud=true
       // перерахувати кешовані лічильники після завантаження з хмари
       (window.SOB.schools || []).forEach(s => this.recalcSchool(s.id));
-      // зберегти в localStorage як кеш
-      try { localStorage.setItem(this.KEY, JSON.stringify(this._snapshot())); } catch(e){}
+      // зберегти в localStorage як кеш (тільки якщо немає свіжих локальних змін)
+      const editsNow = this._getLocalEdits();
+      const hasRecentEdits = Object.values(editsNow).some(t => (Date.now() - t) < 60000);
+      if (!hasRecentEdits) {
+        try { localStorage.setItem(this.KEY, JSON.stringify(this._snapshot())); } catch(e){}
+      }
       // сповістити сторінку що дані оновились
       document.dispatchEvent(new CustomEvent('sob:synced'));
     } catch(e) { console.warn('Firebase недоступний, працюємо локально', e); }
