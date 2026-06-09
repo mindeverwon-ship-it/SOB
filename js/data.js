@@ -98,11 +98,11 @@ window.SOB = {
     { id: "porn",      label: "Попередження втягнення дітей у розповсюдження протиправного контенту", short: "Контент", color: "#9F1239", icon: "warning" },
     { id: "suicide",   label: "Запобігання суїцидальної поведінки серед дітей",   short: "Суїцид",      color: "#7C3AED", icon: "heart" },
     { id: "tolerance", label: "Підвищення рівня обізнаності щодо толерантності та недискримінації", short: "Толерантність", color: "#0891B2", icon: "users" },
+    { id: "evacuation",label: "Евакуація під час надзвичайних ситуацій (повітряна тривога)", short: "Евакуація",   color: "#C8390B", icon: "alert" },
   ],
 
   /* --- Показники співпраці (колонки AA–AD, X–Y) — НЕ тематичні напрямки заходів --- */
   collaborationMetrics: [
-    { id: "evacuation", label: "Здійснено евакуацій під час надзвичайних ситуацій (повітряна тривога)", short: "Евакуації",     color: "#DC2626" },
     { id: "dpp",        label: "Заходи спільно з ДПП (патрульна поліція)",          short: "Спільно ДПП",  color: "#1D4ED8" },
     { id: "juvenile",   label: "Заходи спільно з ювенальною превенцією",            short: "Ювенальна",    color: "#0F766E" },
     { id: "parents",    label: "Участь у батьківських зборах",                      short: "Батьк. збори", color: "#15803D" },
@@ -579,6 +579,8 @@ window.SOBDate = (function(){
   const monthStart = curY+'-'+String(curM+1).padStart(2,'0')+'-01';
   /* Today ISO */
   const todayISO   = today.toISOString().slice(0,10);
+  /* Yesterday ISO */
+  const yesterdayISO = (()=>{ const d=new Date(today); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); })();
 
   /* prev month */
   const prevDate = new Date(curY, curM-1, 1);
@@ -597,11 +599,13 @@ window.SOBDate = (function(){
     /* period labels for selectors */
     presets: [
       { id:'today',     label:'Сьогодні',        from: todayISO,  to: todayISO },
+      { id:'yesterday', label:'Вчора',           from: yesterdayISO, to: yesterdayISO },
       { id:'week',      label:'Поточний тиждень', from: (()=>{ const d=new Date(today); d.setDate(d.getDate()-d.getDay()+1); return d.toISOString().slice(0,10); })(), to: todayISO },
       { id:'month',     label:'Поточний місяць',  ym:  curYM },
       { id:'prevmonth', label:'Попередній місяць',ym:  prevYM },
       { id:'quarter',   label:'Поточний квартал', from: qStart.toISOString().slice(0,10), to: todayISO },
       { id:'year',      label:'Поточний рік',     from: curY+'-01-01', to: todayISO },
+      { id:'custom',    label:'Власний період',  custom: true },
       { id:'all',       label:'Весь час',         all: true },
     ],
 

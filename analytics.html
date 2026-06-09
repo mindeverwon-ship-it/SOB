@@ -91,7 +91,7 @@ table.matrix td.mx-total-col, table.matrix th.mx-total-col { background:var(--bl
 </head>
 <body>
 <div class="app" id="shell"></div>
-<script src="js/data.js?v=11"></script>
+<script src="js/data.js?v=12"></script>
 <script src="js/store.js?v=13"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
@@ -106,8 +106,10 @@ Chart.defaults.animation   = false;
 
 let charts = {};
 let filterSchool = 'all';
-let filterPeriod = 'all'; /* preset id: all / month / prevmonth / quarter / year / today / week */
+let filterPeriod = 'all'; /* preset id: all / today / yesterday / week / month / prevmonth / quarter / year / custom */
 let filterTopic  = 'all';
+let filterFrom   = '';    /* для власного періоду (custom) */
+let filterTo     = '';
 
 /* Коротка назва закладу: беремо текст у лапках, інакше перші 3 слова */
 function schoolShort(s){
@@ -130,9 +132,11 @@ function calcData(){
   /* Фільтр журнальних заходів за закладом і обраним periodом */
   const allJournal = (window.SOB.schoolEvents||[]).filter(e=>e.status!=='cancelled');
   const schoolFilteredJournal = filterSchool==='all' ? allJournal : allJournal.filter(e=>e.schoolId===filterSchool);
-  const filteredJournal = SD ? SD.filterEvents(schoolFilteredJournal, filterPeriod) : schoolFilteredJournal;
+  const filteredJournal = SD ? SD.filterEvents(schoolFilteredJournal, filterPeriod, filterFrom||undefined, filterTo||undefined) : schoolFilteredJournal;
   const isFiltered = filterPeriod !== 'all';
-  const periodLabel = SD ? SD.presetLabel(filterPeriod) : (S.org.period);
+  const periodLabel = (filterPeriod==='custom' && (filterFrom||filterTo))
+    ? `${filterFrom||'…'} — ${filterTo||'…'}`
+    : (SD ? SD.presetLabel(filterPeriod) : (S.org.period));
 
   const prevTypes = ['prevention','mine','evacuation','cyber','buling','legal'];
 
@@ -203,8 +207,34 @@ function calcData(){
   const zrupStats = groupStats(zrupSchools);
   const gunpStats = groupStats(gunpSchools);
 
-  /* Топ закладів */
-  const ranked = [...serviced].sort((a,b)=>(b.events||0)-(a.events||0));
+  /* Показники по кожному закладу з урахуванням періоду (для рейтингу і таблиць) */
+  function schoolStat(s){
+    if (isFiltered) {
+      const evs = filteredJournal.filter(e=>e.schoolId===s.id);
+      const parts = evs.reduce((a,e)=>a+(e.participants||0),0);
+      const uniq = s.students>0 ? Math.min(parts, s.students) : parts;
+      return { events: evs.length, participants: parts, uniqueStudents: uniq,
+               coveragePercent: s.students>0?Math.round(uniq/s.students*100):0,
+               consultations: evs.filter(e=>e.type==='consultation').length };
+    }
+    const c = window.calcCoverage ? window.calcCoverage(s) : { uniqueStudents:s.participants||0, coveragePercent:0 };
+    return { events: s.events||0, participants: s.participants||0, uniqueStudents: c.uniqueStudents,
+             coveragePercent: c.coveragePercent, consultations: s.consultations||0 };
+  }
+  /* Розподіл по напрямках для кожного закладу з урахуванням періоду */
+  function schoolCats(s){
+    if (isFiltered) {
+      const m = {}; (S.eventCategories||[]).forEach(c=>m[c.id]=0);
+      filteredJournal.filter(e=>e.schoolId===s.id).forEach(e=>{ const k=e.category||e.type; if(k in m) m[k]++; });
+      return m;
+    }
+    return s.monthlyData || {};
+  }
+  const statMap = {}, catMap = {};
+  serviced.forEach(s=>{ statMap[s.id]=schoolStat(s); catMap[s.id]=schoolCats(s); });
+
+  /* Топ закладів — за показником у вибраному періоді */
+  const ranked = [...serviced].sort((a,b)=>(statMap[b.id].events)-(statMap[a.id].events));
 
   /* Динаміка по місяцях: Excel-база + платформні заходи з журналу */
   const mc = window.calcMonthlyChart ? window.calcMonthlyChart() : (S.charts?.eventsByMonth || {});
@@ -213,7 +243,8 @@ function calcData(){
   const mParts    = mc.participants || []; /* охоплені учні */
 
   return { serviced, totEvents, totParticipations, totConsult, totStudents, totPrevention, totUnique, covPct, avgRating,
-           catStats, ranked, mLabels, mEvents, mParts, zrupStats, gunpStats, periodLabel, filteredJournal, isFiltered };
+           catStats, ranked, mLabels, mEvents, mParts, zrupStats, gunpStats, periodLabel, filteredJournal, isFiltered,
+           statMap, catMap };
 }
 
 function render(){
@@ -284,24 +315,24 @@ function render(){
     </div>`;
   }
 
-  /* ── Таблиця закладів ── */
-  const tblRows = [...filtered].sort((a,b)=>(b.events||0)-(a.events||0)).map((s,i)=>{
-    const cov = window.calcCoverage ? window.calcCoverage(s) : { uniqueStudents:s.participants||0, coveragePercent:0 };
-    const wp = cov.coveragePercent;
+  /* ── Таблиця закладів (рейтинг у вибраному періоді) ── */
+  const tblRows = d.ranked.map((s,i)=>{
+    const st = d.statMap[s.id] || { events:0, participants:0, uniqueStudents:0, coveragePercent:0, consultations:0 };
+    const wp = st.coveragePercent;
     const worker = S.workers && s.inspector ? S.workers[s.inspector] : null;
     return `<tr style="cursor:pointer" onclick="location.href='school.html?id=${s.id}'">
       <td><div class="rk ${i<3?'g'+(i+1):''}">${i+1}</div></td>
       <td><b>${s.name}</b><div style="font-size:11.5px;color:var(--muted)">${s.city||''} · ${worker?worker.name:''}</div></td>
-      <td class="tnum">${s.events||0}</td>
-      <td class="tnum">${F(s.participants||0)}</td>
-      <td class="tnum">${cov.uniqueStudents}</td>
+      <td class="tnum">${st.events}</td>
+      <td class="tnum">${F(st.participants)}</td>
+      <td class="tnum">${st.uniqueStudents}</td>
       <td>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="cov-bar-wrap" style="width:60px"><div class="cov-bar" style="width:${wp}%;background:${wp>=70?'var(--green-500)':wp>=40?'var(--gold-500)':'var(--red-400)'}"></div></div>
           <span style="font-size:12.5px;font-weight:700;color:${wp>=70?'var(--green-600)':wp>=40?'var(--gold-600)':'var(--red-500)'}">${wp}%</span>
         </div>
       </td>
-      <td class="tnum">${s.consultations||0}</td>
+      <td class="tnum">${st.consultations}</td>
     </tr>`;
   }).join('');
 
@@ -327,6 +358,11 @@ function render(){
       <select class="input" id="filterPeriodEl" style="max-width:200px">
         ${(window.SOBDate?.presets||[]).map(p=>`<option value="${p.id}" ${filterPeriod===p.id?'selected':''}>${p.id==='month'?window.SOBDate.currentLabel:p.id==='prevmonth'?window.SOBDate.prevLabel:p.label}</option>`).join('')}
       </select>
+      <span id="customRangeWrap" style="display:${filterPeriod==='custom'?'flex':'none'};gap:6px;align-items:center">
+        <input type="date" class="input" id="filterFromEl" style="max-width:150px" value="${filterFrom}">
+        <span style="color:var(--muted)">—</span>
+        <input type="date" class="input" id="filterToEl" style="max-width:150px" value="${filterTo}">
+      </span>
       <span style="font-size:13px;color:var(--muted);font-weight:600">${I.filter} Заклад:</span>
       <select class="input" id="filterSchoolEl" style="max-width:280px">
         <option value="all">— Усі заклади —</option>
@@ -337,7 +373,7 @@ function render(){
         <option value="all">— Усі теми —</option>
         ${(S.eventCategories||[]).map(c=>`<option value="${c.id}" ${filterTopic===c.id?'selected':''}>${c.short}</option>`).join('')}
       </select>
-      ${filterSchool!=='all'||filterPeriod!=='all'||filterTopic!=='all'?`<button class="btn btn-ghost btn-sm" onclick="filterSchool='all';filterPeriod='all';filterTopic='all';render()">Скинути</button>`:''}
+      ${filterSchool!=='all'||filterPeriod!=='all'||filterTopic!=='all'?`<button class="btn btn-ghost btn-sm" onclick="filterSchool='all';filterPeriod='all';filterTopic='all';filterFrom='';filterTo='';render()">Скинути</button>`:''}
     </div>
 
     <div class="an-kpis">${kpiHtml}</div>
@@ -346,7 +382,7 @@ function render(){
 
     <div class="card card-pad anim" style="margin-bottom:20px">
       <div class="card-head">
-        <div class="section-title">${I.shield} Заходи за 16 тематичними напрямками</div>
+        <div class="section-title">${I.shield} Заходи за тематичними напрямками (${(S.eventCategories||[]).length})</div>
         <span class="muted" style="font-size:13px">всього: ${F(d.totEvents)}</span>
       </div>
       <div class="cat-grid">${catHtml}</div>
@@ -385,7 +421,7 @@ function render(){
 
       /* ─ Режим 1: обрана конкретна тема → рейтинг закладів за цією темою ─ */
       if (topicCat) {
-        const data = rows.map(s=>({ s, v:(s.monthlyData||{})[topicCat.id]||0 }))
+        const data = rows.map(s=>({ s, v:(d.catMap[s.id]||{})[topicCat.id]||0 }))
                          .sort((a,b)=>b.v-a.v);
         const max = Math.max(1, ...data.map(d=>d.v));
         const total = data.reduce((a,d)=>a+d.v,0);
@@ -408,7 +444,7 @@ function render(){
 
       /* ─ Режим 2: усі теми → матриця заклади × напрямки з підсумками ─ */
       const ranked = rows.map(s=>{
-        const md = s.monthlyData||{};
+        const md = d.catMap[s.id] || {};
         const rowTotal = cats.reduce((a,c)=>a+(md[c.id]||0),0);
         return { s, md, rowTotal };
       }).sort((a,b)=>b.rowTotal-a.rowTotal);
@@ -445,7 +481,7 @@ function render(){
       return `<div class="card card-pad anim" style="margin-top:20px">
         <div class="card-head">
           <div class="section-title">${I.shield} Заходи по закладах та напрямках</div>
-          <span class="muted" style="font-size:13px">${rows.length} закладів · 16 напрямків</span>
+          <span class="muted" style="font-size:13px">${rows.length} закладів · ${(S.eventCategories||[]).length} напрямків</span>
         </div>
         <div class="mx-wrap">
           <table class="matrix">
@@ -458,8 +494,10 @@ function render(){
     })()}`;
 
   document.getElementById('filterSchoolEl')?.addEventListener('change', e=>{ filterSchool=e.target.value; render(); });
-  document.getElementById('filterPeriodEl')?.addEventListener('change', e=>{ filterPeriod=e.target.value; render(); });
+  document.getElementById('filterPeriodEl')?.addEventListener('change', e=>{ filterPeriod=e.target.value; if(filterPeriod!=='custom'){ filterFrom=''; filterTo=''; } render(); });
   document.getElementById('filterTopicEl')?.addEventListener('change', e=>{ filterTopic=e.target.value; render(); });
+  document.getElementById('filterFromEl')?.addEventListener('change', e=>{ filterFrom=e.target.value; render(); });
+  document.getElementById('filterToEl')?.addEventListener('change', e=>{ filterTo=e.target.value; render(); });
 
   /* Графіки */
   const gridColor='#EEF3FA';
@@ -515,10 +553,11 @@ window.exportAnalytics = function(){
   const bom = '﻿';
   const rows = ['"Напрямок","Заходів"\r\n'];
   (S.eventCategories||[]).forEach(c=>rows.push(`"${c.label}","${d.catStats[c.id]||0}"\r\n`));
+  rows.push(`\r\n"Період: ${d.periodLabel}"\r\n`);
   rows.push(`\r\n"Заклад","Місто","Заходів","Участей","Унікально охоплено","Охоплення %","Консультацій"\r\n`);
-  d.serviced.forEach(s=>{
-    const cov = window.calcCoverage?window.calcCoverage(s):{uniqueStudents:s.participants||0,coveragePercent:0};
-    rows.push(`"${s.name}","${s.city||''}","${s.events||0}","${s.participants||0}","${cov.uniqueStudents}","${cov.coveragePercent}","${s.consultations||0}"\r\n`);
+  d.ranked.forEach(s=>{
+    const st = d.statMap[s.id] || {events:0,participants:0,uniqueStudents:0,coveragePercent:0,consultations:0};
+    rows.push(`"${s.name}","${s.city||''}","${st.events}","${st.participants}","${st.uniqueStudents}","${st.coveragePercent}","${st.consultations}"\r\n`);
   });
   const blob = new Blob([bom+rows.join('')],{type:'text/csv;charset=utf-8'});
   const a = document.createElement('a');
