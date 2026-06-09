@@ -525,8 +525,8 @@ window.calcCategoryStatsFromEvents = (events) => {
   const totals = {};
   (window.SOB.eventCategories || []).forEach(c => { totals[c.id] = 0; });
   (events || []).forEach(e => {
-    const type = e.type || '';
-    if (type in totals) totals[type] = (totals[type] || 0) + 1;
+    const cat = e.category || e.type || '';
+    if (cat in totals) totals[cat] = (totals[cat] || 0) + 1;
   });
   return totals;
 };

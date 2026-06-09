@@ -122,6 +122,7 @@
         <div class="field"><label>Дата</label><input class="input" type="date" id="ev_date" min="2020-01-01" max="2050-12-31"></div>
         <div class="field"><label>Тип заходу</label><select class="input" id="ev_type"></select></div>
       </div>
+      <div class="field"><label>Тематичний напрямок (для статистики)</label><select class="input" id="ev_category"></select></div>
       <div class="grid-2" style="gap:14px">
         <div class="field"><label>Аудиторія</label><input class="input" id="ev_audience" placeholder="Напр. 8–11 класи, батьки, педагоги…"></div>
         <div class="field"><label>Учасників</label><input class="input" type="number" id="ev_participants" placeholder="0" min="0"></div>
@@ -158,8 +159,8 @@
   </div>
 </div>
 
-<script src="js/data.js?v=8"></script>
-<script src="js/store.js?v=12"></script>
+<script src="js/data.js?v=9"></script>
+<script src="js/store.js?v=13"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="assets/image-slot.js"></script>
 <script>
@@ -180,6 +181,8 @@ const fmtDate = iso => { const d=new Date(iso); return {d:d.getDate(), m:MONTHS[
 
 // fill event types from eventTypes array
 document.getElementById('ev_type').innerHTML = (S.eventTypes||S.galleryTopics.map(l=>({label:l}))).map(t=>`<option value="${t.id||t.label}">${t.label}</option>`).join('');
+// fill thematic categories (16 Excel-напрямків) — feeds монтлі-статистику
+document.getElementById('ev_category').innerHTML = (S.eventCategories||[]).map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
 
 const otherSchools = window.SOBStore.serviced().filter(x=>x.id!==s.id).map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
 const fileIcType = n => { const e=(n.split('.').pop()||'').toLowerCase(); if(e==='pdf')return'pdf'; if(['doc','docx'].includes(e))return'doc'; if(['ppt','pptx'].includes(e))return'ppt'; if(['zip','rar','7z'].includes(e))return'zip'; if(['jpg','jpeg','png','gif','webp'].includes(e))return'img'; return'other'; };
@@ -511,7 +514,7 @@ document.getElementById('saveEvent').addEventListener('click', ()=>{
   const title = document.getElementById('ev_title').value.trim();
   if(!title){ toast('Введіть назву заходу','red'); return; }
   const parts = +document.getElementById('ev_participants').value||0;
-  const ev = window.SOBStore.addEvent({ schoolId: s.id, title, date: document.getElementById('ev_date').value, type: document.getElementById('ev_type').value, audience: document.getElementById('ev_audience').value.trim(), participants: parts, note: document.getElementById('ev_note').value.trim() });
+  const ev = window.SOBStore.addEvent({ schoolId: s.id, title, date: document.getElementById('ev_date').value, type: document.getElementById('ev_type').value, category: document.getElementById('ev_category').value, audience: document.getElementById('ev_audience').value.trim(), participants: parts, note: document.getElementById('ev_note').value.trim() });
   if(pendingPhotos.length){
     pendingPhotos.forEach(p=>window.SOBStore.addGallery({ schoolId: s.id, eventId: ev.id, dataUrl: p.dataUrl, title: p.name, date: document.getElementById('ev_date').value }));
   }

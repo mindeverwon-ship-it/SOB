@@ -216,6 +216,20 @@ window.SOBStore = {
     s.participants = basePart + evs.reduce((sum, e) => sum + (e.participants || 0), 0);
     s.prevention   = basePrev + evs.filter(e => prevTypes.includes(e.type)).length;
     s.rating       = s.events + Math.round(s.participants / 10);
+
+    /* Тематична статистика (16 напрямків + співпраця): база з Excel + журнальні заходи.
+       Кожен журнальний захід зараховується у свій напрямок (e.category). */
+    if (s.baseMonthly === undefined) s.baseMonthly = Object.assign({}, s.monthlyData || {});
+    const validCats = new Set([
+      ...((window.SOB.eventCategories || []).map(c => c.id)),
+      ...((window.SOB.collaborationMetrics || []).map(c => c.id)),
+    ]);
+    const md = Object.assign({}, s.baseMonthly);
+    evs.forEach(e => {
+      const cat = e.category;
+      if (cat && validCats.has(cat)) md[cat] = (md[cat] || 0) + 1;
+    });
+    s.monthlyData = md;
   },
 
   /* ---- Заходи ---- */
