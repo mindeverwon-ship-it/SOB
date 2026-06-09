@@ -656,13 +656,13 @@ function buildPptx(){
     });
   }
 
-  /* ════ Слайд 5 · Громади / території ════ */
-  const tgMap = {};
-  serviced.forEach(s=>{ const k=s.tg||'—'; tgMap[k]=(tgMap[k]||0)+(s.events||0); });
-  const tgList = Object.entries(tgMap).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value);
-  if (tgList.length){
-    const s5 = content('Територіальний розріз', 'Активність по громадах');
-    bars(s5, tgList.slice(0,11), 0.6, 1.75, 12.1, 0.46, NAVY);
+  /* ════ Слайд 5 · Райони / території ════ */
+  const distMap = {};
+  serviced.forEach(s=>{ const w=S.workers?.[s.inspector]; const k=(w&&w.district)||s.tg||'—'; distMap[k]=(distMap[k]||0)+(s.events||0); });
+  const distList = Object.entries(distMap).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value);
+  if (distList.length){
+    const s5 = content('Територіальний розріз', 'Активність по районах / територіях');
+    bars(s5, distList.slice(0,11), 0.6, 1.75, 12.1, 0.46, NAVY);
   }
 
   /* ════ Слайд 6 · Працівники СОБ ════ */

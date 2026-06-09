@@ -364,10 +364,8 @@ function render(){
       <div class="rank-list">${rows}</div>
     </div>`;
   }
-  const tgItems   = d.tgStats.map(t=>({label:t.label, value:t.value, sub:t.participants}));
   const wItems    = d.workerStats.map(w=>({label:w.label, value:w.value, sub:w.rank, cat:w.cat, href:'inspectors.html?key='+w.key}));
-  const distItems = d.distStats.map(t=>({label:t.label, value:t.value}));
-  const typeItems = d.typeStats.map(t=>({label:t.label, value:t.value, color:t.color}));
+  const distItems = d.distStats.map(t=>({label:t.label, value:t.value, sub:t.participants}));
 
   document.getElementById('content').innerHTML = `
     <div class="page-head">
@@ -443,12 +441,7 @@ function render(){
 
     <div class="grid-2" style="margin-top:20px">
       ${barBlock('Статистика по працівниках СОБ', I.shield, wItems, 'var(--blue-600)', it=>[it.sub,it.cat].filter(Boolean).join(' · '))}
-      ${barBlock('Активність по громадах (ТГ)', I.building, tgItems, 'var(--navy-700,#0E274D)', it=>it.sub?('охоплено '+F(it.sub)):'')}
-    </div>
-
-    <div class="grid-2" style="margin-top:20px">
-      ${barBlock('Активність по районах / територіях', I.pin, distItems, 'var(--green-600)')}
-      ${barBlock('Заходи за типами (журнал)', I.filter, typeItems, 'var(--blue-600)')}
+      ${barBlock('Активність по районах / територіях', I.pin, distItems, 'var(--green-600)', it=>it.sub?('охоплено '+F(it.sub)):'')}
     </div>
 
     ${(()=>{
