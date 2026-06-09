@@ -132,7 +132,7 @@
 <div class="app" id="shell"></div>
 
 <script src="js/data.js?v=12"></script>
-<script src="js/store.js?v=13"></script>
+<script src="js/store.js?v=14"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
@@ -578,7 +578,28 @@ function exportReport(kind){
       { x:0.4, y:1.2, w:12.4, colW:[0.7,7,1.5,1.7,1.5], fontSize:11, fontFace:'Arial', border:{pt:0.5,color:'DDE3EF'}, autoPage:true }
     );
 
-    // ── Слайди 4+: Журнал заходів ──
+    // ── Слайд 4: Заходи за тематичними напрямками ──
+    const catStats = window.calcCategoryStats ? window.calcCategoryStats() : {};
+    const catList = (S.eventCategories||[]).map(c=>({ label:c.label, short:c.short, count:catStats[c.id]||0 }))
+                      .sort((a,b)=>b.count-a.count);
+    if (catList.some(c=>c.count>0)) {
+      const sc = pptx.addSlide();
+      sc.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.0, fill:{ color:CNAV } });
+      sc.addText('Заходи за тематичними напрямками', { x:0.4, y:0.22, w:12, h:0.6, fontSize:18, bold:true, color:CWHT, fontFace:'Arial' });
+      const catRows = catList.map(c => [
+        { text: c.label },
+        { text: String(c.count), options:{ align:'center', bold:true, color:CBLU } },
+      ]);
+      sc.addTable(
+        [[
+          {text:'Тематичний напрямок',options:{bold:true,fill:CNAV,color:CWHT}},
+          {text:'Заходів',options:{bold:true,align:'center',fill:CNAV,color:CWHT}},
+        ], ...catRows],
+        { x:0.4, y:1.2, w:12.4, colW:[10.4,2], fontSize:11, fontFace:'Arial', border:{pt:0.5,color:'DDE3EF'}, autoPage:true }
+      );
+    }
+
+    // ── Слайди 5+: Журнал заходів ──
     if(S.schoolEvents.length){
       const s4 = pptx.addSlide();
       s4.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.0, fill:{ color:CNAV } });

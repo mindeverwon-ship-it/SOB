@@ -241,7 +241,14 @@ window.SOBStore = {
   },
   updateEvent(id, patch) {
     const e = window.SOB.schoolEvents.find(x => x.id === id);
-    if (e) { Object.assign(e, patch); this.recalcSchool(e.schoolId); this.logAudit('update','event',id,'Захід оновлено'); this.save(); } return e;
+    if (e) {
+      const oldSchool = e.schoolId;               /* запам'ятовуємо попередній заклад */
+      Object.assign(e, patch);
+      this.recalcSchool(e.schoolId);              /* новий заклад */
+      if (oldSchool && oldSchool !== e.schoolId) this.recalcSchool(oldSchool); /* перенесення → перерахувати і старий */
+      this.logAudit('update','event',id,'Захід оновлено'); this.save();
+    }
+    return e;
   },
   cancelEvent(id, reason) {
     const e = window.SOB.schoolEvents.find(x => x.id === id);
