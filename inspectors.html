@@ -134,8 +134,8 @@
   </div>
 </div>
 
-<script src="js/data.js?v=5"></script>
-<script src="js/store.js?v=11"></script>
+<script src="js/data.js?v=6"></script>
+<script src="js/store.js?v=12"></script>
 <script src="js/shell.js?v=5"></script>
 <script>
 SOBShell.render({ active: 'workers', crumb: ['СОБ', 'Працівники СОБ'] });
@@ -153,8 +153,8 @@ function insColor(key) {
 }
 function initials(name) { return name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
 function schoolsCount(key) { return S.schools.filter(s=>s.serviced&&s.inspector===key).length; }
-function eventsCount(key) { return S.schools.filter(s=>s.inspector===key).reduce((sum,s)=>sum+(s.events||0),0); }
-function participantsCount(key) { return S.schools.filter(s=>s.inspector===key).reduce((sum,s)=>sum+(s.participants||0),0); }
+function eventsCount(key) { return S.schools.filter(s=>s.serviced&&s.inspector===key).reduce((sum,s)=>sum+(s.events||0),0); }
+function participantsCount(key) { return S.schools.filter(s=>s.serviced&&s.inspector===key).reduce((sum,s)=>sum+(s.participants||0),0); }
 function uniqueCoverage(key) {
   return S.schools.filter(s=>s.inspector===key&&s.serviced).reduce((sum,s)=>{
     const cov = window.calcCoverage ? window.calcCoverage(s) : { uniqueStudents: s.participants||0 };
@@ -435,7 +435,8 @@ document.addEventListener('input', e => {
   const resultsEl = document.getElementById('asgnr-'+key);
   if (!resultsEl) return;
   if (!q) { resultsEl.style.display='none'; resultsEl.innerHTML=''; return; }
-  const matches = S.schools.filter(sc => sc.serviced && sc.inspector !== key && sc.name.toLowerCase().includes(q));
+  /* Показуємо всі заклади (включно з не-обслуговуваними), крім вже закріплених за цим інспектором */
+  const matches = S.schools.filter(sc => sc.inspector !== key && sc.name.toLowerCase().includes(q));
   if (!matches.length) { resultsEl.innerHTML='<div style="padding:8px 12px;color:var(--muted);font-size:12.5px">Не знайдено</div>'; resultsEl.style.display='block'; return; }
   resultsEl.innerHTML = matches.slice(0,8).map(sc=>`<div data-assign-school="${sc.id}" data-to-key="${key}" style="padding:7px 12px;font-size:12.5px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s" onmouseover="this.style.background='var(--blue-050)'" onmouseout="this.style.background=''">${esc(sc.name)}${sc.inspector?`<span style="font-size:11px;color:var(--muted);margin-left:6px">(зараз: ${esc((S.workers[sc.inspector]||{name:sc.inspector}).name)})</span>`:''}</div>`).join('');
   resultsEl.style.display = 'block';

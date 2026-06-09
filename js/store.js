@@ -40,6 +40,8 @@ window.SOBStore = {
       (window.SOB.schools || []).forEach(s => {
         if (Object.prototype.hasOwnProperty.call(ov, s.id)) {
           s.inspector = ov[s.id];
+          // Синхронізуємо serviced разом з inspector — заклад без інспектора не обслуговується
+          s.serviced = !!ov[s.id];
         }
       });
     } catch(_) {}
@@ -177,10 +179,12 @@ window.SOBStore = {
     const s = window.SOB.schools.find(x => x.id === schoolId);
     if (!s) return;
     const prev = s.inspector;
-    if (prev === inspectorKey) return s;
+    if (prev === (inspectorKey || '')) return s;
     if (!s.inspectorHistory) s.inspectorHistory = [];
     if (prev) s.inspectorHistory.push({ key: prev, assignedUntil: new Date().toISOString().slice(0,10) });
     s.inspector = inspectorKey || '';
+    // Якщо інспектора знято — заклад більше не обслуговується і зникає зі статистики
+    s.serviced = !!inspectorKey;
     this._saveInspectorOverride(schoolId, s.inspector); // зберігаємо окремо — Firebase не зітре
     this.save();
     this.logAudit('update','school',schoolId,`Відповідальний змінено: ${prev||'—'} → ${inspectorKey||'—'}`);

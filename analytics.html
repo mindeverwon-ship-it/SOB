@@ -64,8 +64,8 @@
 </head>
 <body>
 <div class="app" id="shell"></div>
-<script src="js/data.js?v=5"></script>
-<script src="js/store.js?v=11"></script>
+<script src="js/data.js?v=6"></script>
+<script src="js/store.js?v=12"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
 <script>
@@ -88,38 +88,72 @@ function destroyCharts(){
 
 function calcData(){
   const SD = window.SOBDate;
-  const serviced = (S.schools||[]).filter(s=>s.serviced);
+  const allServiced = (S.schools||[]).filter(s=>s.serviced);
+  /* Фільтр за закладом */
+  const serviced = filterSchool==='all' ? allServiced : allServiced.filter(s=>s.id===filterSchool);
 
-  /* Фільтр журнальних заходів за обраним периодом */
+  /* Фільтр журнальних заходів за закладом і обраним periodом */
   const allJournal = (window.SOB.schoolEvents||[]).filter(e=>e.status!=='cancelled');
-  const filteredJournal = SD ? SD.filterEvents(allJournal, filterPeriod) : allJournal;
+  const schoolFilteredJournal = filterSchool==='all' ? allJournal : allJournal.filter(e=>e.schoolId===filterSchool);
+  const filteredJournal = SD ? SD.filterEvents(schoolFilteredJournal, filterPeriod) : schoolFilteredJournal;
+  const isFiltered = filterPeriod !== 'all';
   const periodLabel = SD ? SD.presetLabel(filterPeriod) : (S.org.period);
 
-  /* Загальна статистика */
-  const totEvents       = serviced.reduce((a,s)=>a+(s.events||0),0);
-  const totParticipations = serviced.reduce((a,s)=>a+(s.participants||0),0);
-  const totConsult      = serviced.reduce((a,s)=>a+(s.consultations||0),0);
-  const totStudents     = serviced.reduce((a,s)=>a+(s.students||0),0);
-  const totPrevention   = serviced.reduce((a,s)=>a+(s.prevention||0),0);
+  const prevTypes = ['prevention','mine','evacuation','cyber','buling','legal'];
 
-  /* Унікально охоплені — мінімум участей і кількості учнів по кожному закладу */
-  let totUnique = 0;
-  serviced.forEach(s=>{
-    const cov = window.calcCoverage ? window.calcCoverage(s) : { uniqueStudents: s.participants||0 };
-    totUnique += cov.uniqueStudents;
-  });
-  const covPct = totStudents>0 ? Math.round(totUnique/totStudents*100) : 0;
+  let totEvents, totParticipations, totConsult, totStudents, totPrevention, totUnique, covPct;
+
+  if (isFiltered) {
+    /* При активному фільтрі дат — рахуємо ТІЛЬКИ по журнальних заходах у вибраному діапазоні */
+    totEvents        = filteredJournal.length;
+    totParticipations= filteredJournal.reduce((a,e)=>a+(e.participants||0),0);
+    totPrevention    = filteredJournal.filter(e=>prevTypes.includes(e.type)).length;
+    totConsult       = filteredJournal.filter(e=>e.type==='consultation').length;
+    totStudents      = serviced.reduce((a,s)=>a+(s.students||0),0);
+    totUnique        = totStudents>0 ? Math.min(totParticipations, totStudents) : totParticipations;
+    covPct           = totStudents>0 ? Math.round(totUnique/totStudents*100) : 0;
+  } else {
+    /* Без фільтра — використовуємо повні показники (база + всі журнальні заходи) */
+    totEvents        = serviced.reduce((a,s)=>a+(s.events||0),0);
+    totParticipations= serviced.reduce((a,s)=>a+(s.participants||0),0);
+    totConsult       = serviced.reduce((a,s)=>a+(s.consultations||0),0);
+    totStudents      = serviced.reduce((a,s)=>a+(s.students||0),0);
+    totPrevention    = serviced.reduce((a,s)=>a+(s.prevention||0),0);
+    totUnique = 0;
+    serviced.forEach(s=>{
+      const cov = window.calcCoverage ? window.calcCoverage(s) : { uniqueStudents: s.participants||0 };
+      totUnique += cov.uniqueStudents;
+    });
+    covPct = totStudents>0 ? Math.round(totUnique/totStudents*100) : 0;
+  }
 
   /* Середній рейтинг */
   const avgRating = serviced.length ? Math.round(serviced.reduce((a,s)=>a+(s.rating||0),0)/serviced.length) : 0;
 
-  /* Розбивка по 22 категоріях з monthlyData */
-  const catStats = window.calcCategoryStats ? window.calcCategoryStats() : {};
+  /* Розбивка по 16 категоріях з monthlyData */
+  const catStats = isFiltered
+    ? window.calcCategoryStatsFromEvents ? window.calcCategoryStatsFromEvents(filteredJournal) : (window.calcCategoryStats ? window.calcCategoryStats(serviced) : {})
+    : (window.calcCategoryStats ? window.calcCategoryStats(serviced) : {});
 
   /* ГУНП / ЗРУП поділ */
   const workers = S.workers || {};
   function workerSchools(cat){ return serviced.filter(s=>{const w=workers[s.inspector||'']; return w&&w.category===cat;}); }
   function groupStats(schools){
+    if (isFiltered) {
+      const schoolIds = new Set(schools.map(s=>s.id));
+      const evs = filteredJournal.filter(e=>schoolIds.has(e.schoolId));
+      const st = schools.reduce((a,s)=>a+(s.students||0),0);
+      const parts = evs.reduce((a,e)=>a+(e.participants||0),0);
+      const uniq = st>0 ? Math.min(parts,st) : parts;
+      return {
+        schools: schools.length,
+        events: evs.length,
+        participations: parts,
+        unique: uniq,
+        students: st,
+        workers: [...new Set(schools.map(s=>s.inspector).filter(Boolean))].length,
+      };
+    }
     return {
       schools: schools.length,
       events: schools.reduce((a,s)=>a+(s.events||0),0),
@@ -144,14 +178,15 @@ function calcData(){
   const mParts    = mc.participants || []; /* охоплені учні */
 
   return { serviced, totEvents, totParticipations, totConsult, totStudents, totPrevention, totUnique, covPct, avgRating,
-           catStats, ranked, mLabels, mEvents, mParts, zrupStats, gunpStats, periodLabel, filteredJournal };
+           catStats, ranked, mLabels, mEvents, mParts, zrupStats, gunpStats, periodLabel, filteredJournal, isFiltered };
 }
 
 function render(){
   const d = calcData();
   destroyCharts();
 
-  const filtered = d.serviced.filter(s => filterSchool==='all' || s.id===filterSchool);
+  /* d.serviced вже відфільтровано по filterSchool у calcData() */
+  const filtered = d.serviced;
 
   /* ── KPI ── */
   const kpiHtml = `

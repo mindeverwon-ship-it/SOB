@@ -158,8 +158,8 @@
   </div>
 </div>
 
-<script src="js/data.js?v=5"></script>
-<script src="js/store.js?v=11"></script>
+<script src="js/data.js?v=6"></script>
+<script src="js/store.js?v=12"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="assets/image-slot.js"></script>
 <script>
@@ -490,7 +490,7 @@ document.getElementById('saveEvent').addEventListener('click', ()=>{
   if(pendingPhotos.length){
     pendingPhotos.forEach(p=>window.SOBStore.addGallery({ schoolId: s.id, eventId: ev.id, dataUrl: p.dataUrl, title: p.name, date: document.getElementById('ev_date').value }));
   }
-  window.SOBStore.updateSchool(s.id, { events: (s.events||0)+1, participants: (s.participants||0)+parts });
+  // addEvent вже викликає recalcSchool — не дублюємо ручний increment
   s = S.schools.find(x=>x.id===s.id);
   pendingPhotos=[];
   closeModal('eventModal'); toast('Захід додано'); render();
@@ -586,6 +586,7 @@ window.openPhoto = function(src){
   lbox.style.display='flex';
 };
 document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ const lb=document.getElementById('lightbox'); if(lb) lb.style.display='none'; }});
+document.addEventListener('sob:synced', ()=>render());
 
 render();
 </script>

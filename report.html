@@ -65,8 +65,8 @@
 </head>
 <body>
 <div class="app" id="shell"></div>
-<script src="js/data.js?v=5"></script>
-<script src="js/store.js?v=11"></script>
+<script src="js/data.js?v=6"></script>
+<script src="js/store.js?v=12"></script>
 <script src="js/shell.js?v=5"></script>
 <script>
 const S = window.SOB, F = window.fmt, I = window.ICON;
@@ -113,9 +113,10 @@ function buildData() {
   const rows = schools.map(sc => {
     const ins       = S.workers?.[sc.inspector] || {};
     const scEvs     = journalEvs.filter(e => e.schoolId === sc.id);
-    /* if period filter → show only journal; otherwise base+journal */
-    const baseE     = filterPeriod ? 0 : (sc.baseEvents       ?? sc.events       ?? 0);
-    const baseP     = filterPeriod ? 0 : (sc.baseParticipants ?? sc.participants  ?? 0);
+    /* if period filter → show only journal; "all" або відсутність фільтра → база+журнал */
+    const noFilter  = !filterPeriod || filterPeriod === 'all';
+    const baseE     = noFilter ? (sc.baseEvents       ?? sc.events       ?? 0) : 0;
+    const baseP     = noFilter ? (sc.baseParticipants ?? sc.participants  ?? 0) : 0;
     const journalE  = scEvs.length;
     const journalP  = scEvs.reduce((s,e) => s+(e.participants||0), 0);
     const totalE    = baseE + journalE;
@@ -151,9 +152,10 @@ function buildData() {
   const topWorkers = Object.entries(workerMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
 
   /* ── problem schools ── */
-  const problems = filterPeriod
-    ? rows.filter(r => r.journalE === 0)
-    : rows.filter(r => r.totalE < 3);
+  const noFilter2 = !filterPeriod || filterPeriod === 'all';
+  const problems = noFilter2
+    ? rows.filter(r => r.totalE < 3)
+    : rows.filter(r => r.journalE === 0);
 
   /* ── auto conclusion ── */
   const periodLabel = filterPeriod

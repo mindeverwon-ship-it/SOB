@@ -32,8 +32,8 @@
 </head>
 <body>
 <div class="app" id="shell"></div>
-<script src="js/data.js?v=5"></script>
-<script src="js/store.js?v=11"></script>
+<script src="js/data.js?v=6"></script>
+<script src="js/store.js?v=12"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="assets/image-slot.js"></script>
 <script>
@@ -115,6 +115,7 @@ function bindSlots(){ /* image-slot persists by id automatically */ }
 
 document.getElementById('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b));render();});
 document.getElementById('topicFilters').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;topicFilter=b.dataset.t;document.querySelectorAll('#topicFilters button').forEach(x=>x.classList.toggle('on',x===b));render();});
+document.addEventListener('sob:synced', ()=>render());
 render();
 </script>
 </body>

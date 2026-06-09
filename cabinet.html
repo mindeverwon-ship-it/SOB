@@ -78,8 +78,8 @@
   </div>
 </div>
 
-<script src="js/data.js?v=5"></script>
-<script src="js/store.js?v=11"></script>
+<script src="js/data.js?v=6"></script>
+<script src="js/store.js?v=12"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="js/firebase-storage.js?v=3"></script>
 <script>
@@ -93,17 +93,18 @@ if(U.role !== 'inspector' && U.role !== 'admin'){
   document.getElementById('closeEvent').innerHTML = I.close;
   const myKey = U.inspector;
   const myName = (S.workers[myKey]?.name) || U.name;
-  // schools this inspector manages (admin sees all serviced)
-  const myParams = U.role==='admin' ? window.SOBStore.serviced() : S.schools.filter(s=>s.serviced && s.inspector===myKey);
-  const ids = myParams.map(s=>s.id);
   const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
   const fmtDate=iso=>{const d=new Date(iso);return d.getDate()+' '+MONTHS[d.getMonth()];};
   const fileIcType=n=>{const e=(n.split('.').pop()||'').toLowerCase();if(e==='pdf')return'pdf';if(['doc','docx'].includes(e))return'doc';if(['ppt','pptx'].includes(e))return'ppt';if(['zip','rar','7z'].includes(e))return'zip';if(['jpg','jpeg','png','gif','webp'].includes(e))return'img';return'other';};
 
   document.getElementById('ev_type').innerHTML = (S.eventTypes||[]).map(t=>`<option value="${t.id}">${t.label}</option>`).join('');
-  document.getElementById('ev_school').innerHTML = myParams.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
 
   function render(){
+    /* Перераховуємо щоразу — список закладів може змінитись після sob:synced */
+    const myParams = U.role==='admin' ? window.SOBStore.serviced() : S.schools.filter(s=>s.serviced && s.inspector===myKey);
+    const ids = myParams.map(s=>s.id);
+    document.getElementById('ev_school').innerHTML = myParams.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+
     const myEvents = S.schoolEvents.filter(e=>ids.includes(e.schoolId)).slice(0,6);
     const myFiles = S.files.filter(f=>ids.includes(f.schoolId)).slice(0,6);
     const totEvents = S.schoolEvents.filter(e=>ids.includes(e.schoolId)).length;
@@ -174,7 +175,7 @@ if(U.role !== 'inspector' && U.role !== 'admin'){
         <div class="photo-grid" id="photoGrid">
           ${(S.gallery||[]).filter(g=>ids.includes(g.schoolId)).slice(0,20).map(g=>`
             <div class="photo-thumb" style="position:relative">
-              <img src="${g.url}" alt="${g.name||'фото'}" style="width:100%;height:120px;object-fit:cover;border-radius:12px;display:block">
+              <img src="${g.url||g.dataUrl||''}" alt="${g.name||'фото'}" style="width:100%;height:120px;object-fit:cover;border-radius:12px;display:block">
               <button class="adm-photo-del" data-gdel="${g.id}" style="opacity:1;position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:8px;padding:5px 7px;font-size:12px;cursor:pointer">${I.trash}</button>
               <div style="font-size:11px;color:var(--muted);padding:3px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g.date||''}</div>
             </div>`).join('')}
@@ -282,6 +283,7 @@ if(U.role !== 'inspector' && U.role !== 'admin'){
   }
 
   document.querySelectorAll('.modal-scrim').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
+  document.addEventListener('sob:synced', ()=>render());
   render();
 }
 </script>

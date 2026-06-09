@@ -453,31 +453,79 @@ window.calcMonthlyChart = () => {
   return { labels, events, participants };
 };
 
-/* Агрегована статистика по всіх обслуговуваних закладах */
-window.calcTotalStats = () => {
-  const serviced = (window.SOB.schools || []).filter(s => s.serviced);
-  return serviced.reduce((acc, s) => {
-    acc.totalStudents  += s.students     || 0;
-    acc.events         += s.events       || 0;
-    acc.participations += s.participants || 0;
-    acc.prevention     += s.prevention   || 0;
-    acc.consultations  += s.consultations|| 0;
-    // підрахунок унікально охоплених: min по кожному закладу, потім сумуємо
-    const sch = window.calcCoverage(s);
-    acc.uniqueStudents += sch.uniqueStudents;
-    return acc;
-  }, { totalStudents: 0, events: 0, participations: 0, prevention: 0, consultations: 0, uniqueStudents: 0 });
+/* ============================================================
+   Централізований модуль статистики — єдине джерело правди
+   Всі сторінки використовують ці функції, дублювання заборонено
+   ============================================================ */
+
+/* Агрегована статистика по списку закладів.
+   Якщо передано events — перераховує динамічно з журналу (для фільтрів дат).
+   Без events — використовує статичні поля (base + всі журнальні). */
+window.calcStats = (schools, events) => {
+  if (!schools) schools = (window.SOB.schools || []).filter(s => s.serviced);
+  const prevTypes = ['prevention','mine','evacuation','cyber','buling','legal'];
+
+  if (events !== undefined) {
+    /* Режим: динамічний підрахунок з переданого масиву заходів */
+    const schoolIds = new Set(schools.map(s => s.id));
+    const evs = events.filter(e => schoolIds.has(e.schoolId));
+    const totalStudents  = schools.reduce((a, s) => a + (s.students || 0), 0);
+    const participations = evs.reduce((a, e) => a + (e.participants || 0), 0);
+    const uniqueStudents = totalStudents > 0 ? Math.min(participations, totalStudents) : participations;
+    const coveragePercent = totalStudents > 0 ? Math.round(uniqueStudents / totalStudents * 100) : 0;
+    return {
+      events:        evs.length,
+      participations,
+      prevention:    evs.filter(e => prevTypes.includes(e.type)).length,
+      consultations: evs.filter(e => e.type === 'consultation').length,
+      totalStudents,
+      uniqueStudents,
+      coveragePercent,
+    };
+  }
+
+  /* Режим: статичні поля (base + всі журнальні заходи через recalcSchool) */
+  let uniqueStudents = 0;
+  schools.forEach(s => { uniqueStudents += window.calcCoverage(s).uniqueStudents; });
+  const totalStudents  = schools.reduce((a, s) => a + (s.students     || 0), 0);
+  const participations = schools.reduce((a, s) => a + (s.participants  || 0), 0);
+  const coveragePercent = totalStudents > 0 ? Math.round(uniqueStudents / totalStudents * 100) : 0;
+  return {
+    events:        schools.reduce((a, s) => a + (s.events        || 0), 0),
+    participations,
+    prevention:    schools.reduce((a, s) => a + (s.prevention    || 0), 0),
+    consultations: schools.reduce((a, s) => a + (s.consultations || 0), 0),
+    totalStudents,
+    uniqueStudents,
+    coveragePercent,
+  };
 };
 
-/* Агрегована статистика заходів по тематиках (тільки 16 напрямків з eventCategories) */
-window.calcCategoryStats = () => {
-  const serviced = (window.SOB.schools || []).filter(s => s.serviced && s.monthlyData);
+/* Зручний аліас: статистика по всіх обслуговуваних закладах */
+window.calcTotalStats = () => window.calcStats();
+
+/* Агрегована статистика заходів по 16 тематичних напрямках із monthlyData.
+   Приймає необов'язковий список закладів (за замовчуванням — всі обслуговувані). */
+window.calcCategoryStats = (schools) => {
+  if (!schools) schools = (window.SOB.schools || []).filter(s => s.serviced && s.monthlyData);
   const totals = {};
   (window.SOB.eventCategories || []).forEach(c => { totals[c.id] = 0; });
-  serviced.forEach(s => {
+  schools.forEach(s => {
     Object.entries(s.monthlyData || {}).forEach(([k, v]) => {
-      if (k in totals) totals[k] = (totals[k] || 0) + (v || 0); // тільки тематичні напрямки
+      if (k in totals) totals[k] = (totals[k] || 0) + (v || 0);
     });
+  });
+  return totals;
+};
+
+/* Статистика категорій із журнальних заходів (для режиму фільтру дат).
+   Маппінг eventTypes → eventCategories за id де вони збігаються. */
+window.calcCategoryStatsFromEvents = (events) => {
+  const totals = {};
+  (window.SOB.eventCategories || []).forEach(c => { totals[c.id] = 0; });
+  (events || []).forEach(e => {
+    const type = e.type || '';
+    if (type in totals) totals[type] = (totals[type] || 0) + 1;
   });
   return totals;
 };
