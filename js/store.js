@@ -19,6 +19,28 @@ const SCHOOL_SYNC_FIELDS = ['inspector','director','phone','phone2','email','tel
 window.SOBStore = {
   KEY: 'sob_data_v4',
   FB: FIREBASE_URL,
+  /* Публічний ключ веб-застосунку Firebase (не секрет — ходить у кожному клієнті).
+     Використовується для анонімної авторизації, щоб база була закрита від прямого доступу. */
+  API_KEY: 'AIzaSyCURW01X-T0GEeqOLPJ0CCFyZRtCQsiJ6o',
+  _token: null,
+  _tokenExp: 0,
+  /* Отримати (і кешувати) анонімний токен через REST Identity Toolkit.
+     Якщо анонімний вхід не ввімкнено або немає мережі — повертає null (працюємо локально). */
+  async _authToken() {
+    if (this._token && Date.now() < this._tokenExp) return this._token;
+    try {
+      const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + this.API_KEY, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ returnSecureToken: true })
+      });
+      if (!r.ok) return null;
+      const d = await r.json();
+      this._token = d.idToken;
+      this._tokenExp = Date.now() + (parseInt(d.expiresIn || '3600', 10) - 120) * 1000;
+      return this._token;
+    } catch (e) { return null; }
+  },
+  _fbUrl(token) { return this.FB + '/sob.json' + (token ? ('?auth=' + token) : ''); },
   /* Синхронізуємо тільки колекції з даними, введеними користувачами.
      'secondary', 'kpis', 'org' — статичні дані з data.js, не перезаписуємо. */
   collections: ['schools', 'schoolEvents', 'gallery', 'files', 'inspectors', 'incidents', 'assignments', 'auditLog'],
@@ -106,7 +128,8 @@ window.SOBStore = {
 
   async _fetchCloud() {
     try {
-      const res = await fetch(this.FB + '/sob.json');
+      const token = await this._authToken();
+      const res = await fetch(this._fbUrl(token));
       if (!res.ok) return;
       const data = await res.json();
       if (!data) return;
@@ -134,13 +157,13 @@ window.SOBStore = {
       console.warn('localStorage переповнений', e);
       if(typeof toast === 'function') toast('Сховище майже заповнене', 'red');
     }
-    // записати у Firebase у фоні — PATCH щоб не затирати паралельні зміни
+    // записати у Firebase у фоні — PATCH щоб не затирати паралельні зміни (з токеном авторизації)
     if (this.FB && this.FB !== 'YOUR_FIREBASE_URL') {
-      fetch(this.FB + '/sob.json', {
+      this._authToken().then(token => fetch(this._fbUrl(token), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(out)
-      }).catch(e => console.warn('Firebase sync failed', e));
+      })).catch(e => console.warn('Firebase sync failed', e));
     }
     return true;
   },
