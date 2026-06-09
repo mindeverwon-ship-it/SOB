@@ -157,10 +157,12 @@ window.SOBStore = {
       console.warn('localStorage переповнений', e);
       if(typeof toast === 'function') toast('Сховище майже заповнене', 'red');
     }
-    // записати у Firebase у фоні — PATCH щоб не затирати паралельні зміни (з токеном авторизації)
+    // записати у Firebase у фоні — PUT (повне перезаписування вузла), щоб видалення
+    // заходів коректно прибиралися з хмари. PATCH не видаляє відсутні елементи масиву
+    // → видалені заходи «оживали» при синхронізації. (з токеном авторизації)
     if (this.FB && this.FB !== 'YOUR_FIREBASE_URL') {
       this._authToken().then(token => fetch(this._fbUrl(token), {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(out)
       })).catch(e => console.warn('Firebase sync failed', e));
