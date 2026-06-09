@@ -57,6 +57,33 @@
 .tbl .rk.g2 { background:#E7ECF4; color:var(--navy-700); }
 .tbl .rk.g3 { background:var(--amber-100); color:var(--amber-500); }
 
+/* Topic × school matrix */
+.mx-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius-lg); }
+table.matrix { border-collapse:collapse; width:100%; font-size:12.5px; }
+table.matrix th, table.matrix td { padding:9px 8px; text-align:center; white-space:nowrap; border-bottom:1px solid var(--border); }
+table.matrix thead th { position:sticky; top:0; background:var(--surface-2); font-size:10.5px; font-weight:700; line-height:1.25; text-transform:uppercase; letter-spacing:.02em; vertical-align:bottom; z-index:2; }
+table.matrix th.mx-school, table.matrix td.mx-school { position:sticky; left:0; background:var(--surface); text-align:left; min-width:200px; max-width:240px; white-space:normal; z-index:1; box-shadow:1px 0 0 var(--border); }
+table.matrix thead th.mx-school { z-index:3; background:var(--surface-2); }
+table.matrix tbody tr:hover td { background:var(--surface-2); }
+table.matrix tbody tr:hover td.mx-school { background:var(--surface-3); }
+table.matrix td.mx-num { font-variant-numeric:tabular-nums; font-weight:600; }
+table.matrix td.mx-zero { color:var(--muted-2); font-weight:400; }
+table.matrix .mx-tot td, table.matrix th.mx-tot { font-weight:800; background:var(--surface-2); }
+table.matrix td.mx-total-col, table.matrix th.mx-total-col { background:var(--blue-050); font-weight:800; }
+.mx-name { font-weight:700; font-size:12.5px; line-height:1.3; }
+.mx-sub  { font-size:10.5px; color:var(--muted); margin-top:1px; }
+
+/* Single-topic ranked bars */
+.rank-list { display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+.rank-row  { display:grid; grid-template-columns:230px 1fr 44px; align-items:center; gap:12px; cursor:pointer; }
+.rank-row:hover .rank-name { color:var(--blue-600); }
+.rank-name { font-size:13px; font-weight:600; line-height:1.25; }
+.rank-name .rn-sub { font-size:11px; color:var(--muted); font-weight:400; }
+.rank-bar-bg { height:18px; background:var(--surface-3); border-radius:6px; overflow:hidden; }
+.rank-bar    { height:100%; border-radius:6px; transition:width .4s; min-width:2px; }
+.rank-val    { font-variant-numeric:tabular-nums; font-weight:800; text-align:right; }
+@media(max-width:560px){ .rank-row{grid-template-columns:130px 1fr 36px} }
+
 @media(max-width:1080px){ .an-kpis{grid-template-columns:repeat(3,1fr)} .cov-kpis{grid-template-columns:repeat(2,1fr)} .split-grid{grid-template-columns:1fr} }
 @media(max-width:700px){ .an-kpis{grid-template-columns:repeat(2,1fr)} }
 @media(max-width:480px){ .an-kpis{grid-template-columns:1fr} }
@@ -64,7 +91,7 @@
 </head>
 <body>
 <div class="app" id="shell"></div>
-<script src="js/data.js?v=7"></script>
+<script src="js/data.js?v=8"></script>
 <script src="js/store.js?v=12"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
@@ -81,6 +108,13 @@ let charts = {};
 let filterSchool = 'all';
 let filterPeriod = 'all'; /* preset id: all / month / prevmonth / quarter / year / today / week */
 let filterTopic  = 'all';
+
+/* Коротка назва закладу: беремо текст у лапках, інакше перші 3 слова */
+function schoolShort(s){
+  const m = (s.name||'').match(/[«"]([^«»"]+)[»"]/);
+  if (m) return m[1];
+  return (s.name||'').split(/\s+/).slice(0,3).join(' ');
+}
 
 function destroyCharts(){
   Object.values(charts).forEach(c=>{ try{ c.destroy(); }catch(e){} });
@@ -347,36 +381,79 @@ function render(){
       /* ── Розбивка по закладах: скільки заходів на кожну тему ── */
       const cats = S.eventCategories || [];
       const topicCat = filterTopic !== 'all' ? cats.find(c=>c.id===filterTopic) : null;
-      const displayCats = topicCat ? [topicCat] : cats;
+      const rows = [...filtered];
 
-      /* Рядки: заклади × теми */
-      const topicRows = [...filtered].sort((a,b)=>(b.events||0)-(a.events||0)).map(s=>{
-        const md = s.monthlyData || {};
-        const cells = displayCats.map(c=>{
-          const v = md[c.id] || 0;
-          return `<td class="tnum" style="color:${v>0?c.color:'var(--muted)'}">${v||'—'}</td>`;
+      /* ─ Режим 1: обрана конкретна тема → рейтинг закладів за цією темою ─ */
+      if (topicCat) {
+        const data = rows.map(s=>({ s, v:(s.monthlyData||{})[topicCat.id]||0 }))
+                         .sort((a,b)=>b.v-a.v);
+        const max = Math.max(1, ...data.map(d=>d.v));
+        const total = data.reduce((a,d)=>a+d.v,0);
+        const list = data.map(({s,v})=>{
+          const worker = S.workers && s.inspector ? S.workers[s.inspector] : null;
+          return `<div class="rank-row" onclick="location.href='school.html?id=${s.id}'">
+            <div class="rank-name">${schoolShort(s)}<div class="rn-sub">${s.city||''}${worker?' · '+worker.name:''}</div></div>
+            <div class="rank-bar-bg"><div class="rank-bar" style="width:${Math.round(v/max*100)}%;background:${topicCat.color}"></div></div>
+            <div class="rank-val" style="color:${v>0?topicCat.color:'var(--muted-2)'}">${v}</div>
+          </div>`;
         }).join('');
+        return `<div class="card card-pad anim" style="margin-top:20px">
+          <div class="card-head">
+            <div class="section-title"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${topicCat.color};margin-right:7px"></span>${topicCat.label}</div>
+            <span class="muted" style="font-size:13px">всього: ${total} заходів</span>
+          </div>
+          <div class="rank-list">${list}</div>
+        </div>`;
+      }
+
+      /* ─ Режим 2: усі теми → матриця заклади × напрямки з підсумками ─ */
+      const ranked = rows.map(s=>{
+        const md = s.monthlyData||{};
+        const rowTotal = cats.reduce((a,c)=>a+(md[c.id]||0),0);
+        return { s, md, rowTotal };
+      }).sort((a,b)=>b.rowTotal-a.rowTotal);
+
+      const colTotals = {};
+      cats.forEach(c=>{ colTotals[c.id]=ranked.reduce((a,r)=>a+(r.md[c.id]||0),0); });
+      const grand = Object.values(colTotals).reduce((a,v)=>a+v,0);
+
+      const head = `<tr>
+        <th class="mx-school">Заклад</th>
+        ${cats.map(c=>`<th title="${esc(c.label)}"><span style="color:${c.color}">${c.short}</span></th>`).join('')}
+        <th class="mx-total-col">Усього</th>
+      </tr>`;
+
+      const body = ranked.map(({s,md,rowTotal})=>{
         const worker = S.workers && s.inspector ? S.workers[s.inspector] : null;
+        const cells = cats.map(c=>{
+          const v = md[c.id]||0;
+          return `<td class="mx-num ${v===0?'mx-zero':''}" ${v>0?`style="color:${c.color}"`:''}>${v||'·'}</td>`;
+        }).join('');
         return `<tr style="cursor:pointer" onclick="location.href='school.html?id=${s.id}'">
-          <td><b style="font-size:13px">${s.name}</b><div style="font-size:11px;color:var(--muted)">${s.city||''} · ${worker?worker.name:''}</div></td>
+          <td class="mx-school"><div class="mx-name">${schoolShort(s)}</div><div class="mx-sub">${s.city||''}${worker?' · '+worker.name:''}</div></td>
           ${cells}
+          <td class="mx-num mx-total-col">${rowTotal}</td>
         </tr>`;
       }).join('');
 
-      const thCols = displayCats.map(c=>`<th style="font-size:11px;text-align:center;max-width:70px;white-space:normal;line-height:1.2;color:${c.color}">${c.short}</th>`).join('');
-      const title = topicCat
-        ? `Заходи за темою «${topicCat.short}» по закладах`
-        : 'Заходи по закладах та темах';
+      const totRow = `<tr class="mx-tot">
+        <td class="mx-school">Усього по напрямку</td>
+        ${cats.map(c=>`<td>${colTotals[c.id]||0}</td>`).join('')}
+        <td class="mx-total-col">${grand}</td>
+      </tr>`;
 
-      return `<div class="card card-pad anim" style="margin-top:20px;overflow-x:auto">
+      return `<div class="card card-pad anim" style="margin-top:20px">
         <div class="card-head">
-          <div class="section-title">${I.shield} ${title}</div>
-          ${topicCat?`<span class="muted" style="font-size:13px">тема: ${topicCat.label}</span>`:''}
+          <div class="section-title">${I.shield} Заходи по закладах та напрямках</div>
+          <span class="muted" style="font-size:13px">${rows.length} закладів · 16 напрямків</span>
         </div>
-        <table class="tbl" style="min-width:600px">
-          <thead><tr><th>Заклад</th>${thCols}</tr></thead>
-          <tbody>${topicRows}</tbody>
-        </table>
+        <div class="mx-wrap">
+          <table class="matrix">
+            <thead>${head}</thead>
+            <tbody>${body}${totRow}</tbody>
+          </table>
+        </div>
+        <div class="muted" style="font-size:11.5px;margin-top:10px">Наведіть на заголовок стовпця, щоб побачити повну назву напрямку. Натисніть на рядок — відкриється сторінка закладу.</div>
       </div>`;
     })()}`;
 

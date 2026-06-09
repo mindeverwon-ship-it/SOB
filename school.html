@@ -158,7 +158,7 @@
   </div>
 </div>
 
-<script src="js/data.js?v=7"></script>
+<script src="js/data.js?v=8"></script>
 <script src="js/store.js?v=12"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="assets/image-slot.js"></script>
@@ -325,6 +325,31 @@ function render(){
           ${eventsHtml}
         </div>
       </div>
+
+      ${(()=>{
+        const md = s.monthlyData||{};
+        const cats = (S.eventCategories||[]).filter(c=>(md[c.id]||0)>0).sort((a,b)=>(md[b.id]||0)-(md[a.id]||0));
+        const collab = (S.collaborationMetrics||[]).filter(c=>(md[c.id]||0)>0);
+        const extra = [];
+        if((md.evacTraining||0)>0) extra.push({label:'Тренувань з евакуації',value:md.evacTraining});
+        const catTotal = cats.reduce((a,c)=>a+(md[c.id]||0),0);
+        if(!cats.length && !collab.length && !extra.length) return '';
+        const catCells = cats.map(c=>{
+          const v = md[c.id]||0;
+          return `<div style="display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px">
+            <span style="width:9px;height:9px;border-radius:3px;background:${c.color};flex-shrink:0"></span>
+            <span style="font-size:12.5px;color:var(--text-2);line-height:1.25;flex:1">${c.short}</span>
+            <b class="tnum" style="font-size:15px;color:${c.color}">${v}</b>
+          </div>`;
+        }).join('');
+        const collabRows = [...collab.map(c=>({label:c.label,value:md[c.id]})),...extra]
+          .map(r=>`<div class="row between" style="padding:5px 0"><span class="muted" style="font-size:13px">${r.label}</span><b class="tnum">${r.value}</b></div>`).join('');
+        return `<div class="card card-pad" style="margin-top:18px">
+          <div class="card-head"><div class="section-title">${I.shield} Заходи за тематичними напрямками</div><span class="muted" style="font-size:13px">всього: ${catTotal}</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:6px">${catCells}</div>
+          ${collabRows?`<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px"><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px">Співпраця та навчання</div>${collabRows}</div>`:''}
+        </div>`;
+      })()}
     </div>
 
     <div class="tab-panel" data-panel="calendar">
