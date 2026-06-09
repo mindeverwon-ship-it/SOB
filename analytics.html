@@ -64,7 +64,7 @@
 </head>
 <body>
 <div class="app" id="shell"></div>
-<script src="js/data.js?v=6"></script>
+<script src="js/data.js?v=7"></script>
 <script src="js/store.js?v=12"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
@@ -80,6 +80,7 @@ Chart.defaults.animation   = false;
 let charts = {};
 let filterSchool = 'all';
 let filterPeriod = 'all'; /* preset id: all / month / prevmonth / quarter / year / today / week */
+let filterTopic  = 'all';
 
 function destroyCharts(){
   Object.values(charts).forEach(c=>{ try{ c.destroy(); }catch(e){} });
@@ -297,7 +298,12 @@ function render(){
         <option value="all">— Усі заклади —</option>
         ${(S.schools||[]).filter(s=>s.serviced).map(s=>`<option value="${s.id}" ${filterSchool===s.id?'selected':''}>${s.name}</option>`).join('')}
       </select>
-      ${filterSchool!=='all'||filterPeriod!=='all'?`<button class="btn btn-ghost btn-sm" onclick="filterSchool='all';filterPeriod='all';render()">Скинути</button>`:''}
+      <span style="font-size:13px;color:var(--muted);font-weight:600">${I.shield} Тема:</span>
+      <select class="input" id="filterTopicEl" style="max-width:220px">
+        <option value="all">— Усі теми —</option>
+        ${(S.eventCategories||[]).map(c=>`<option value="${c.id}" ${filterTopic===c.id?'selected':''}>${c.short}</option>`).join('')}
+      </select>
+      ${filterSchool!=='all'||filterPeriod!=='all'||filterTopic!=='all'?`<button class="btn btn-ghost btn-sm" onclick="filterSchool='all';filterPeriod='all';filterTopic='all';render()">Скинути</button>`:''}
     </div>
 
     <div class="an-kpis">${kpiHtml}</div>
@@ -335,10 +341,48 @@ function render(){
         <thead><tr><th></th><th>Заклад / Працівник</th><th>Заходи</th><th>Участей</th><th>Унікально охоплено</th><th>Охоплення</th><th>Консульт.</th></tr></thead>
         <tbody>${tblRows}</tbody>
       </table>
-    </div>`;
+    </div>
+
+    ${(()=>{
+      /* ── Розбивка по закладах: скільки заходів на кожну тему ── */
+      const cats = S.eventCategories || [];
+      const topicCat = filterTopic !== 'all' ? cats.find(c=>c.id===filterTopic) : null;
+      const displayCats = topicCat ? [topicCat] : cats;
+
+      /* Рядки: заклади × теми */
+      const topicRows = [...filtered].sort((a,b)=>(b.events||0)-(a.events||0)).map(s=>{
+        const md = s.monthlyData || {};
+        const cells = displayCats.map(c=>{
+          const v = md[c.id] || 0;
+          return `<td class="tnum" style="color:${v>0?c.color:'var(--muted)'}">${v||'—'}</td>`;
+        }).join('');
+        const worker = S.workers && s.inspector ? S.workers[s.inspector] : null;
+        return `<tr style="cursor:pointer" onclick="location.href='school.html?id=${s.id}'">
+          <td><b style="font-size:13px">${s.name}</b><div style="font-size:11px;color:var(--muted)">${s.city||''} · ${worker?worker.name:''}</div></td>
+          ${cells}
+        </tr>`;
+      }).join('');
+
+      const thCols = displayCats.map(c=>`<th style="font-size:11px;text-align:center;max-width:70px;white-space:normal;line-height:1.2;color:${c.color}">${c.short}</th>`).join('');
+      const title = topicCat
+        ? `Заходи за темою «${topicCat.short}» по закладах`
+        : 'Заходи по закладах та темах';
+
+      return `<div class="card card-pad anim" style="margin-top:20px;overflow-x:auto">
+        <div class="card-head">
+          <div class="section-title">${I.shield} ${title}</div>
+          ${topicCat?`<span class="muted" style="font-size:13px">тема: ${topicCat.label}</span>`:''}
+        </div>
+        <table class="tbl" style="min-width:600px">
+          <thead><tr><th>Заклад</th>${thCols}</tr></thead>
+          <tbody>${topicRows}</tbody>
+        </table>
+      </div>`;
+    })()}`;
 
   document.getElementById('filterSchoolEl')?.addEventListener('change', e=>{ filterSchool=e.target.value; render(); });
   document.getElementById('filterPeriodEl')?.addEventListener('change', e=>{ filterPeriod=e.target.value; render(); });
+  document.getElementById('filterTopicEl')?.addEventListener('change', e=>{ filterTopic=e.target.value; render(); });
 
   /* Графіки */
   const gridColor='#EEF3FA';
