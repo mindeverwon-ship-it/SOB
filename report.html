@@ -106,6 +106,21 @@ function buildData() {
   /* apply period filter to journal events */
   const journalEvs = SD ? SD.filterEvents(allEvs, filterPeriod) : allEvs;
 
+  /* ── Excel-база за період (помісячна розбивка byMonth) ── */
+  function periodMonths(){
+    const now=new Date();
+    if(filterPeriod==='all'||!filterPeriod) return null;
+    if(filterPeriod==='month')     return [SD?SD.currentYM:null];
+    if(filterPeriod==='prevmonth') return [SD?SD.prevYM:null];
+    if(filterPeriod==='year')      { const y=now.getFullYear(); return Array.from({length:12},(_,i)=>y+'-'+String(i+1).padStart(2,'0')); }
+    if(filterPeriod==='quarter')   { const qs=Math.floor(now.getMonth()/3)*3,y=now.getFullYear(); return [0,1,2].map(i=>y+'-'+String(qs+i+1).padStart(2,'0')); }
+    return [];
+  }
+  const monthsSpec = periodMonths();
+  function monthIn(ym){ if(monthsSpec===null) return true; if(Array.isArray(monthsSpec)) return monthsSpec.includes(ym); return ym>=monthsSpec.from&&ym<=monthsSpec.to; }
+  function baseAgg(sc){ const bm=sc.byMonth||{}; let e=0,p=0; Object.keys(bm).forEach(ym=>{ if(!monthIn(ym))return; e+=bm[ym].e||0; p+=bm[ym].p||0; });
+    if(monthsSpec===null && !sc.byMonth){ e=sc.baseEvents??sc.events??0; p=sc.baseParticipants??sc.participants??0; } return {e,p}; }
+
   /* apply school filter */
   const schools = filterSchool === 'all' ? serviced : serviced.filter(s => s.id === filterSchool);
 
@@ -113,10 +128,9 @@ function buildData() {
   const rows = schools.map(sc => {
     const ins       = S.workers?.[sc.inspector] || {};
     const scEvs     = journalEvs.filter(e => e.schoolId === sc.id);
-    /* if period filter → show only journal; "all" або відсутність фільтра → база+журнал */
-    const noFilter  = !filterPeriod || filterPeriod === 'all';
-    const baseE     = noFilter ? (sc.baseEvents       ?? sc.events       ?? 0) : 0;
-    const baseP     = noFilter ? (sc.baseParticipants ?? sc.participants  ?? 0) : 0;
+    const b         = baseAgg(sc);
+    const baseE     = b.e;
+    const baseP     = b.p;
     const journalE  = scEvs.length;
     const journalP  = scEvs.reduce((s,e) => s+(e.participants||0), 0);
     const totalE    = baseE + journalE;
