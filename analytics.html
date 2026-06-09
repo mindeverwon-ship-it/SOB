@@ -236,6 +236,29 @@ function calcData(){
   /* Топ закладів — за показником у вибраному періоді */
   const ranked = [...serviced].sort((a,b)=>(statMap[b.id].events)-(statMap[a.id].events));
 
+  /* ── Розрізи: по громадах (ТГ), районах, працівниках, типах заходів ── */
+  const tgAgg={}, distAgg={}, wAgg={}, typeAgg={};
+  serviced.forEach(s=>{
+    const st = statMap[s.id], ev = st.events, pa = st.participants;
+    const tg = s.tg || '—';
+    tgAgg[tg]   = tgAgg[tg]   || { events:0, participants:0 };
+    tgAgg[tg].events += ev; tgAgg[tg].participants += pa;
+    const w = S.workers && s.inspector ? S.workers[s.inspector] : null;
+    const dist = (w && w.district) || s.tg || '—';
+    distAgg[dist] = distAgg[dist] || { events:0, participants:0 };
+    distAgg[dist].events += ev; distAgg[dist].participants += pa;
+    if (s.inspector){
+      wAgg[s.inspector] = wAgg[s.inspector] || { events:0, participants:0 };
+      wAgg[s.inspector].events += ev; wAgg[s.inspector].participants += pa;
+    }
+  });
+  (filteredJournal||[]).forEach(e=>{ const t=e.type||'other'; typeAgg[t]=(typeAgg[t]||0)+1; });
+
+  const tgStats   = Object.entries(tgAgg).map(([k,v])=>({label:k, value:v.events, participants:v.participants})).sort((a,b)=>b.value-a.value);
+  const distStats = Object.entries(distAgg).map(([k,v])=>({label:k, value:v.events, participants:v.participants})).sort((a,b)=>b.value-a.value);
+  const workerStats = Object.entries(wAgg).map(([k,v])=>({key:k, label:(S.workers?.[k]?.name)||k, rank:(S.workers?.[k]?.rank)||'', cat:(S.workers?.[k]?.category)||'', value:v.events, participants:v.participants})).sort((a,b)=>b.value-a.value);
+  const typeStats = Object.entries(typeAgg).map(([k,v])=>({ id:k, label:(S.eventTypes||[]).find(t=>t.id===k)?.label||k, color:((S.eventTypes||[]).find(t=>t.id===k)?.color||'#1F59DD'), value:v })).sort((a,b)=>b.value-a.value);
+
   /* Динаміка по місяцях: Excel-база + платформні заходи з журналу */
   const mc = window.calcMonthlyChart ? window.calcMonthlyChart() : (S.charts?.eventsByMonth || {});
   const mLabels   = mc.labels       || [];
@@ -244,7 +267,7 @@ function calcData(){
 
   return { serviced, totEvents, totParticipations, totConsult, totStudents, totPrevention, totUnique, covPct, avgRating,
            catStats, ranked, mLabels, mEvents, mParts, zrupStats, gunpStats, periodLabel, filteredJournal, isFiltered,
-           statMap, catMap };
+           statMap, catMap, tgStats, distStats, workerStats, typeStats };
 }
 
 function render(){
@@ -341,6 +364,25 @@ function render(){
     .filter(c=>c.count>0).sort((a,b)=>b.count-a.count).slice(0,8);
   const legendHtml = topCats.map(t=>`<div class="legend-item"><span class="sw" style="background:${t.color}"></span>${t.label}<b>${t.count}</b></div>`).join('');
 
+  /* ── Універсальний блок-рейтинг (горизонтальні смуги) ── */
+  function barBlock(title, icon, items, accent, subFn){
+    const max = Math.max(1, ...items.map(i=>i.value));
+    const rows = items.length ? items.map(it=>`
+      <div class="rank-row" ${it.href?`onclick="location.href='${it.href}'"`:''} style="${it.href?'':'cursor:default'}">
+        <div class="rank-name">${it.label}${subFn&&subFn(it)?`<div class="rn-sub">${subFn(it)}</div>`:''}</div>
+        <div class="rank-bar-bg"><div class="rank-bar" style="width:${Math.round(it.value/max*100)}%;background:${it.color||accent}"></div></div>
+        <div class="rank-val" style="color:${it.value>0?(it.color||accent):'var(--muted-2)'}">${it.value}</div>
+      </div>`).join('') : `<div style="padding:14px;text-align:center;color:var(--muted)">Немає даних за період</div>`;
+    return `<div class="card card-pad anim">
+      <div class="card-head"><div class="section-title">${icon} ${title}</div><span class="muted" style="font-size:13px">${items.length}</span></div>
+      <div class="rank-list">${rows}</div>
+    </div>`;
+  }
+  const tgItems   = d.tgStats.map(t=>({label:t.label, value:t.value, sub:t.participants}));
+  const wItems    = d.workerStats.map(w=>({label:w.label, value:w.value, sub:w.rank, cat:w.cat, href:'inspectors.html?key='+w.key}));
+  const distItems = d.distStats.map(t=>({label:t.label, value:t.value}));
+  const typeItems = d.typeStats.map(t=>({label:t.label, value:t.value, color:t.color}));
+
   document.getElementById('content').innerHTML = `
     <div class="page-head">
       <div>
@@ -411,6 +453,16 @@ function render(){
         <thead><tr><th></th><th>Заклад / Працівник</th><th>Заходи</th><th>Участей</th><th>Унікально охоплено</th><th>Охоплення</th><th>Консульт.</th></tr></thead>
         <tbody>${tblRows}</tbody>
       </table>
+    </div>
+
+    <div class="grid-2" style="margin-top:20px">
+      ${barBlock('Статистика по працівниках СОБ', I.shield, wItems, 'var(--blue-600)', it=>[it.sub,it.cat].filter(Boolean).join(' · '))}
+      ${barBlock('Активність по громадах (ТГ)', I.building, tgItems, 'var(--navy-700,#0E274D)', it=>it.sub?('охоплено '+F(it.sub)):'')}
+    </div>
+
+    <div class="grid-2" style="margin-top:20px">
+      ${barBlock('Активність по районах / територіях', I.pin, distItems, 'var(--green-600)')}
+      ${barBlock('Заходи за типами (журнал)', I.filter, typeItems, 'var(--blue-600)')}
     </div>
 
     ${(()=>{
