@@ -91,7 +91,7 @@ table.matrix td.mx-total-col, table.matrix th.mx-total-col { background:var(--bl
 </head>
 <body>
 <div class="app" id="shell"></div>
-<script src="js/data.js?v=12"></script>
+<script src="js/data.js?v=13"></script>
 <script src="js/store.js?v=14"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
@@ -140,98 +140,84 @@ function calcData(){
 
   const prevTypes = ['prevention','mine','evacuation','cyber','buling','legal'];
 
-  let totEvents, totParticipations, totConsult, totStudents, totPrevention, totUnique, covPct;
-
-  if (isFiltered) {
-    /* При активному фільтрі дат — рахуємо ТІЛЬКИ по журнальних заходах у вибраному діапазоні */
-    totEvents        = filteredJournal.length;
-    totParticipations= filteredJournal.reduce((a,e)=>a+(e.participants||0),0);
-    totPrevention    = filteredJournal.filter(e=>prevTypes.includes(e.type)).length;
-    totConsult       = filteredJournal.filter(e=>e.type==='consultation').length;
-    totStudents      = serviced.reduce((a,s)=>a+(s.students||0),0);
-    totUnique        = totStudents>0 ? Math.min(totParticipations, totStudents) : totParticipations;
-    covPct           = totStudents>0 ? Math.round(totUnique/totStudents*100) : 0;
-  } else {
-    /* Без фільтра — використовуємо повні показники (база + всі журнальні заходи) */
-    totEvents        = serviced.reduce((a,s)=>a+(s.events||0),0);
-    totParticipations= serviced.reduce((a,s)=>a+(s.participants||0),0);
-    totConsult       = serviced.reduce((a,s)=>a+(s.consultations||0),0);
-    totStudents      = serviced.reduce((a,s)=>a+(s.students||0),0);
-    totPrevention    = serviced.reduce((a,s)=>a+(s.prevention||0),0);
-    totUnique = 0;
-    serviced.forEach(s=>{
-      const cov = window.calcCoverage ? window.calcCoverage(s) : { uniqueStudents: s.participants||0 };
-      totUnique += cov.uniqueStudents;
-    });
-    covPct = totStudents>0 ? Math.round(totUnique/totStudents*100) : 0;
+  /* ── Які місяці Excel-бази потрапляють у вибраний період ──
+     null = всі місяці; [] = піддобовий період (база не застосовується);
+     масив YYYY-MM; або діапазон {from,to} для власного періоду. */
+  function periodMonths(){
+    const now = new Date();
+    if (filterPeriod==='all')       return null;
+    if (filterPeriod==='month')     return [SD ? SD.currentYM : null];
+    if (filterPeriod==='prevmonth') return [SD ? SD.prevYM : null];
+    if (filterPeriod==='year')      { const y=now.getFullYear(); return Array.from({length:12},(_,i)=>y+'-'+String(i+1).padStart(2,'0')); }
+    if (filterPeriod==='quarter')   { const qs=Math.floor(now.getMonth()/3)*3, y=now.getFullYear(); return [0,1,2].map(i=>y+'-'+String(qs+i+1).padStart(2,'0')); }
+    if (filterPeriod==='custom')    { if(!filterFrom && !filterTo) return null; return { from:(filterFrom||'0000-00').slice(0,7), to:(filterTo||'9999-99').slice(0,7) }; }
+    return []; /* today / yesterday / week — лише журнал */
   }
+  const monthsSpec = periodMonths();
+  function monthIn(ym){
+    if (monthsSpec===null) return true;
+    if (Array.isArray(monthsSpec)) return monthsSpec.includes(ym);
+    return ym>=monthsSpec.from && ym<=monthsSpec.to;
+  }
+  /* База закладу за період (із byMonth) */
+  function baseAgg(s){
+    const bm=s.byMonth||{}; let e=0,p=0,prev=0; const c={};
+    Object.keys(bm).forEach(ym=>{ if(!monthIn(ym)) return; const m=bm[ym];
+      e+=m.e||0; p+=m.p||0; prev+=m.prev||0;
+      const mc=m.c||{}; for(const k in mc) c[k]=(c[k]||0)+mc[k]; });
+    return { e, p, prev, c };
+  }
+  /* Показники закладу = база за період + журнальні заходи у періоді */
+  function schoolStat(s){
+    const b = baseAgg(s);
+    const evs = filteredJournal.filter(e=>e.schoolId===s.id);
+    const events = b.e + evs.length;
+    const participants = b.p + evs.reduce((a,e)=>a+(e.participants||0),0);
+    const prevention = b.prev + evs.filter(e=>prevTypes.includes(e.type)).length;
+    const uniq = s.students>0 ? Math.min(participants, s.students) : participants;
+    return { events, participants, prevention, uniqueStudents:uniq,
+             coveragePercent: s.students>0?Math.round(uniq/s.students*100):0,
+             consultations: evs.filter(e=>e.type==='consultation').length };
+  }
+  function schoolCats(s){
+    const m={}; (S.eventCategories||[]).forEach(c=>m[c.id]=0);
+    const b=baseAgg(s); for(const k in b.c){ if(k in m) m[k]+=b.c[k]; }
+    filteredJournal.filter(e=>e.schoolId===s.id).forEach(e=>{ const k=e.category||e.type; if(k in m) m[k]++; });
+    return m;
+  }
+  const statMap = {}, catMap = {};
+  serviced.forEach(s=>{ statMap[s.id]=schoolStat(s); catMap[s.id]=schoolCats(s); });
 
-  /* Середній рейтинг */
+  /* Зведені показники — суми по statMap/catMap (єдине джерело) */
+  const totEvents        = serviced.reduce((a,s)=>a+statMap[s.id].events,0);
+  const totParticipations= serviced.reduce((a,s)=>a+statMap[s.id].participants,0);
+  const totPrevention    = serviced.reduce((a,s)=>a+statMap[s.id].prevention,0);
+  const totConsult       = serviced.reduce((a,s)=>a+statMap[s.id].consultations,0);
+  const totStudents      = serviced.reduce((a,s)=>a+(s.students||0),0);
+  const totUnique        = serviced.reduce((a,s)=>a+statMap[s.id].uniqueStudents,0);
+  const covPct           = totStudents>0 ? Math.round(totUnique/totStudents*100) : 0;
+
   const avgRating = serviced.length ? Math.round(serviced.reduce((a,s)=>a+(s.rating||0),0)/serviced.length) : 0;
 
-  /* Розбивка по 16 категоріях з monthlyData */
-  const catStats = isFiltered
-    ? window.calcCategoryStatsFromEvents ? window.calcCategoryStatsFromEvents(filteredJournal) : (window.calcCategoryStats ? window.calcCategoryStats(serviced) : {})
-    : (window.calcCategoryStats ? window.calcCategoryStats(serviced) : {});
+  /* Розбивка по напрямках = сума catMap */
+  const catStats={}; (S.eventCategories||[]).forEach(c=>catStats[c.id]=0);
+  serviced.forEach(s=>{ const cm=catMap[s.id]; for(const k in cm) catStats[k]=(catStats[k]||0)+cm[k]; });
 
   /* ГУНП / ЗРУП поділ */
   const workers = S.workers || {};
   function workerSchools(cat){ return serviced.filter(s=>{const w=workers[s.inspector||'']; return w&&w.category===cat;}); }
   function groupStats(schools){
-    if (isFiltered) {
-      const schoolIds = new Set(schools.map(s=>s.id));
-      const evs = filteredJournal.filter(e=>schoolIds.has(e.schoolId));
-      const st = schools.reduce((a,s)=>a+(s.students||0),0);
-      const parts = evs.reduce((a,e)=>a+(e.participants||0),0);
-      const uniq = st>0 ? Math.min(parts,st) : parts;
-      return {
-        schools: schools.length,
-        events: evs.length,
-        participations: parts,
-        unique: uniq,
-        students: st,
-        workers: [...new Set(schools.map(s=>s.inspector).filter(Boolean))].length,
-      };
-    }
     return {
       schools: schools.length,
-      events: schools.reduce((a,s)=>a+(s.events||0),0),
-      participations: schools.reduce((a,s)=>a+(s.participants||0),0),
-      unique: schools.reduce((a,s)=>a+(window.calcCoverage?window.calcCoverage(s).uniqueStudents:s.participants||0),0),
+      events: schools.reduce((a,s)=>a+statMap[s.id].events,0),
+      participations: schools.reduce((a,s)=>a+statMap[s.id].participants,0),
+      unique: schools.reduce((a,s)=>a+statMap[s.id].uniqueStudents,0),
       students: schools.reduce((a,s)=>a+(s.students||0),0),
       workers: [...new Set(schools.map(s=>s.inspector).filter(Boolean))].length,
     };
   }
-  const zrupSchools = workerSchools('ЗРУП');
-  const gunpSchools = workerSchools('ГУНП');
-  const zrupStats = groupStats(zrupSchools);
-  const gunpStats = groupStats(gunpSchools);
-
-  /* Показники по кожному закладу з урахуванням періоду (для рейтингу і таблиць) */
-  function schoolStat(s){
-    if (isFiltered) {
-      const evs = filteredJournal.filter(e=>e.schoolId===s.id);
-      const parts = evs.reduce((a,e)=>a+(e.participants||0),0);
-      const uniq = s.students>0 ? Math.min(parts, s.students) : parts;
-      return { events: evs.length, participants: parts, uniqueStudents: uniq,
-               coveragePercent: s.students>0?Math.round(uniq/s.students*100):0,
-               consultations: evs.filter(e=>e.type==='consultation').length };
-    }
-    const c = window.calcCoverage ? window.calcCoverage(s) : { uniqueStudents:s.participants||0, coveragePercent:0 };
-    return { events: s.events||0, participants: s.participants||0, uniqueStudents: c.uniqueStudents,
-             coveragePercent: c.coveragePercent, consultations: s.consultations||0 };
-  }
-  /* Розподіл по напрямках для кожного закладу з урахуванням періоду */
-  function schoolCats(s){
-    if (isFiltered) {
-      const m = {}; (S.eventCategories||[]).forEach(c=>m[c.id]=0);
-      filteredJournal.filter(e=>e.schoolId===s.id).forEach(e=>{ const k=e.category||e.type; if(k in m) m[k]++; });
-      return m;
-    }
-    return s.monthlyData || {};
-  }
-  const statMap = {}, catMap = {};
-  serviced.forEach(s=>{ statMap[s.id]=schoolStat(s); catMap[s.id]=schoolCats(s); });
+  const zrupStats = groupStats(workerSchools('ЗРУП'));
+  const gunpStats = groupStats(workerSchools('ГУНП'));
 
   /* Топ закладів — за показником у вибраному періоді */
   const ranked = [...serviced].sort((a,b)=>(statMap[b.id].events)-(statMap[a.id].events));
