@@ -131,7 +131,7 @@
 <body>
 <div class="app" id="shell"></div>
 
-<script src="js/data.js?v=13"></script>
+<script src="js/data.js?v=14"></script>
 <script src="js/store.js?v=17"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
@@ -209,8 +209,13 @@ document.getElementById('content').innerHTML = `
       <div class="report-panel anim anim-2" id="report">
         <div class="rp-top">
           <div class="rp-ic">${I.doc}</div>
-          <div class="rp-t"><b>Звіт за ${S.org.period}</b><span>Готовий до експорту</span></div>
+          <div class="rp-t"><b>Звіт за період</b><span id="rpPeriodLabel">${(window.SOBDate&&window.SOBDate.currentLabel)||S.org.period}</span></div>
         </div>
+        <label for="rpPeriod" style="font-size:12px;color:rgba(255,255,255,.6);font-weight:600;display:block;margin-bottom:6px">Період звіту</label>
+        <select id="rpPeriod" onchange="window.rpPeriod=this.value;const o=this.options[this.selectedIndex];const l=document.getElementById('rpPeriodLabel');if(l)l.textContent=o.text;"
+          style="width:100%;padding:10px 12px;margin-bottom:14px;border-radius:11px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.10);color:#fff;font-size:14px;font-weight:600;cursor:pointer">
+          ${(window.SOBDate?.presets||[]).filter(p=>!p.custom).map(p=>{const lbl=p.id==='month'?window.SOBDate.currentLabel:p.id==='prevmonth'?window.SOBDate.prevLabel:p.label;return `<option value="${p.id}" ${p.id==='month'?'selected':''}>${lbl}</option>`;}).join('')}
+        </select>
         <button class="rp-btn gold" onclick="exportReport('PowerPoint')">${I.download} Завантажити презентацію (.pptx)</button>
       </div>
     </div>
@@ -435,12 +440,22 @@ function buildPptx(){
   const today = new Date().toLocaleDateString('uk-UA');
   const W = 13.333;
 
-  /* ── Живі дані ── */
-  const live    = window.calcTotalStats ? window.calcTotalStats() : {};
-  const catAll  = window.calcCategoryStats ? window.calcCategoryStats() : {};
-  const serviced= (S.schools||[]).filter(s=>s.serviced);
-  const evTotal = live.events ?? 0;
-  const coverage= live.coveragePercent ?? 0;
+  /* ── Обраний період (із селектора на головній; за замовч. — поточний місяць) ── */
+  const period = window.rpPeriod
+    || (document.getElementById('rpPeriod')?.value)
+    || 'month';
+  const ps = window.calcPeriodStats ? window.calcPeriodStats(period)
+           : { serviced:(S.schools||[]).filter(s=>s.serviced), statMap:{}, catStats:{}, filteredJournal:[],
+               periodLabel:S.org.period, events:0, prevention:0, participations:0, coveragePercent:0 };
+  const periodLabel = ps.periodLabel || S.org.period;
+
+  /* ── Живі дані за період ── */
+  const serviced= ps.serviced;
+  const evTotal = ps.events ?? 0;
+  const coverage= ps.coveragePercent ?? 0;
+  const evOf = s => (ps.statMap[s.id]?.events ?? 0);          /* заходи закладу за період */
+  const covOf= s => (ps.statMap[s.id]?.coveragePercent ?? 0); /* охоплення закладу за період */
+  const partOf=s => (ps.statMap[s.id]?.participants ?? 0);
 
   /* ── Загальний шаблон контент-слайда ── */
   function content(eyebrow, title){
@@ -451,7 +466,7 @@ function buildPptx(){
     s.addImage({ path:EMBLEM, x:0.45, y:0.5, w:0.62, h:0.62 });
     s.addText((eyebrow||'').toUpperCase(), { x:1.25, y:0.5, w:9, h:0.3, fontSize:11, bold:true, color:GOLDINK, charSpacing:2, fontFace:'Arial' });
     s.addText(title||'', { x:1.25, y:0.74, w:11.6, h:0.6, fontSize:26, bold:true, color:NAVY, fontFace:'Arial' });
-    s.addText(S.org.period, { x:10.4, y:0.52, w:2.45, h:0.4, align:'right', fontSize:12, bold:true, color:MUT, fontFace:'Arial' });
+    s.addText(periodLabel, { x:9.4, y:0.52, w:3.45, h:0.4, align:'right', fontSize:12, bold:true, color:MUT, fontFace:'Arial' });
     s.addShape(pptx.ShapeType.rect, { x:0, y:7.18, w:W, h:0.32, fill:{ color:NAVY } });
     s.addText('Служба освітньої безпеки · ' + S.org.district, { x:0.45, y:7.18, w:8, h:0.32, valign:'middle', fontSize:9, color:'9FB0CE', fontFace:'Arial' });
     s.addText(today, { x:9, y:7.18, w:3.9, h:0.32, valign:'middle', align:'right', fontSize:9, color:'9FB0CE', fontFace:'Arial' });
@@ -490,7 +505,7 @@ function buildPptx(){
   t.addText('Служба освітньої безпеки', { x:0.5, y:3.72, w:W-1, h:1, align:'center', fontSize:40, bold:true, color:NAVY, fontFace:'Arial' });
   t.addShape(pptx.ShapeType.rect, { x:(W-2.2)/2, y:4.72, w:2.2, h:0.045, fill:{ color:GOLD } });
   t.addText(S.org.district, { x:0.5, y:4.9, w:W-1, h:0.5, align:'center', fontSize:20, color:MUT, fontFace:'Arial' });
-  t.addText('Звітний період: ' + S.org.period, { x:0.5, y:5.5, w:W-1, h:0.5, align:'center', fontSize:15, bold:true, color:INK, fontFace:'Arial' });
+  t.addText('Звітний період: ' + periodLabel, { x:0.5, y:5.5, w:W-1, h:0.5, align:'center', fontSize:15, bold:true, color:INK, fontFace:'Arial' });
   /* нижня плашка */
   t.addShape(pptx.ShapeType.rect, { x:0, y:7.0, w:W, h:0.5, fill:{ color:NAVY } });
   t.addText('Національна поліція України', { x:0.45, y:7.0, w:7, h:0.5, valign:'middle', fontSize:10, color:'9FB0CE', fontFace:'Arial' });
@@ -499,9 +514,9 @@ function buildPptx(){
   /* ════ Слайд 2 · Ключові показники ════ */
   const s2 = content('Загальні підсумки', 'Ключові показники ефективності');
   const cards = [
-    { v: evTotal,                       l:'Проведено заходів',   s:'усього за період',      a:BLUE  },
-    { v: live.prevention ?? 0,          l:'Профілактичні',       s:'відпрацювання',         a:NAVY  },
-    { v: window.fmt(live.participations ?? 0), l:'Охоплено учасників', s:'сумарно',          a:GOLD  },
+    { v: evTotal,                       l:'Проведено заходів',   s:'за період',             a:BLUE  },
+    { v: ps.prevention ?? 0,            l:'Профілактичні',       s:'відпрацювання',         a:NAVY  },
+    { v: window.fmt(ps.participations ?? 0), l:'Охоплено учасників', s:'за період',         a:GOLD  },
     { v: serviced.length,               l:'Заклади освіти',      s:'на обслуговуванні',     a:GREEN },
     { v: coverage + '%',                l:'Охоплення учнів',     s:'від загальної к-сті',   a:BLUE  },
   ];
@@ -511,7 +526,7 @@ function buildPptx(){
     { x:0.55, y:4.55, w:12.2, h:0.5, fontSize:12, italic:true, color:MUT, fontFace:'Arial' });
 
   /* ════ Слайд 3 · Тематичні напрямки ════ */
-  const catList = (S.eventCategories||[]).map(c=>({ label:c.short, value:catAll[c.id]||0, color:(c.color||'1F59DD').replace('#','') }))
+  const catList = (S.eventCategories||[]).map(c=>({ label:c.short, value:ps.catStats[c.id]||0, color:(c.color||'1F59DD').replace('#','') }))
                     .filter(c=>c.value>0).sort((a,b)=>b.value-a.value);
   if (catList.length){
     const s3 = content('Розподіл діяльності', 'Заходи за тематичними напрямками');
@@ -520,18 +535,18 @@ function buildPptx(){
   }
 
   /* ════ Слайд 4 · Рейтинг закладів ════ */
-  const ranked2 = [...serviced].sort((a,b)=>(b.events||0)-(a.events||0));
+  const ranked2 = [...serviced].sort((a,b)=>evOf(b)-evOf(a));
   if (ranked2.length){
     const s4 = content('Заклади освіти', 'Рейтинг активності закладів');
     const rows = ranked2.map((s,i)=>{
-      const cov = window.calcCoverage ? window.calcCoverage(s) : { coveragePercent:0 };
+      const cp = covOf(s);
       return [
         { text:String(i+1), options:{ bold:true, align:'center', color: i<3?GOLD.replace('#',''):MUT } },
         { text:s.name, options:{ color:INK } },
         { text:s.city||'', options:{ color:MUT } },
-        { text:String(s.events||0), options:{ align:'center', bold:true, color:NAVY } },
-        { text:window.fmt(s.participants||0), options:{ align:'center', color:INK } },
-        { text:cov.coveragePercent+'%', options:{ align:'center', color: cov.coveragePercent>=70?GREEN:cov.coveragePercent>=40?'B8860B':'B91C1C' } },
+        { text:String(evOf(s)), options:{ align:'center', bold:true, color:NAVY } },
+        { text:window.fmt(partOf(s)), options:{ align:'center', color:INK } },
+        { text:cp+'%', options:{ align:'center', color: cp>=70?GREEN:cp>=40?'B8860B':'B91C1C' } },
       ];
     });
     const head = ['#','Заклад освіти','Населений пункт','Заходів','Охоплено','Охопл. %']
@@ -546,7 +561,7 @@ function buildPptx(){
 
   /* ════ Слайд 5 · Райони / території ════ */
   const distMap = {};
-  serviced.forEach(s=>{ const w=S.workers?.[s.inspector]; const k=(w&&w.district)||s.tg||'—'; distMap[k]=(distMap[k]||0)+(s.events||0); });
+  serviced.forEach(s=>{ const w=S.workers?.[s.inspector]; const k=(w&&w.district)||s.tg||'—'; distMap[k]=(distMap[k]||0)+evOf(s); });
   const distList = Object.entries(distMap).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value);
   if (distList.length){
     const s5 = content('Територіальний розріз', 'Активність по районах / територіях');
@@ -555,19 +570,19 @@ function buildPptx(){
 
   /* ════ Слайд 6 · Працівники СОБ ════ */
   const wMap = {};
-  serviced.forEach(s=>{ if(s.inspector){ wMap[s.inspector]=(wMap[s.inspector]||0)+(s.events||0); } });
+  serviced.forEach(s=>{ if(s.inspector){ wMap[s.inspector]=(wMap[s.inspector]||0)+evOf(s); } });
   const wList = Object.entries(wMap).map(([k,value])=>({ label:(S.workers?.[k]?.name)||k, value })).sort((a,b)=>b.value-a.value);
   if (wList.length){
     const s6 = content('Персонал', 'Статистика по працівниках СОБ');
     bars(s6, wList.slice(0,11), 0.6, 1.75, 12.1, 0.46, GREEN);
   }
 
-  /* ════ Слайд 7+ · Журнал заходів ════ */
-  if ((S.schoolEvents||[]).filter(e=>e.status!=='cancelled').length){
+  /* ════ Слайд 7+ · Журнал заходів (за обраний період) ════ */
+  if ((ps.filteredJournal||[]).length){
     const s7 = content('Деталізація', 'Журнал проведених заходів');
     const typeLabels = Object.fromEntries((S.eventTypes||[]).map(x=>[x.id,x.label]));
     const catLabels  = Object.fromEntries((S.eventCategories||[]).map(x=>[x.id,x.short]));
-    const evs = (S.schoolEvents||[]).filter(e=>e.status!=='cancelled')
+    const evs = [...(ps.filteredJournal||[])]
       .sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,60);
     const head = ['Дата','Заклад','Напрямок','Назва заходу','Учасн.']
       .map((h,i)=>({ text:h, options:{ bold:true, fill:{color:NAVY}, color:WHITE, align:i===4?'center':'left', valign:'middle' } }));
@@ -601,7 +616,7 @@ function buildPptx(){
   fin.addShape(pptx.ShapeType.rect, { x:0, y:7.0, w:W, h:0.5, fill:{ color:NAVY } });
   fin.addText('Сформовано: ' + today, { x:0.45, y:7.0, w:12.4, h:0.5, valign:'middle', align:'center', fontSize:10, color:'9FB0CE', fontFace:'Arial' });
 
-  const fname = `sob-презентація-${S.org.period.replace(/\s+/g,'-')}-${new Date().toISOString().slice(0,10)}.pptx`;
+  const fname = `sob-презентація-${String(periodLabel).replace(/\s+/g,'-')}-${new Date().toISOString().slice(0,10)}.pptx`;
   pptx.writeFile({ fileName: fname });
   toast('PowerPoint-презентацію завантажено ✓');
 }

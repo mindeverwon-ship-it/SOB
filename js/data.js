@@ -540,6 +540,83 @@ window.calcCategoryStatsFromEvents = (events) => {
   return totals;
 };
 
+/* ============================================================
+   calcPeriodStats — статистика за обраний період (місяць/квартал/рік/…)
+   Єдине джерело для звітів і презентації. Логіка ідентична «Аналітиці»:
+   база Excel береться помісячно з s.byMonth + журнальні заходи у періоді.
+   Повертає: { serviced, statMap, catStats, filteredJournal, periodLabel,
+               events, participations, prevention, consultations,
+               totalStudents, uniqueStudents, coveragePercent }
+   ============================================================ */
+window.calcPeriodStats = (periodId, filterSchool, customFrom, customTo) => {
+  const SD = window.SOBDate;
+  const prevTypes = ['prevention','mine','evacuation','cyber','buling','legal'];
+  const allServiced = (window.SOB.schools || []).filter(s => s.serviced);
+  const serviced = (!filterSchool || filterSchool === 'all')
+    ? allServiced : allServiced.filter(s => s.id === filterSchool);
+
+  const allJournal = (window.SOB.schoolEvents || []).filter(e => e.status !== 'cancelled');
+  const schoolJournal = (!filterSchool || filterSchool === 'all')
+    ? allJournal : allJournal.filter(e => e.schoolId === filterSchool);
+  const filteredJournal = SD ? SD.filterEvents(schoolJournal, periodId, customFrom, customTo) : schoolJournal;
+
+  /* Які місяці Excel-бази входять у період (null=усі, []=лише журнал, масив YYYY-MM, або {from,to}) */
+  function periodMonths(){
+    const now = new Date();
+    if (!periodId || periodId === 'all') return null;
+    if (periodId === 'month')     return [SD ? SD.currentYM : null];
+    if (periodId === 'prevmonth') return [SD ? SD.prevYM : null];
+    if (periodId === 'year')      { const y = now.getFullYear(); return Array.from({length:12},(_,i)=>y+'-'+String(i+1).padStart(2,'0')); }
+    if (periodId === 'quarter')   { const qs = Math.floor(now.getMonth()/3)*3, y = now.getFullYear(); return [0,1,2].map(i=>y+'-'+String(qs+i+1).padStart(2,'0')); }
+    if (periodId === 'custom')    { if (!customFrom && !customTo) return null; return { from:(customFrom||'0000-00').slice(0,7), to:(customTo||'9999-99').slice(0,7) }; }
+    return []; /* today / yesterday / week — лише журнал, без Excel-бази */
+  }
+  const monthsSpec = periodMonths();
+  const monthIn = ym => monthsSpec === null ? true
+    : Array.isArray(monthsSpec) ? monthsSpec.includes(ym)
+    : (ym >= monthsSpec.from && ym <= monthsSpec.to);
+
+  function baseAgg(s){
+    const bm = s.byMonth || {}; let e=0,p=0,prev=0; const c={};
+    Object.keys(bm).forEach(ym => { if(!monthIn(ym)) return; const m = bm[ym];
+      e += m.e||0; p += m.p||0; prev += m.prev||0;
+      const mc = m.c||{}; for (const k in mc) c[k] = (c[k]||0) + mc[k]; });
+    /* fallback: весь час і немає byMonth → беремо незмінну базу */
+    if (monthsSpec === null && !s.byMonth){ e = s.baseEvents ?? s.events ?? 0; p = s.baseParticipants ?? s.participants ?? 0; prev = s.basePrevention ?? s.prevention ?? 0; }
+    return { e, p, prev, c };
+  }
+
+  const statMap = {};
+  const catStats = {}; (window.SOB.eventCategories || []).forEach(c => catStats[c.id] = 0);
+  serviced.forEach(s => {
+    const b = baseAgg(s);
+    const evs = filteredJournal.filter(e => e.schoolId === s.id);
+    const events       = b.e + evs.length;
+    const participants = b.p + evs.reduce((a,e)=>a+(e.participants||0),0);
+    const prevention   = b.prev + evs.filter(e=>prevTypes.includes(e.type)).length;
+    const uniq = s.students > 0 ? Math.min(participants, s.students) : participants;
+    statMap[s.id] = { events, participants, prevention, uniqueStudents:uniq,
+      coveragePercent: s.students > 0 ? Math.round(uniq/s.students*100) : 0,
+      consultations: evs.filter(e=>e.type==='consultation').length };
+    for (const k in b.c) { if (k in catStats) catStats[k] += b.c[k]; }
+    evs.forEach(e => { const k = e.category || e.type; if (k in catStats) catStats[k]++; });
+  });
+
+  const sum = f => serviced.reduce((a,s) => a + f(statMap[s.id]), 0);
+  const totalStudents  = serviced.reduce((a,s) => a + (s.students||0), 0);
+  const uniqueStudents = sum(st => st.uniqueStudents);
+  return {
+    serviced, statMap, catStats, filteredJournal,
+    periodLabel: SD ? SD.presetLabel(periodId) : (periodId || 'весь час'),
+    events:         sum(st => st.events),
+    participations: sum(st => st.participants),
+    prevention:     sum(st => st.prevention),
+    consultations:  sum(st => st.consultations),
+    totalStudents, uniqueStudents,
+    coveragePercent: totalStudents > 0 ? Math.round(uniqueStudents/totalStudents*100) : 0,
+  };
+};
+
 /* ---- Авторизація ---- */
 window.SOBAuth = {
   get(){ try { return JSON.parse(localStorage.getItem('sob_session') || 'null'); } catch(e){ return null; } },
