@@ -11,8 +11,9 @@ window.SOB = {
   org: {
     title: "Служба освітньої безпеки",
     abbr: "СОБ",
-    district: "Запорізький район",
+    district: "Запорізька область",
     region: "Запорізька область",
+    districtGenitive: "Запорізької області",
     period: (function(){ const mn=['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень']; const d=new Date(); return mn[d.getMonth()]+' '+d.getFullYear(); })(),
     periodOptions: (function(){ const mn=['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'],r=[];for(let y=2024;y<=2050;y++)for(let m=0;m<12;m++)r.push(mn[m]+' '+y);return r; })(),
     center: { lat: 47.8500, lng: 35.4000 },
@@ -28,7 +29,7 @@ window.SOB = {
     { id: "events",       label: "Проведено заходів",           value: 964,   delta: 0, icon: "calendar", color: "blue"  },
     { id: "prevention",   label: "Профілактичні відпрацювання", value: 381,   delta: 0, icon: "shield",   color: "navy"  },
     { id: "participants", label: "Охоплено учасників",          value: 18176, delta: 0, icon: "users",   color: "gold"  },
-    { id: "schools",      label: "Заклади освіти",              value: 8,   delta: 0,   icon: "school",   color: "green" },
+    { id: "schools",      label: "Заклади освіти",              value: 9,   delta: 0,   icon: "school",   color: "green" },
   ],
 
   /* --- Додаткові показники --- */

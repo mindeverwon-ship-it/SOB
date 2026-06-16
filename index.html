@@ -135,8 +135,6 @@
 <script src="js/store.js?v=17"></script>
 <script src="js/shell.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" crossorigin="anonymous"></script>
 <script>
 document.body.classList.add('js-anim');
@@ -201,7 +199,7 @@ document.getElementById('content').innerHTML = `
           <span class="hbadge">Національна поліція України</span>
         </div>
         <h1>Цифрова карта безпеки та паспорт роботи Служби освітньої безпеки</h1>
-        <p>Єдиний цифровий портал обліку заходів, статистики та взаємодії із закладами освіти ${S.org.district}у.</p>
+        <p>Єдиний цифровий портал обліку заходів, статистики та взаємодії із закладами освіти ${S.org.districtGenitive||S.org.district}.</p>
         <div class="cta">
           ${quickAction}
           <a class="btn" style="background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.18)" href="map.html">${I.map} Карта закладів</a>
@@ -213,9 +211,7 @@ document.getElementById('content').innerHTML = `
           <div class="rp-ic">${I.doc}</div>
           <div class="rp-t"><b>Звіт за ${S.org.period}</b><span>Готовий до експорту</span></div>
         </div>
-        <button class="rp-btn gold" onclick="exportReport('PDF')">${I.download} Завантажити PDF</button>
-        <button class="rp-btn" onclick="exportReport('PowerPoint')">${I.download} PowerPoint (.pptx)</button>
-        <button class="rp-btn" onclick="window.print()">${I.doc} Друкована версія</button>
+        <button class="rp-btn gold" onclick="exportReport('PowerPoint')">${I.download} Завантажити презентацію (.pptx)</button>
       </div>
     </div>
   </section>
@@ -413,121 +409,8 @@ requestAnimationFrame(paintCharts); setTimeout(paintCharts, 80);
 document.addEventListener('visibilitychange', () => { if(!document.hidden) paintCharts(); });
 
 function exportReport(kind){
-  const date = new Date().toISOString().slice(0,10);
-  const typeLabels = S.eventTypes ? Object.fromEntries((S.eventTypes||[]).map(t=>[t.id,t.label])) : {};
-
-  if(kind === 'PDF'){
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
-    const W = doc.internal.pageSize.getWidth();
-    const NAVY = [14, 39, 77];
-    const GOLD = [255, 196, 46];
-    const BLUE = [31, 89, 221];
-
-    // ── Шапка ──
-    doc.setFillColor(...NAVY);
-    doc.rect(0, 0, W, 42, 'F');
-    doc.setTextColor(255,255,255);
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(16);
-    doc.text('Служба освiтньої безпеки · ' + S.org.district, 14, 16);
-    doc.setFontSize(10);
-    doc.setFont('helvetica','normal');
-    doc.setTextColor(200,210,235);
-    doc.text('Звiт за ' + S.org.period + '  ·  Сформовано ' + new Date().toLocaleDateString('uk-UA'), 14, 25);
-    doc.text(S.org.region, 14, 33);
-
-    // ── KPI блок ──
-    let y = 52;
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(11);
-    doc.setTextColor(...NAVY);
-    doc.text('КЛЮЧОВI ПОКАЗНИКИ', 14, y);
-    doc.setFillColor(...GOLD);
-    doc.rect(14, y+2, 22, 1, 'F');
-    y += 10;
-
-    const kpiCols = S.kpis.map(k => ({ label: k.label, value: String(kpiValues[k.id] ?? k.value) }));
-    const colW = (W - 28) / kpiCols.length;
-    kpiCols.forEach((k, i) => {
-      const x = 14 + i * colW;
-      doc.setFillColor(240,244,252);
-      doc.roundedRect(x, y, colW - 4, 22, 3, 3, 'F');
-      doc.setFont('helvetica','bold');
-      doc.setFontSize(18);
-      doc.setTextColor(...BLUE);
-      doc.text(k.value, x + (colW-4)/2, y + 12, { align:'center' });
-      doc.setFont('helvetica','normal');
-      doc.setFontSize(8);
-      doc.setTextColor(100,120,155);
-      const lines = doc.splitTextToSize(k.label, colW - 8);
-      doc.text(lines[0], x + (colW-4)/2, y + 18, { align:'center' });
-    });
-    y += 30;
-
-    // ── Рейтинг закладів ──
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(11);
-    doc.setTextColor(...NAVY);
-    doc.text('РЕЙТИНГ АКТИВНОСТI ЗАКЛАДIВ', 14, y);
-    doc.setFillColor(...GOLD);
-    doc.rect(14, y+2, 36, 1, 'F');
-    y += 6;
-
-    doc.autoTable({
-      startY: y,
-      head: [['#','Заклад освiти','Заходiв','Учасникiв','Рейтинг']],
-      body: ranked.map((s,i) => [i+1, s.name, s.events||0, s.participants||0, s.rating||0]),
-      headStyles: { fillColor: NAVY, textColor: 255, fontStyle:'bold', fontSize:9 },
-      bodyStyles: { fontSize:9, textColor:[30,40,60] },
-      alternateRowStyles: { fillColor:[245,248,255] },
-      columnStyles: { 0:{cellWidth:10,halign:'center'}, 2:{halign:'center'}, 3:{halign:'center'}, 4:{halign:'center'} },
-      margin: { left:14, right:14 },
-    });
-    y = doc.lastAutoTable.finalY + 10;
-
-    // ── Журнал заходів ──
-    if(S.schoolEvents.length){
-      if(y > 230){ doc.addPage(); y = 20; }
-      doc.setFont('helvetica','bold');
-      doc.setFontSize(11);
-      doc.setTextColor(...NAVY);
-      doc.text('ЖУРНАЛ ЗАХОДIВ', 14, y);
-      doc.setFillColor(...GOLD);
-      doc.rect(14, y+2, 26, 1, 'F');
-      y += 6;
-
-      doc.autoTable({
-        startY: y,
-        head: [['Дата','Заклад','Тип','Назва заходу','Учасн.']],
-        body: S.schoolEvents.slice(0,50).map(e => {
-          const sc = S.schools.find(x=>x.id===e.schoolId);
-          return [e.date||'', sc?sc.name:'', typeLabels[e.type]||e.type||'', e.title||'', e.participants||0];
-        }),
-        headStyles: { fillColor: NAVY, textColor:255, fontStyle:'bold', fontSize:8 },
-        bodyStyles: { fontSize:8, textColor:[30,40,60] },
-        alternateRowStyles: { fillColor:[245,248,255] },
-        columnStyles: { 0:{cellWidth:22}, 4:{cellWidth:16,halign:'center'} },
-        margin: { left:14, right:14 },
-      });
-    }
-
-    // ── Підвал ──
-    const pages = doc.internal.getNumberOfPages();
-    for(let p=1; p<=pages; p++){
-      doc.setPage(p);
-      doc.setFont('helvetica','normal');
-      doc.setFontSize(8);
-      doc.setTextColor(150,160,180);
-      doc.text(`© ${new Date().getFullYear()} ${S.org.region}  ·  Стор. ${p} з ${pages}`, W/2, 290, {align:'center'});
-    }
-
-    doc.save(`sob-звiт-${date}.pdf`);
-    toast('PDF-звiт завантажено ✓');
-
-  } else if(kind === 'PowerPoint'){
-    buildPptx();
-  }
+  /* Єдиний формат експорту — PowerPoint-презентація */
+  buildPptx();
 }
 window.exportReport = exportReport;
 
@@ -545,10 +428,10 @@ function buildPptx(){
   pptx.title   = 'Служба освітньої безпеки · ' + S.org.district;
 
   /* ── Палітра бренду ── */
-  const NAVY='0E274D', NAVY2='07172E', GOLD='FFC42E', BLUE='1F59DD',
+  const NAVY='0E274D', NAVY2='07172E', GOLD='FFC42E', GOLDINK='B8860B', BLUE='1F59DD',
         CREAM='F4F1EA', WHITE='FFFFFF', INK='14233B', MUT='6A7A98',
         GREEN='1AA56C', BORDER='E4DCCD', CARDBD='E7ECF4', SOFT='EAF0FA';
-  const EMBLEM='assets/sob-emblem.png', LOGO='assets/sob-logo-transparent.png';
+  const EMBLEM='assets/sob-emblem-hi.png', LOGO='assets/sob-logo-hi.png';
   const today = new Date().toLocaleDateString('uk-UA');
   const W = 13.333;
 
@@ -566,7 +449,7 @@ function buildPptx(){
     s.addShape(pptx.ShapeType.rect, { x:0, y:0, w:W, h:0.18, fill:{ color:NAVY } });
     s.addShape(pptx.ShapeType.rect, { x:0, y:0.18, w:W, h:0.03, fill:{ color:GOLD } });
     s.addImage({ path:EMBLEM, x:0.45, y:0.5, w:0.62, h:0.62 });
-    s.addText((eyebrow||'').toUpperCase(), { x:1.25, y:0.5, w:9, h:0.3, fontSize:11, bold:true, color:GOLD, charSpacing:2, fontFace:'Arial' });
+    s.addText((eyebrow||'').toUpperCase(), { x:1.25, y:0.5, w:9, h:0.3, fontSize:11, bold:true, color:GOLDINK, charSpacing:2, fontFace:'Arial' });
     s.addText(title||'', { x:1.25, y:0.74, w:11.6, h:0.6, fontSize:26, bold:true, color:NAVY, fontFace:'Arial' });
     s.addText(S.org.period, { x:10.4, y:0.52, w:2.45, h:0.4, align:'right', fontSize:12, bold:true, color:MUT, fontFace:'Arial' });
     s.addShape(pptx.ShapeType.rect, { x:0, y:7.18, w:W, h:0.32, fill:{ color:NAVY } });
@@ -596,17 +479,22 @@ function buildPptx(){
     });
   }
 
-  /* ════ Слайд 1 · Титул ════ */
+  /* ════ Слайд 1 · Титул — світлий «офіційний документ» ════ */
   const t = pptx.addSlide();
-  t.background = { color: NAVY };
-  t.addShape(pptx.ShapeType.rect, { x:0, y:0, w:W, h:7.5, fill:{ color:NAVY } });
-  t.addShape(pptx.ShapeType.rect, { x:0, y:5.55, w:W, h:0.06, fill:{ color:GOLD } });
-  t.addImage({ path:LOGO, x:0.85, y:1.05, w:1.5, h:1.5 });
-  t.addText('ЗВІТ ПРО РОБОТУ', { x:0.9, y:2.9, w:11, h:0.4, fontSize:14, bold:true, color:GOLD, charSpacing:3, fontFace:'Arial' });
-  t.addText('Служба освітньої безпеки', { x:0.85, y:3.25, w:11.6, h:1, fontSize:44, bold:true, color:WHITE, fontFace:'Arial' });
-  t.addText(S.org.district + ' · ' + S.org.region, { x:0.9, y:4.45, w:11, h:0.5, fontSize:20, color:'C8D2EB', fontFace:'Arial' });
-  t.addText('Звітний період: ' + S.org.period, { x:0.9, y:5.75, w:8, h:0.5, fontSize:15, bold:true, color:WHITE, fontFace:'Arial' });
-  t.addText('Сформовано: ' + today, { x:0.9, y:6.25, w:8, h:0.4, fontSize:12, color:'8090B0', fontFace:'Arial' });
+  t.background = { color: CREAM };
+  t.addShape(pptx.ShapeType.rect, { x:0, y:0,    w:W, h:0.30, fill:{ color:NAVY } });
+  t.addShape(pptx.ShapeType.rect, { x:0, y:0.30, w:W, h:0.05, fill:{ color:GOLD } });
+  /* логотип (підготовлений під світлий фон) — по центру */
+  t.addImage({ path:LOGO, x:(W-3.4)/2, y:0.95, w:3.4, h:2.03 });
+  t.addText('ЗВІТ ПРО РОБОТУ', { x:0.5, y:3.35, w:W-1, h:0.4, align:'center', fontSize:14, bold:true, color:GOLDINK, charSpacing:4, fontFace:'Arial' });
+  t.addText('Служба освітньої безпеки', { x:0.5, y:3.72, w:W-1, h:1, align:'center', fontSize:40, bold:true, color:NAVY, fontFace:'Arial' });
+  t.addShape(pptx.ShapeType.rect, { x:(W-2.2)/2, y:4.72, w:2.2, h:0.045, fill:{ color:GOLD } });
+  t.addText(S.org.district, { x:0.5, y:4.9, w:W-1, h:0.5, align:'center', fontSize:20, color:MUT, fontFace:'Arial' });
+  t.addText('Звітний період: ' + S.org.period, { x:0.5, y:5.5, w:W-1, h:0.5, align:'center', fontSize:15, bold:true, color:INK, fontFace:'Arial' });
+  /* нижня плашка */
+  t.addShape(pptx.ShapeType.rect, { x:0, y:7.0, w:W, h:0.5, fill:{ color:NAVY } });
+  t.addText('Національна поліція України', { x:0.45, y:7.0, w:7, h:0.5, valign:'middle', fontSize:10, color:'9FB0CE', fontFace:'Arial' });
+  t.addText('Сформовано: ' + today, { x:6, y:7.0, w:6.9, h:0.5, valign:'middle', align:'right', fontSize:10, color:'9FB0CE', fontFace:'Arial' });
 
   /* ════ Слайд 2 · Ключові показники ════ */
   const s2 = content('Загальні підсумки', 'Ключові показники ефективності');
@@ -701,13 +589,17 @@ function buildPptx(){
     });
   }
 
-  /* ════ Слайд фінал · Подяка ════ */
+  /* ════ Слайд фінал · Подяка — світлий «офіційний документ» ════ */
   const fin = pptx.addSlide();
-  fin.background = { color: NAVY };
-  fin.addImage({ path:EMBLEM, x:6.1, y:2.1, w:1.1, h:1.1 });
-  fin.addText('Дякуємо за увагу', { x:0.5, y:3.4, w:12.3, h:0.7, align:'center', fontSize:30, bold:true, color:WHITE, fontFace:'Arial' });
-  fin.addText('Служба освітньої безпеки · ' + S.org.district, { x:0.5, y:4.2, w:12.3, h:0.5, align:'center', fontSize:15, color:'C8D2EB', fontFace:'Arial' });
-  fin.addShape(pptx.ShapeType.rect, { x:5.4, y:4.95, w:2.5, h:0.05, fill:{ color:GOLD } });
+  fin.background = { color: CREAM };
+  fin.addShape(pptx.ShapeType.rect, { x:0, y:0,    w:W, h:0.30, fill:{ color:NAVY } });
+  fin.addShape(pptx.ShapeType.rect, { x:0, y:0.30, w:W, h:0.05, fill:{ color:GOLD } });
+  fin.addImage({ path:EMBLEM, x:(W-1.5)/2, y:2.0, w:1.5, h:1.5 });
+  fin.addText('Дякуємо за увагу', { x:0.5, y:3.75, w:12.3, h:0.7, align:'center', fontSize:32, bold:true, color:NAVY, fontFace:'Arial' });
+  fin.addShape(pptx.ShapeType.rect, { x:(W-2.2)/2, y:4.62, w:2.2, h:0.045, fill:{ color:GOLD } });
+  fin.addText('Служба освітньої безпеки · ' + S.org.district, { x:0.5, y:4.8, w:12.3, h:0.5, align:'center', fontSize:15, color:MUT, fontFace:'Arial' });
+  fin.addShape(pptx.ShapeType.rect, { x:0, y:7.0, w:W, h:0.5, fill:{ color:NAVY } });
+  fin.addText('Сформовано: ' + today, { x:0.45, y:7.0, w:12.4, h:0.5, valign:'middle', align:'center', fontSize:10, color:'9FB0CE', fontFace:'Arial' });
 
   const fname = `sob-презентація-${S.org.period.replace(/\s+/g,'-')}-${new Date().toISOString().slice(0,10)}.pptx`;
   pptx.writeFile({ fileName: fname });
